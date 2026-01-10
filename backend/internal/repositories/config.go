@@ -1,5 +1,7 @@
 package repositories
 
+import "strconv"
+
 type DatabaseConfig struct {
 	Host     string
 	Port     int
@@ -11,7 +13,7 @@ type DatabaseConfig struct {
 
 func (dc *DatabaseConfig) GetPostgresConnectionString() string {
 	return "host=" + dc.Host +
-		" port=" + string(rune(dc.Port)) +
+		" port=" + strconv.Itoa(dc.Port) +
 		" user=" + dc.User +
 		" password=" + dc.Password +
 		" dbname=" + dc.DBName +

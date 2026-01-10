@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
 	"github.com/labstack/echo/v4"
 	"gorm.io/driver/postgres"
@@ -17,8 +18,11 @@ type APIServer struct {
 	uowFactory *repositories.UnitOfWorkFactory
 	globalUOW  *repositories.UnitOfWork
 
-	userService *users.UserService
-	userHandler *UserHandler
+	userService    *users.UserService
+	sessionService *user_sessions.SessionService
+	tokenService   *user_sessions.TokenService
+	userHandler    *UserHandler
+	sessionHandler *SessionHandler
 }
 
 func (s *APIServer) StartOrFatal() {
@@ -56,6 +60,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 	return s.gorm.AutoMigrate(
 		users.User{},
 		users.UserCredential{},
+		&user_sessions.UserSession{},
 	)
 }
 
@@ -64,13 +69,18 @@ func (s *APIServer) SetupAPIServer() error {
 	// Global Unit of Work for read operations
 	s.globalUOW = s.uowFactory.NewUnitOfWork()
 
+	// Register custom validator
+	s.echo.Validator = NewValidator()
+
 	s.SetupUserService()
 
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
+	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
 
 	// Register routes
 	s.userHandler.RegisterRoutes(s.echo)
+	s.sessionHandler.RegisterRoutes(s.echo)
 
 	return nil
 }

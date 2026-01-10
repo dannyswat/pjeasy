@@ -8,16 +8,22 @@ import (
 func main() {
 	// Entry point for the API server
 	apiServer := apis.NewAPIServer()
-	apiServer.SetupDatabase(&repositories.DatabaseConfig{
+	err := apiServer.SetupDatabase(&repositories.DatabaseConfig{
 		Host:     "localhost",
 		Port:     5432,
-		User:     "youruser",
-		Password: "yourpassword",
-		DBName:   "yourdbname",
+		User:     "postgres",
+		Password: "postgres",
+		DBName:   "pjeasy",
 		SSLMode:  "disable",
 	})
-	apiServer.AutoMigrate(true)
-	err := apiServer.SetupAPIServer()
+	if err != nil {
+		panic(err)
+	}
+	err = apiServer.AutoMigrate(true)
+	if err != nil {
+		panic(err)
+	}
+	err = apiServer.SetupAPIServer()
 	if err != nil {
 		panic(err)
 	}

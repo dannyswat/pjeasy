@@ -107,3 +107,7 @@ func (s *UserService) AuthenticateWithPassword(loginID, password string) (*User,
 
 	return user, nil
 }
+
+func (s *UserService) GetUserByID(userID int) (*User, error) {
+	return s.repo.GetByID(userID)
+}
