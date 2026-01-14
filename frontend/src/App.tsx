@@ -5,6 +5,8 @@ import DashboardPage from './dashboard/DashboardPage'
 import LoginPage from './auth/LoginPage'
 import RegisterPage from './users/RegisterPage'
 import SystemAdminPage from './admins/SystemAdminPage'
+import ProjectsListPage from './projects/ProjectsListPage'
+import ProjectFormPage from './projects/ProjectFormPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
@@ -96,6 +98,36 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <DashboardPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ProjectsListPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/new"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ProjectFormPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ProjectFormPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

@@ -1,0 +1,318 @@
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useGetProject } from './useGetProject'
+import { useCreateProject } from './useCreateProject'
+import { useUpdateProject } from './useUpdateProject'
+import { useArchiveProject, useUnarchiveProject } from './useArchiveProject'
+import { useAddMember, useRemoveMember } from './useProjectMembers'
+
+export default function ProjectFormPage() {
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const projectId = id ? parseInt(id) : null
+  const isEditMode = projectId !== null
+
+  const { project, members, isLoading, refetch } = useGetProject(projectId)
+  const { createProject, isPending: isCreating } = useCreateProject()
+  const { updateProject, isPending: isUpdating } = useUpdateProject()
+  const { archiveProject, isPending: isArchiving } = useArchiveProject()
+  const { unarchiveProject, isPending: isUnarchiving } = useUnarchiveProject()
+  const { addMember, isPending: isAddingMember } = useAddMember()
+  const { removeMember, isPending: isRemovingMember } = useRemoveMember()
+
+  const [name, setName] = useState(project?.name || '')
+  const [description, setDescription] = useState(project?.description || '')
+  const [newMemberUserId, setNewMemberUserId] = useState('')
+  const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      if (isEditMode && projectId) {
+        await updateProject({ projectId, data: { name, description } })
+        setSuccessMessage('Project updated successfully')
+        refetch()
+      } else {
+        const newProject = await createProject({ name, description })
+        setSuccessMessage('Project created successfully')
+        setTimeout(() => navigate(`/projects/${newProject.id}`), 1500)
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Operation failed')
+    }
+  }
+
+  const handleAddMember = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    if (!projectId) return
+
+    if (!newMemberUserId.trim()) {
+      setErrorMessage('Please enter a login ID')
+      return
+    }
+
+    try {
+      await addMember({ projectId, data: { loginId: newMemberUserId, isAdmin: newMemberIsAdmin } })
+      setSuccessMessage('Member added successfully')
+      setNewMemberUserId('')
+      setNewMemberIsAdmin(false)
+      refetch()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to add member')
+    }
+  }
+
+  const handleRemoveMember = async (memberId: number, memberName: string) => {
+    if (!projectId) return
+    if (!confirm(`Are you sure you want to remove ${memberName} from this project?`)) return
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await removeMember({ projectId, memberId })
+      setSuccessMessage('Member removed successfully')
+      refetch()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to remove member')
+    }
+  }
+
+  const handleArchive = async () => {
+    if (!projectId) return
+    if (!confirm('Are you sure you want to archive this project?')) return
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await archiveProject(projectId)
+      setSuccessMessage('Project archived successfully')
+      refetch()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to archive project')
+    }
+  }
+
+  const handleUnarchive = async () => {
+    if (!projectId) return
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await unarchiveProject(projectId)
+      setSuccessMessage('Project unarchived successfully')
+      refetch()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to unarchive project')
+    }
+  }
+
+  if (isEditMode && isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember
+
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">
+          {isEditMode ? 'Edit Project' : 'Create New Project'}
+        </h1>
+        <p className="text-gray-600 mt-2">
+          {isEditMode ? 'Update project details and manage members' : 'Create a new project and start collaborating'}
+        </p>
+      </div>
+
+      {/* Messages */}
+      {successMessage && (
+        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-start">
+          <svg className="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span className="text-sm">{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">
+          <svg className="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span className="text-sm">{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Project Form */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Project Details</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              Project Name *
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              placeholder="Enter project name"
+              required
+              disabled={isPending}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              placeholder="Enter project description"
+              disabled={isPending}
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+            >
+              {isEditMode ? 'Update Project' : 'Create Project'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/projects')}
+              disabled={isPending}
+              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition disabled:bg-gray-200"
+            >
+              Cancel
+            </button>
+            {isEditMode && project && (
+              <>
+                {project.isArchived ? (
+                  <button
+                    type="button"
+                    onClick={handleUnarchive}
+                    disabled={isPending}
+                    className="ml-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                  >
+                    Unarchive
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleArchive}
+                    disabled={isPending}
+                    className="ml-auto bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition disabled:bg-gray-400"
+                  >
+                    Archive
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* Members Section - Only in Edit Mode */}
+      {isEditMode && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Project Members</h2>
+
+          {/* Add Member Form */}
+          <form onSubmit={handleAddMember} className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Add New Member</h3>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={newMemberUserId}
+                onChange={(e) => setNewMemberUserId(e.target.value)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                placeholder="Login ID"
+                disabled={isPending}
+              />
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={newMemberIsAdmin}
+                  onChange={(e) => setNewMemberIsAdmin(e.target.checked)}
+                  className="mr-2 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  disabled={isPending}
+                />
+                <span className="text-sm text-gray-700">Admin</span>
+              </label>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+              >
+                Add
+              </button>
+            </div>
+          </form>
+
+          {/* Members List */}
+          <div className="space-y-2">
+            {members.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No members yet</p>
+            ) : (
+              members.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center font-semibold text-green-700">
+                      {member.user.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{member.user.name}</p>
+                      <p className="text-sm text-gray-500">{member.user.loginId}</p>
+                    </div>
+                    {member.isAdmin && (
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                        Admin
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleRemoveMember(member.userId, member.user.name)}
+                    disabled={isPending}
+                    className="text-red-600 hover:text-red-900 disabled:text-gray-400 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -3,6 +3,7 @@ package apis
 import (
 	"errors"
 
+	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
@@ -22,10 +23,12 @@ type APIServer struct {
 	userService    *users.UserService
 	sessionService *user_sessions.SessionService
 	adminService   *userroles.SystemAdminService
+	projectService *projects.ProjectService
 	tokenService   *user_sessions.TokenService
 	userHandler    *UserHandler
 	sessionHandler *SessionHandler
 	adminHandler   *AdminHandler
+	projectHandler *ProjectHandler
 	authMiddleware *AuthMiddleware
 }
 
@@ -66,6 +69,8 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		users.UserCredential{},
 		&user_sessions.UserSession{},
 		&userroles.SystemAdmin{},
+		&projects.Project{},
+		&projects.ProjectMember{},
 	)
 }
 
@@ -84,16 +89,23 @@ func (s *APIServer) SetupAPIServer() error {
 	userRepo := users.NewUserRepository(s.globalUOW)
 	s.adminService = userroles.NewSystemAdminService(adminRepo, userRepo)
 
+	// Initialize project service
+	projectRepo := projects.NewProjectRepository(s.gorm)
+	memberRepo := projects.NewProjectMemberRepository(s.gorm)
+	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo)
+
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
 	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
 	s.adminHandler = NewAdminHandler(s.adminService)
+	s.projectHandler = NewProjectHandler(s.projectService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 
 	// Register routes
 	s.userHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.sessionHandler.RegisterRoutes(s.echo)
 	s.adminHandler.RegisterRoutes(s.echo, s.authMiddleware)
+	s.projectHandler.RegisterRoutes(s.echo, s.authMiddleware)
 
 	return nil
 }
