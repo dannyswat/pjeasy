@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const location = useLocation()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -42,15 +44,19 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
           } bg-white shadow-lg transition-all duration-300 overflow-hidden`}
         >
           <nav className="p-4 space-y-2">
-            <a
-              href="#"
-              className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-green-50 text-green-700 font-medium"
+            <Link
+              to="/dashboard"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+                location.pathname === '/dashboard'
+                  ? 'bg-green-50 text-green-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-100'
+              } transition-colors`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
               <span>Dashboard</span>
-            </a>
+            </Link>
             <a
               href="#"
               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
@@ -78,6 +84,28 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
               </svg>
               <span>Team</span>
             </a>
+
+            {/* Admin Section Divider */}
+            <div className="pt-4 pb-2">
+              <div className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Administration
+              </div>
+            </div>
+
+            <Link
+              to="/admin/system-admins"
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg ${
+                location.pathname === '/admin/system-admins'
+                  ? 'bg-green-50 text-green-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-100'
+              } transition-colors`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>System Admins</span>
+            </Link>
+
             <a
               href="#"
               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"

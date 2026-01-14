@@ -4,6 +4,7 @@ import DefaultLayout from './layout/DefaultLayout'
 import DashboardPage from './dashboard/DashboardPage'
 import LoginPage from './auth/LoginPage'
 import RegisterPage from './users/RegisterPage'
+import SystemAdminPage from './admins/SystemAdminPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
@@ -95,6 +96,16 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <DashboardPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/system-admins"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <SystemAdminPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

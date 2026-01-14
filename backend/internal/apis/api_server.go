@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
 	"github.com/labstack/echo/v4"
@@ -20,9 +21,11 @@ type APIServer struct {
 
 	userService    *users.UserService
 	sessionService *user_sessions.SessionService
+	adminService   *userroles.SystemAdminService
 	tokenService   *user_sessions.TokenService
 	userHandler    *UserHandler
 	sessionHandler *SessionHandler
+	adminHandler   *AdminHandler
 	authMiddleware *AuthMiddleware
 }
 
@@ -62,6 +65,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		users.User{},
 		users.UserCredential{},
 		&user_sessions.UserSession{},
+		&userroles.SystemAdmin{},
 	)
 }
 
@@ -75,14 +79,21 @@ func (s *APIServer) SetupAPIServer() error {
 
 	s.SetupUserService()
 
+	// Initialize admin service
+	adminRepo := userroles.NewSystemAdminRepository(s.gorm)
+	userRepo := users.NewUserRepository(s.globalUOW)
+	s.adminService = userroles.NewSystemAdminService(adminRepo, userRepo)
+
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
 	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
-	s.authMiddleware = NewAuthMiddleware(s.tokenService)
+	s.adminHandler = NewAdminHandler(s.adminService)
+	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 
 	// Register routes
 	s.userHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.sessionHandler.RegisterRoutes(s.echo)
+	s.adminHandler.RegisterRoutes(s.echo, s.authMiddleware)
 
 	return nil
 }

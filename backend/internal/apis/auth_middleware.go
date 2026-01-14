@@ -4,17 +4,20 @@ import (
 	"net/http"
 	"strings"
 
+	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/labstack/echo/v4"
 )
 
 type AuthMiddleware struct {
 	tokenService *user_sessions.TokenService
+	adminService *userroles.SystemAdminService
 }
 
-func NewAuthMiddleware(tokenService *user_sessions.TokenService) *AuthMiddleware {
+func NewAuthMiddleware(tokenService *user_sessions.TokenService, adminService *userroles.SystemAdminService) *AuthMiddleware {
 	return &AuthMiddleware{
 		tokenService: tokenService,
+		adminService: adminService,
 	}
 }
 
@@ -55,6 +58,29 @@ func (m *AuthMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		// Set user info in context
 		c.Set("user_id", claims.UserID)
 		c.Set("login_id", claims.LoginID)
+
+		return next(c)
+	}
+}
+
+// RequireAdmin middleware ensures the user is a system admin
+func (m *AuthMiddleware) RequireAdmin(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// First ensure user is authenticated
+		userID, ok := c.Get("user_id").(int)
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+		}
+
+		// Check if user is an admin
+		isAdmin, err := m.adminService.IsUserAdmin(userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to verify admin status")
+		}
+
+		if !isAdmin {
+			return echo.NewHTTPError(http.StatusForbidden, "Admin access required")
+		}
 
 		return next(c)
 	}
