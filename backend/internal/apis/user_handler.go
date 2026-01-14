@@ -55,6 +55,30 @@ func (h *UserHandler) Register(c echo.Context) error {
 	return c.JSON(http.StatusCreated, response)
 }
 
-func (h *UserHandler) RegisterRoutes(e *echo.Echo) {
+func (h *UserHandler) Me(c echo.Context) error {
+	// Get user ID from context (set by auth middleware)
+	userID, ok := c.Get("user_id").(int)
+	if !ok {
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+
+	// Get user from service
+	user, err := h.userService.GetUserByID(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "User not found")
+	}
+
+	response := &UserResponse{
+		ID:              user.ID,
+		LoginID:         user.LoginID,
+		Name:            user.Name,
+		ProfileImageURL: user.ProfileImageURL,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
 	e.POST("/api/users/register", h.Register)
+	e.GET("/api/users/me", h.Me, authMiddleware.RequireAuth)
 }

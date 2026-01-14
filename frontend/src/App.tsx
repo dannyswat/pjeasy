@@ -4,6 +4,9 @@ import DefaultLayout from './layout/DefaultLayout'
 import DashboardPage from './dashboard/DashboardPage'
 import LoginPage from './auth/LoginPage'
 import RegisterPage from './users/RegisterPage'
+import { useMeApi } from './auth/useMeApi'
+import { useUserSession } from './auth/useUserSession'
+import { useEffect } from 'react'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,23 +17,90 @@ const queryClient = new QueryClient({
   },
 })
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, isError } = useMeApi()
+  const { clearSession } = useUserSession()
+
+  useEffect(() => {
+    // If token is invalid or expired, clear session
+    if (isError) {
+      clearSession()
+    }
+  }, [isError, clearSession])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isError || !user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
+
+function AuthRedirect({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useMeApi()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If user is already authenticated, redirect to dashboard
+  if (user) {
+    return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/login"
+            element={
+              <AuthRedirect>
+                <LoginPage />
+              </AuthRedirect>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthRedirect>
+                <RegisterPage />
+              </AuthRedirect>
+            }
+          />
           <Route
             path="/dashboard"
             element={
-              <DefaultLayout>
-                <DashboardPage />
-              </DefaultLayout>
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <DashboardPage />
+                </DefaultLayout>
+              </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
@@ -38,3 +108,4 @@ function App() {
 }
 
 export default App
+

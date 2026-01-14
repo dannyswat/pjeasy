@@ -23,6 +23,7 @@ type APIServer struct {
 	tokenService   *user_sessions.TokenService
 	userHandler    *UserHandler
 	sessionHandler *SessionHandler
+	authMiddleware *AuthMiddleware
 }
 
 func (s *APIServer) StartOrFatal() {
@@ -77,9 +78,10 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
 	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
+	s.authMiddleware = NewAuthMiddleware(s.tokenService)
 
 	// Register routes
-	s.userHandler.RegisterRoutes(s.echo)
+	s.userHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.sessionHandler.RegisterRoutes(s.echo)
 
 	return nil
