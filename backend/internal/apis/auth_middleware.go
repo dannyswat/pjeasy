@@ -2,8 +2,10 @@ package apis
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
+	"github.com/dannyswat/pjeasy/internal/projects"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/labstack/echo/v4"
@@ -82,6 +84,75 @@ func (m *AuthMiddleware) RequireAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusForbidden, "Admin access required")
 		}
 
+		return next(c)
+	}
+}
+
+// ProjectMiddleware handles project-level authorization
+type ProjectMiddleware struct {
+	memberCache *projects.ProjectMemberCache
+}
+
+func NewProjectMiddleware(memberCache *projects.ProjectMemberCache) *ProjectMiddleware {
+	return &ProjectMiddleware{
+		memberCache: memberCache,
+	}
+}
+
+// RequireProjectMember ensures the user is a member of the project
+func (m *ProjectMiddleware) RequireProjectMember(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID, ok := c.Get("user_id").(int)
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+		}
+
+		projectIDStr := c.Param("projectId")
+		if projectIDStr == "" {
+			projectIDStr = c.Param("id")
+		}
+
+		projectID, err := strconv.Atoi(projectIDStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+		}
+
+		isMember, err := m.memberCache.IsUserMember(projectID, userID)
+
+		if !isMember {
+			return echo.NewHTTPError(http.StatusForbidden, "Project membership required")
+		}
+
+		c.Set("project_id", projectID)
+		return next(c)
+	}
+}
+
+// RequireProjectAdmin ensures the user is an admin of the project
+func (m *ProjectMiddleware) RequireProjectAdmin(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID, ok := c.Get("user_id").(int)
+		if !ok {
+			return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+		}
+
+		projectIDStr := c.Param("projectId")
+		if projectIDStr == "" {
+			projectIDStr = c.Param("id")
+		}
+
+		projectID, err := strconv.Atoi(projectIDStr)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+		}
+
+		isAdmin, err := m.memberCache.IsUserAdmin(projectID, userID)
+
+		if !isAdmin {
+			return echo.NewHTTPError(http.StatusForbidden, "Project admin access required")
+		}
+
+		c.Set("project_id", projectID)
 		return next(c)
 	}
 }

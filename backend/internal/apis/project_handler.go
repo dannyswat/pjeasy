@@ -374,16 +374,16 @@ func (h *ProjectHandler) UnarchiveProject(c echo.Context) error {
 	})
 }
 
-func (h *ProjectHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
+func (h *ProjectHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
 	projectGroup := e.Group("/api/projects", LoggingMiddleware, authMiddleware.RequireAuth)
 
 	projectGroup.POST("", h.CreateProject)
 	projectGroup.GET("", h.ListProjects)
-	projectGroup.GET("/:id", h.GetProject)
-	projectGroup.PUT("/:id", h.UpdateProject)
-	projectGroup.POST("/:id/archive", h.ArchiveProject)
-	projectGroup.POST("/:id/unarchive", h.UnarchiveProject)
-	projectGroup.POST("/:id/members", h.AddMember)
-	projectGroup.DELETE("/:id/members/:memberId", h.RemoveMember)
-	projectGroup.PUT("/:id/members/:memberId", h.UpdateMemberRole)
+	projectGroup.GET("/:id", h.GetProject, projectMiddleware.RequireProjectMember)
+	projectGroup.PUT("/:id", h.UpdateProject, projectMiddleware.RequireProjectAdmin)
+	projectGroup.POST("/:id/archive", h.ArchiveProject, projectMiddleware.RequireProjectAdmin)
+	projectGroup.POST("/:id/unarchive", h.UnarchiveProject, projectMiddleware.RequireProjectAdmin)
+	projectGroup.POST("/:id/members", h.AddMember, projectMiddleware.RequireProjectAdmin)
+	projectGroup.DELETE("/:id/members/:memberId", h.RemoveMember, projectMiddleware.RequireProjectAdmin)
+	projectGroup.PUT("/:id/members/:memberId", h.UpdateMemberRole, projectMiddleware.RequireProjectAdmin)
 }

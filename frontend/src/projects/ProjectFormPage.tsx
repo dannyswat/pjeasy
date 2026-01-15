@@ -5,6 +5,7 @@ import { useCreateProject } from './useCreateProject'
 import { useUpdateProject } from './useUpdateProject'
 import { useArchiveProject, useUnarchiveProject } from './useArchiveProject'
 import { useAddMember, useRemoveMember } from './useProjectMembers'
+import { useGenerateSequences } from './useGenerateSequences'
 
 export default function ProjectFormPage() {
   const navigate = useNavigate()
@@ -19,6 +20,7 @@ export default function ProjectFormPage() {
   const { unarchiveProject, isPending: isUnarchiving } = useUnarchiveProject()
   const { addMember, isPending: isAddingMember } = useAddMember()
   const { removeMember, isPending: isRemovingMember } = useRemoveMember()
+  const generateSequences = useGenerateSequences()
 
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
@@ -117,6 +119,20 @@ export default function ProjectFormPage() {
     }
   }
 
+  const handleGenerateSequences = async () => {
+    if (!projectId) return
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await generateSequences.mutateAsync({ projectId })
+      setSuccessMessage('Sequences generated successfully')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate sequences')
+    }
+  }
+
   if (isEditMode && isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -128,7 +144,7 @@ export default function ProjectFormPage() {
     )
   }
 
-  const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember
+  const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember || generateSequences.isPending
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -239,14 +255,27 @@ export default function ProjectFormPage() {
                     Unarchive
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleArchive}
-                    disabled={isPending}
-                    className="ml-auto bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition disabled:bg-gray-400"
-                  >
-                    Archive
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleGenerateSequences}
+                      disabled={isPending}
+                      className="ml-auto bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition disabled:bg-gray-400 flex items-center"
+                    >
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                      </svg>
+                      Generate Sequences
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleArchive}
+                      disabled={isPending}
+                      className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition disabled:bg-gray-400"
+                    >
+                      Archive
+                    </button>
+                  </>
                 )}
               </>
             )}

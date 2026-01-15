@@ -244,8 +244,8 @@ func (h *IdeaHandler) GetProjectIdeas(c echo.Context) error {
 }
 
 // RegisterRoutes registers the idea routes
-func (h *IdeaHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
-	ideas := e.Group("/api/projects/:projectId/ideas", LoggingMiddleware, authMiddleware.RequireAuth)
+func (h *IdeaHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
+	ideas := e.Group("/api/projects/:projectId/ideas", LoggingMiddleware, authMiddleware.RequireAuth, projectMiddleware.RequireProjectMember)
 
 	ideas.POST("", h.CreateIdea)
 	ideas.GET("", h.GetProjectIdeas)

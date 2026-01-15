@@ -4,20 +4,25 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/dannyswat/pjeasy/internal/users"
 )
 
 type ProjectService struct {
-	projectRepo *ProjectRepository
-	memberRepo  *ProjectMemberRepository
-	userRepo    *users.UserRepository
+	projectRepo  *ProjectRepository
+	memberRepo   *ProjectMemberRepository
+	memberCache  *ProjectMemberCache
+	userRepo     *users.UserRepository
+	sequenceRepo *sequences.SequenceRepository
 }
 
-func NewProjectService(projectRepo *ProjectRepository, memberRepo *ProjectMemberRepository, userRepo *users.UserRepository) *ProjectService {
+func NewProjectService(projectRepo *ProjectRepository, memberRepo *ProjectMemberRepository, userRepo *users.UserRepository, sequenceRepo *sequences.SequenceRepository, memberCache *ProjectMemberCache) *ProjectService {
 	return &ProjectService{
-		projectRepo: projectRepo,
-		memberRepo:  memberRepo,
-		userRepo:    userRepo,
+		projectRepo:  projectRepo,
+		memberRepo:   memberRepo,
+		memberCache:  memberCache,
+		userRepo:     userRepo,
+		sequenceRepo: sequenceRepo,
 	}
 }
 
@@ -71,6 +76,15 @@ func (s *ProjectService) CreateProject(name, description string, createdBy int) 
 		// Rollback project creation if member addition fails
 		s.projectRepo.Delete(project.ID)
 		return nil, err
+	}
+
+	// Invalidate cache for this project
+	s.memberCache.InvalidateProject(project.ID)
+
+	// Generate default sequences for the project
+	if err := s.sequenceRepo.CreateSequenceIfNotExists(project.ID, "ideas", "IDEA", 4); err != nil {
+		// Log the error but don't fail project creation
+		// Sequences can be generated later if needed
 	}
 
 	return project, nil
@@ -216,7 +230,13 @@ func (s *ProjectService) AddMember(projectID, userID int, isAdmin bool, addedBy 
 		AddedBy:   addedBy,
 	}
 
-	return s.memberRepo.Create(member)
+	if err := s.memberRepo.Create(member); err != nil {
+		return err
+	}
+
+	// Invalidate cache for this project
+	s.memberCache.InvalidateProject(projectID)
+	return nil
 }
 
 // RemoveMember removes a user from a project
@@ -256,7 +276,13 @@ func (s *ProjectService) RemoveMember(projectID, userID int, removedBy int) erro
 		return errors.New("cannot remove the last admin from project")
 	}
 
-	return s.memberRepo.Delete(projectID, userID)
+	if err := s.memberRepo.Delete(projectID, userID); err != nil {
+		return err
+	}
+
+	// Invalidate cache for this project
+	s.memberCache.InvalidateProject(projectID)
+	return nil
 }
 
 // UpdateMemberRole updates a member's admin status
@@ -298,7 +324,13 @@ func (s *ProjectService) UpdateMemberRole(projectID, userID int, isAdmin bool, u
 	}
 
 	member.IsAdmin = isAdmin
-	return s.memberRepo.Update(member)
+	if err := s.memberRepo.Update(member); err != nil {
+		return err
+	}
+
+	// Invalidate cache for this project
+	s.memberCache.InvalidateProject(projectID)
+	return nil
 }
 
 // ArchiveProject archives a project

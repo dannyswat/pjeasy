@@ -196,7 +196,7 @@ func (h *CommentHandler) DeleteComment(c echo.Context) error {
 }
 
 // RegisterRoutes registers the comment routes
-func (h *CommentHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
+func (h *CommentHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
 	comments := e.Group("/api/:itemType/:itemId/comments", LoggingMiddleware, authMiddleware.RequireAuth)
 
 	comments.POST("", h.CreateComment)

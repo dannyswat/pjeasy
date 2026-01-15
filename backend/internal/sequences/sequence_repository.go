@@ -205,3 +205,29 @@ func (r *SequenceRepository) PreviewNextNumber(projectID int, itemType string) (
 	// Generate the formatted number without incrementing
 	return r.formatSequenceNumber(&sequence, nextNumber), nil
 }
+
+// CreateSequenceIfNotExists creates a sequence configuration if it doesn't already exist
+func (r *SequenceRepository) CreateSequenceIfNotExists(projectID int, itemType string, prefix string, paddedZeroLength int) error {
+	// Check if sequence already exists
+	existing, err := r.GetSequenceByItemType(projectID, itemType)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		// Already exists, skip
+		return nil
+	}
+
+	// Create new sequence
+	now := time.Now()
+	sequence := &Sequence{
+		ProjectID:        projectID,
+		ItemType:         itemType,
+		Prefix:           prefix,
+		PaddedZeroLength: paddedZeroLength,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+	}
+
+	return r.db.Create(sequence).Error
+}

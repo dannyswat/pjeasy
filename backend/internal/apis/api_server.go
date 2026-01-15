@@ -2,6 +2,7 @@ package apis
 
 import (
 	"errors"
+	"time"
 
 	"github.com/dannyswat/pjeasy/internal/comments"
 	"github.com/dannyswat/pjeasy/internal/ideas"
@@ -23,20 +24,23 @@ type APIServer struct {
 	uowFactory *repositories.UnitOfWorkFactory
 	globalUOW  *repositories.UnitOfWork
 
-	userService    *users.UserService
-	sessionService *user_sessions.SessionService
-	adminService   *userroles.SystemAdminService
-	projectService *projects.ProjectService
-	ideaService    *ideas.IdeaService
-	commentService *comments.CommentService
-	tokenService   *user_sessions.TokenService
-	userHandler    *UserHandler
-	sessionHandler *SessionHandler
-	adminHandler   *AdminHandler
-	projectHandler *ProjectHandler
-	ideaHandler    *IdeaHandler
-	commentHandler *CommentHandler
-	authMiddleware *AuthMiddleware
+	userService       *users.UserService
+	sessionService    *user_sessions.SessionService
+	adminService      *userroles.SystemAdminService
+	projectService    *projects.ProjectService
+	ideaService       *ideas.IdeaService
+	commentService    *comments.CommentService
+	sequenceService   *sequences.SequenceService
+	tokenService      *user_sessions.TokenService
+	userHandler       *UserHandler
+	sessionHandler    *SessionHandler
+	adminHandler      *AdminHandler
+	projectHandler    *ProjectHandler
+	ideaHandler       *IdeaHandler
+	commentHandler    *CommentHandler
+	sequenceHandler   *SequenceHandler
+	authMiddleware    *AuthMiddleware
+	projectMiddleware *ProjectMiddleware
 }
 
 func (s *APIServer) StartOrFatal() {
@@ -100,10 +104,15 @@ func (s *APIServer) SetupAPIServer() error {
 	userRepo := users.NewUserRepository(s.globalUOW)
 	s.adminService = userroles.NewSystemAdminService(adminRepo, userRepo)
 
+	// Initialize sequence service
+	sequenceRepo := sequences.NewSequenceRepository(s.gorm)
+	s.sequenceService = sequences.NewSequenceService(sequenceRepo)
+
 	// Initialize project service
 	projectRepo := projects.NewProjectRepository(s.gorm)
 	memberRepo := projects.NewProjectMemberRepository(s.gorm)
-	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo)
+	memberCache := projects.NewProjectMemberCache(memberRepo, 1*time.Hour)
+	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo, sequenceRepo, memberCache)
 
 	// Initialize idea service
 	ideaRepo := ideas.NewIdeaRepository(s.gorm)
@@ -120,15 +129,18 @@ func (s *APIServer) SetupAPIServer() error {
 	s.projectHandler = NewProjectHandler(s.projectService)
 	s.ideaHandler = NewIdeaHandler(s.ideaService)
 	s.commentHandler = NewCommentHandler(s.commentService)
+	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
+	s.projectMiddleware = NewProjectMiddleware(memberCache)
 
 	// Register routes
 	s.userHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.sessionHandler.RegisterRoutes(s.echo)
 	s.adminHandler.RegisterRoutes(s.echo, s.authMiddleware)
-	s.projectHandler.RegisterRoutes(s.echo, s.authMiddleware)
-	s.ideaHandler.RegisterRoutes(s.echo, s.authMiddleware)
-	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware)
+	s.projectHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.ideaHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	return nil
 }
