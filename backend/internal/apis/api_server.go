@@ -3,6 +3,7 @@ package apis
 import (
 	"errors"
 
+	"github.com/dannyswat/pjeasy/internal/comments"
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
@@ -26,12 +27,14 @@ type APIServer struct {
 	adminService   *userroles.SystemAdminService
 	projectService *projects.ProjectService
 	ideaService    *ideas.IdeaService
+	commentService *comments.CommentService
 	tokenService   *user_sessions.TokenService
 	userHandler    *UserHandler
 	sessionHandler *SessionHandler
 	adminHandler   *AdminHandler
 	projectHandler *ProjectHandler
 	ideaHandler    *IdeaHandler
+	commentHandler *CommentHandler
 	authMiddleware *AuthMiddleware
 }
 
@@ -75,6 +78,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&projects.Project{},
 		&projects.ProjectMember{},
 		&ideas.Idea{},
+		&comments.Comment{},
 	)
 }
 
@@ -102,12 +106,17 @@ func (s *APIServer) SetupAPIServer() error {
 	ideaRepo := ideas.NewIdeaRepository(s.gorm)
 	s.ideaService = ideas.NewIdeaService(ideaRepo, memberRepo, projectRepo)
 
+	// Initialize comment service
+	commentRepo := comments.NewCommentRepository(s.gorm)
+	s.commentService = comments.NewCommentService(commentRepo)
+
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
 	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
 	s.adminHandler = NewAdminHandler(s.adminService)
 	s.projectHandler = NewProjectHandler(s.projectService)
 	s.ideaHandler = NewIdeaHandler(s.ideaService)
+	s.commentHandler = NewCommentHandler(s.commentService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 
 	// Register routes
@@ -116,6 +125,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.adminHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.projectHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.ideaHandler.RegisterRoutes(s.echo, s.authMiddleware)
+	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware)
 
 	return nil
 }
