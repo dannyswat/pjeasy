@@ -7,6 +7,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/sequences"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
@@ -79,6 +80,8 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&projects.ProjectMember{},
 		&ideas.Idea{},
 		&comments.Comment{},
+		&sequences.Sequence{},
+		&sequences.SequenceNumber{},
 	)
 }
 
