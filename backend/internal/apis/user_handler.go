@@ -79,6 +79,6 @@ func (h *UserHandler) Me(c echo.Context) error {
 }
 
 func (h *UserHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
-	e.POST("/api/users/register", h.Register)
-	e.GET("/api/users/me", h.Me, authMiddleware.RequireAuth)
+	e.POST("/api/users/register", h.Register) // No logging for registration (security)
+	e.GET("/api/users/me", h.Me, LoggingMiddleware, authMiddleware.RequireAuth)
 }

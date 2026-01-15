@@ -138,13 +138,13 @@ func (h *AdminHandler) CheckAdmin(c echo.Context) error {
 
 func (h *AdminHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
 	// All admin routes require authentication
-	adminGroup := e.Group("/api/admins", authMiddleware.RequireAuth)
+	adminGroup := e.Group("/api/admins", LoggingMiddleware, authMiddleware.RequireAuth)
 
 	// Check admin status (available to all authenticated users)
 	adminGroup.GET("/check", h.CheckAdmin)
 
 	// Admin-only routes
-	adminOnlyGroup := e.Group("/api/admins", authMiddleware.RequireAuth, authMiddleware.RequireAdmin)
+	adminOnlyGroup := e.Group("/api/admins", LoggingMiddleware, authMiddleware.RequireAuth, authMiddleware.RequireAdmin)
 	adminOnlyGroup.GET("", h.ListAdmins)
 	adminOnlyGroup.POST("", h.AssignAdmin)
 	adminOnlyGroup.DELETE("/:userId", h.UnassignAdmin)

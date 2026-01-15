@@ -7,6 +7,7 @@ import RegisterPage from './users/RegisterPage'
 import SystemAdminPage from './admins/SystemAdminPage'
 import ProjectsListPage from './projects/ProjectsListPage'
 import ProjectFormPage from './projects/ProjectFormPage'
+import IdeasPage from './ideas/IdeasPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
@@ -128,6 +129,16 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <ProjectFormPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/ideas"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <IdeasPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }
