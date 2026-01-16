@@ -12,7 +12,7 @@ func (s *APIServer) SetupUserService() {
 	// Initialize repositories
 	userRepo := users.NewUserRepository(s.globalUOW)
 	credRepo := users.NewUserCredentialRepository(s.globalUOW)
-	sessionRepo := user_sessions.NewUserSessionRepository(s.gorm)
+	sessionRepo := user_sessions.NewUserSessionRepository(s.globalUOW)
 
 	// Initialize credential provider
 	passwordProvider := &users.PasswordCredential{}
