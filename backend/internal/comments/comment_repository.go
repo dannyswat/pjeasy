@@ -1,26 +1,27 @@
 package comments
 
 import (
+	"github.com/dannyswat/pjeasy/internal/repositories"
 	"gorm.io/gorm"
 )
 
 type CommentRepository struct {
-	db *gorm.DB
+	uow *repositories.UnitOfWork
 }
 
-func NewCommentRepository(db *gorm.DB) *CommentRepository {
-	return &CommentRepository{db: db}
+func NewCommentRepository(uow *repositories.UnitOfWork) *CommentRepository {
+	return &CommentRepository{uow: uow}
 }
 
 // Create creates a new comment
 func (r *CommentRepository) Create(comment *Comment) error {
-	return r.db.Create(comment).Error
+	return r.uow.GetDB().Create(comment).Error
 }
 
 // GetByID finds a comment by ID
 func (r *CommentRepository) GetByID(id int) (*Comment, error) {
 	var comment Comment
-	err := r.db.First(&comment, id).Error
+	err := r.uow.GetDB().First(&comment, id).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -29,18 +30,18 @@ func (r *CommentRepository) GetByID(id int) (*Comment, error) {
 
 // Update updates a comment
 func (r *CommentRepository) Update(comment *Comment) error {
-	return r.db.Save(comment).Error
+	return r.uow.GetDB().Save(comment).Error
 }
 
 // Delete deletes a comment
 func (r *CommentRepository) Delete(id int) error {
-	return r.db.Delete(&Comment{}, id).Error
+	return r.uow.GetDB().Delete(&Comment{}, id).Error
 }
 
 // GetByItem returns all comments for an item ordered by creation time
 func (r *CommentRepository) GetByItem(itemID int, itemType string) ([]Comment, error) {
 	var comments []Comment
-	err := r.db.Where("item_id = ? AND item_type = ?", itemID, itemType).
+	err := r.uow.GetDB().Where("item_id = ? AND item_type = ?", itemID, itemType).
 		Order("created_at ASC").
 		Find(&comments).Error
 	return comments, err
@@ -51,7 +52,7 @@ func (r *CommentRepository) GetByItemWithPagination(itemID int, itemType string,
 	var comments []Comment
 	var total int64
 
-	query := r.db.Model(&Comment{}).Where("item_id = ? AND item_type = ?", itemID, itemType)
+	query := r.uow.GetDB().Model(&Comment{}).Where("item_id = ? AND item_type = ?", itemID, itemType)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -70,6 +71,6 @@ func (r *CommentRepository) GetByItemWithPagination(itemID int, itemType string,
 // CountByItem returns the number of comments for an item
 func (r *CommentRepository) CountByItem(itemID int, itemType string) (int64, error) {
 	var count int64
-	err := r.db.Model(&Comment{}).Where("item_id = ? AND item_type = ?", itemID, itemType).Count(&count).Error
+	err := r.uow.GetDB().Model(&Comment{}).Where("item_id = ? AND item_type = ?", itemID, itemType).Count(&count).Error
 	return count, err
 }

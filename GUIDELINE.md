@@ -115,22 +115,22 @@ func (h *UserHandler) Register(c echo.Context) error {
 ```go
 // Repository struct with database dependency
 type ProjectRepository struct {
-    db *gorm.DB
+    uow *repositories.UnitOfWork
 }
 
 // Constructor
-func NewProjectRepository(db *gorm.DB) *ProjectRepository {
-    return &ProjectRepository{db: db}
+func NewProjectRepository(uow *repositories.UnitOfWork) *ProjectRepository {
+    return &ProjectRepository{uow: uow}
 }
 
 // Standard CRUD methods
 func (r *ProjectRepository) Create(project *Project) error {
-    return r.db.Create(project).Error
+    return r.uow.GetDB().Create(project).Error
 }
 
 func (r *ProjectRepository) GetByID(id int) (*Project, error) {
     var project Project
-    err := r.db.First(&project, id).Error
+    err := r.uow.GetDB().First(&project, id).Error
     if err == gorm.ErrRecordNotFound {
         return nil, nil
     }
@@ -138,11 +138,11 @@ func (r *ProjectRepository) GetByID(id int) (*Project, error) {
 }
 
 func (r *ProjectRepository) Update(project *Project) error {
-    return r.db.Save(project).Error
+    return r.uow.GetDB().Save(project).Error
 }
 
 func (r *ProjectRepository) Delete(id int) error {
-    return r.db.Delete(&Project{}, id).Error
+    return r.uow.GetDB().Delete(&Project{}, id).Error
 }
 
 // Paginated queries return (items, total, error)
@@ -152,7 +152,7 @@ func (r *ProjectRepository) GetAll(includeArchived bool, offset, limit int) ([]P
 ```
 
 **Conventions:**
-- Repositories take `*gorm.DB` or `*UnitOfWork` in constructor
+- Repositories take `*UnitOfWork` in constructor
 - Return pointer for single entity queries
 - Return slice for multiple entity queries
 - Paginated queries return `([]Entity, totalCount, error)`

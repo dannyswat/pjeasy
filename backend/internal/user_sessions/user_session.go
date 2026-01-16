@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type UserSession struct {
@@ -23,7 +22,7 @@ func (s *UserSession) IsValid() bool {
 	return s.RevokedAt == nil && time.Now().Before(s.ExpiresAt)
 }
 
-func (s *UserSession) BeforeCreate(tx *gorm.DB) error {
+func (s *UserSession) BeforeCreate() error {
 	if s.ID == uuid.Nil {
 		s.ID = uuid.New()
 	}

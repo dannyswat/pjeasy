@@ -100,26 +100,26 @@ func (s *APIServer) SetupAPIServer() error {
 	s.SetupUserService()
 
 	// Initialize admin service
-	adminRepo := userroles.NewSystemAdminRepository(s.gorm)
+	adminRepo := userroles.NewSystemAdminRepository(s.globalUOW)
 	userRepo := users.NewUserRepository(s.globalUOW)
 	s.adminService = userroles.NewSystemAdminService(adminRepo, userRepo)
 
 	// Initialize sequence service
-	sequenceRepo := sequences.NewSequenceRepository(s.gorm)
+	sequenceRepo := sequences.NewSequenceRepository(s.globalUOW)
 	s.sequenceService = sequences.NewSequenceService(sequenceRepo)
 
 	// Initialize project service
-	projectRepo := projects.NewProjectRepository(s.gorm)
-	memberRepo := projects.NewProjectMemberRepository(s.gorm)
+	projectRepo := projects.NewProjectRepository(s.globalUOW)
+	memberRepo := projects.NewProjectMemberRepository(s.globalUOW)
 	memberCache := projects.NewProjectMemberCache(memberRepo, 1*time.Hour)
 	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo, sequenceRepo, memberCache)
 
 	// Initialize idea service
-	ideaRepo := ideas.NewIdeaRepository(s.gorm)
+	ideaRepo := ideas.NewIdeaRepository(s.globalUOW)
 	s.ideaService = ideas.NewIdeaService(ideaRepo, memberRepo, projectRepo)
 
 	// Initialize comment service
-	commentRepo := comments.NewCommentRepository(s.gorm)
+	commentRepo := comments.NewCommentRepository(s.globalUOW)
 	s.commentService = comments.NewCommentService(commentRepo)
 
 	// Initialize handlers

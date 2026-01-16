@@ -1,26 +1,27 @@
 package ideas
 
 import (
+	"github.com/dannyswat/pjeasy/internal/repositories"
 	"gorm.io/gorm"
 )
 
 type IdeaRepository struct {
-	db *gorm.DB
+	uow *repositories.UnitOfWork
 }
 
-func NewIdeaRepository(db *gorm.DB) *IdeaRepository {
-	return &IdeaRepository{db: db}
+func NewIdeaRepository(uow *repositories.UnitOfWork) *IdeaRepository {
+	return &IdeaRepository{uow: uow}
 }
 
 // Create creates a new idea
 func (r *IdeaRepository) Create(idea *Idea) error {
-	return r.db.Create(idea).Error
+	return r.uow.GetDB().Create(idea).Error
 }
 
 // GetByID finds an idea by ID
 func (r *IdeaRepository) GetByID(id int) (*Idea, error) {
 	var idea Idea
-	err := r.db.First(&idea, id).Error
+	err := r.uow.GetDB().First(&idea, id).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -29,12 +30,12 @@ func (r *IdeaRepository) GetByID(id int) (*Idea, error) {
 
 // Update updates an idea
 func (r *IdeaRepository) Update(idea *Idea) error {
-	return r.db.Save(idea).Error
+	return r.uow.GetDB().Save(idea).Error
 }
 
 // Delete deletes an idea
 func (r *IdeaRepository) Delete(id int) error {
-	return r.db.Delete(&Idea{}, id).Error
+	return r.uow.GetDB().Delete(&Idea{}, id).Error
 }
 
 // GetByProjectID returns all ideas for a project with pagination
@@ -42,7 +43,7 @@ func (r *IdeaRepository) GetByProjectID(projectID int, offset, limit int) ([]Ide
 	var ideas []Idea
 	var total int64
 
-	query := r.db.Model(&Idea{}).Where("project_id = ?", projectID)
+	query := r.uow.GetDB().Model(&Idea{}).Where("project_id = ?", projectID)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -63,7 +64,7 @@ func (r *IdeaRepository) GetByProjectIDAndStatus(projectID int, status string, o
 	var ideas []Idea
 	var total int64
 
-	query := r.db.Model(&Idea{}).
+	query := r.uow.GetDB().Model(&Idea{}).
 		Where("project_id = ? AND status = ?", projectID, status)
 
 	// Get total count
@@ -82,7 +83,7 @@ func (r *IdeaRepository) GetByProjectIDAndStatus(projectID int, status string, o
 
 // UpdateStatus updates only the status of an idea
 func (r *IdeaRepository) UpdateStatus(id int, status string) error {
-	return r.db.Model(&Idea{}).
+	return r.uow.GetDB().Model(&Idea{}).
 		Where("id = ?", id).
 		Update("status", status).Error
 }

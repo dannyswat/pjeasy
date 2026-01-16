@@ -1,26 +1,27 @@
 package projects
 
 import (
+	"github.com/dannyswat/pjeasy/internal/repositories"
 	"gorm.io/gorm"
 )
 
 type ProjectRepository struct {
-	db *gorm.DB
+	uow *repositories.UnitOfWork
 }
 
-func NewProjectRepository(db *gorm.DB) *ProjectRepository {
-	return &ProjectRepository{db: db}
+func NewProjectRepository(uow *repositories.UnitOfWork) *ProjectRepository {
+	return &ProjectRepository{uow: uow}
 }
 
 // Create creates a new project
 func (r *ProjectRepository) Create(project *Project) error {
-	return r.db.Create(project).Error
+	return r.uow.GetDB().Create(project).Error
 }
 
 // GetByID finds a project by ID
 func (r *ProjectRepository) GetByID(id int) (*Project, error) {
 	var project Project
-	err := r.db.First(&project, id).Error
+	err := r.uow.GetDB().First(&project, id).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -29,12 +30,12 @@ func (r *ProjectRepository) GetByID(id int) (*Project, error) {
 
 // Update updates a project
 func (r *ProjectRepository) Update(project *Project) error {
-	return r.db.Save(project).Error
+	return r.uow.GetDB().Save(project).Error
 }
 
 // Delete deletes a project
 func (r *ProjectRepository) Delete(id int) error {
-	return r.db.Delete(&Project{}, id).Error
+	return r.uow.GetDB().Delete(&Project{}, id).Error
 }
 
 // GetAll returns all projects with optional filters
@@ -42,7 +43,7 @@ func (r *ProjectRepository) GetAll(includeArchived bool, offset, limit int) ([]P
 	var projects []Project
 	var total int64
 
-	query := r.db.Model(&Project{})
+	query := r.uow.GetDB().Model(&Project{})
 
 	if !includeArchived {
 		query = query.Where("is_archived = ?", false)
@@ -67,7 +68,7 @@ func (r *ProjectRepository) GetByUserID(userID int, includeArchived bool, offset
 	var projects []Project
 	var total int64
 
-	query := r.db.Model(&Project{}).
+	query := r.uow.GetDB().Model(&Project{}).
 		Joins("JOIN project_members ON projects.id = project_members.project_id").
 		Where("project_members.user_id = ?", userID)
 
@@ -91,7 +92,7 @@ func (r *ProjectRepository) GetByUserID(userID int, includeArchived bool, offset
 
 // Archive archives a project
 func (r *ProjectRepository) Archive(id int) error {
-	return r.db.Model(&Project{}).
+	return r.uow.GetDB().Model(&Project{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"is_archived": true,
@@ -101,7 +102,7 @@ func (r *ProjectRepository) Archive(id int) error {
 
 // Unarchive unarchives a project
 func (r *ProjectRepository) Unarchive(id int) error {
-	return r.db.Model(&Project{}).
+	return r.uow.GetDB().Model(&Project{}).
 		Where("id = ?", id).
 		Updates(map[string]interface{}{
 			"is_archived": false,
