@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import TagsInput from './TagsInput'
+import TagsInput from '../components/TagsInput'
 
 interface CreateIdeaFormProps {
   onSubmit: (data: { title: string; description: string; tags: string }) => Promise<void>

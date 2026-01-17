@@ -56,7 +56,7 @@ export default function TagsInput({ value, onChange, placeholder, className = ''
 
   return (
     <div className={`${className}`}>
-      <div className="min-h-[42px] px-3 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent flex flex-wrap gap-2 items-center">
+      <div className="min-h-10.5 px-3 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-green-500 focus-within:border-transparent flex flex-wrap gap-2 items-center">
         {value.map((tag, index) => (
           <span
             key={index}
@@ -86,7 +86,7 @@ export default function TagsInput({ value, onChange, placeholder, className = ''
           onPaste={handlePaste}
           onBlur={handleBlur}
           placeholder={value.length === 0 ? placeholder : ''}
-          className="flex-1 min-w-[120px] outline-none bg-transparent"
+          className="flex-1 min-w-30 outline-none bg-transparent"
         />
       </div>
       <p className="mt-1 text-xs text-gray-500">

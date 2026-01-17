@@ -9,6 +9,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/tasks"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
@@ -31,6 +32,7 @@ type APIServer struct {
 	ideaService       *ideas.IdeaService
 	commentService    *comments.CommentService
 	sequenceService   *sequences.SequenceService
+	taskService       *tasks.TaskService
 	tokenService      *user_sessions.TokenService
 	userHandler       *UserHandler
 	sessionHandler    *SessionHandler
@@ -39,6 +41,7 @@ type APIServer struct {
 	ideaHandler       *IdeaHandler
 	commentHandler    *CommentHandler
 	sequenceHandler   *SequenceHandler
+	taskHandler       *TaskHandler
 	authMiddleware    *AuthMiddleware
 	projectMiddleware *ProjectMiddleware
 }
@@ -86,6 +89,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&comments.Comment{},
 		&sequences.Sequence{},
 		&sequences.SequenceNumber{},
+		&tasks.Task{},
 	)
 }
 
@@ -125,6 +129,10 @@ func (s *APIServer) SetupAPIServer() error {
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
 	s.commentService = comments.NewCommentService(commentRepo, userRepo)
 
+	// Initialize task service
+	taskRepo := tasks.NewTaskRepository(s.globalUOW)
+	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
 	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
@@ -133,6 +141,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.ideaHandler = NewIdeaHandler(s.ideaService)
 	s.commentHandler = NewCommentHandler(s.commentService)
 	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
+	s.taskHandler = NewTaskHandler(s.taskService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 	s.projectMiddleware = NewProjectMiddleware(memberCache)
 
@@ -144,6 +153,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.ideaHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	return nil
 }
