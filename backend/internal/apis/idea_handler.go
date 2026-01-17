@@ -36,6 +36,7 @@ type UpdateIdeaStatusRequest struct {
 
 type IdeaResponse struct {
 	ID          int    `json:"id"`
+	RefNum      string `json:"refNum"`
 	ProjectID   int    `json:"projectId"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -57,6 +58,7 @@ type IdeasListResponse struct {
 func toIdeaResponse(idea *ideas.Idea) IdeaResponse {
 	return IdeaResponse{
 		ID:          idea.ID,
+		RefNum:      idea.RefNum,
 		ProjectID:   idea.ProjectID,
 		Title:       idea.Title,
 		Description: idea.Description,
@@ -245,12 +247,12 @@ func (h *IdeaHandler) GetProjectIdeas(c echo.Context) error {
 
 // RegisterRoutes registers the idea routes
 func (h *IdeaHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
-	ideas := e.Group("/api/projects/:projectId/ideas", LoggingMiddleware, authMiddleware.RequireAuth, projectMiddleware.RequireProjectMember)
+	ideas := e.Group("/api/projects/:projectId/ideas", authMiddleware.RequireAuth, projectMiddleware.RequireProjectMember)
 
 	ideas.POST("", h.CreateIdea)
 	ideas.GET("", h.GetProjectIdeas)
 
-	ideaItem := e.Group("/api/ideas/:id", LoggingMiddleware, authMiddleware.RequireAuth)
+	ideaItem := e.Group("/api/ideas/:id", authMiddleware.RequireAuth)
 
 	ideaItem.GET("", h.GetIdea)
 	ideaItem.PUT("", h.UpdateIdea)

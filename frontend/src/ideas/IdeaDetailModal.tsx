@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { IdeaResponse } from './ideaTypes'
 
 interface IdeaDetailModalProps {
@@ -9,19 +10,27 @@ interface IdeaDetailModalProps {
 }
 
 export default function IdeaDetailModal({ idea, onClose, onEdit, onDelete, onStatusChange }: IdeaDetailModalProps) {
+  const [showMenu, setShowMenu] = useState(false)
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <h2 className="text-2xl font-bold text-gray-900">{idea.title}</h2>
-            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-              idea.status === 'Open' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-gray-100 text-gray-600'
-            }`}>
-              {idea.status}
-            </span>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-500">{idea.refNum}</span>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                  idea.status === 'Open' 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {idea.status}
+                </span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mt-1">{idea.title}</h2>
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -33,6 +42,7 @@ export default function IdeaDetailModal({ idea, onClose, onEdit, onDelete, onSta
           </button>
         </div>
         
+        {/* Content */}
         <div className="p-6 space-y-6">
           {/* Description */}
           <div>
@@ -70,7 +80,7 @@ export default function IdeaDetailModal({ idea, onClose, onEdit, onDelete, onSta
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
             <button
               onClick={() => onStatusChange(idea.status === 'Open' ? 'Closed' : 'Open')}
               className={`px-4 py-2 text-sm rounded-lg transition ${
@@ -82,19 +92,40 @@ export default function IdeaDetailModal({ idea, onClose, onEdit, onDelete, onSta
               {idea.status === 'Open' ? 'Close Idea' : 'Reopen Idea'}
             </button>
             
-            <div className="flex space-x-3">
+            <button
+              onClick={onEdit}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Edit
+            </button>
+
+            {/* Three-dot menu for delete */}
+            <div className="relative">
               <button
-                onClick={onEdit}
-                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
               >
-                Edit
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
               </button>
-              <button
-                onClick={onDelete}
-                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-              >
-                Delete
-              </button>
+              
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                    <button
+                      onClick={() => {
+                        setShowMenu(false)
+                        onDelete()
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition"
+                    >
+                      Delete Idea
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

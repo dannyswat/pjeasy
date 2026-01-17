@@ -375,7 +375,7 @@ func (h *ProjectHandler) UnarchiveProject(c echo.Context) error {
 }
 
 func (h *ProjectHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
-	projectGroup := e.Group("/api/projects", LoggingMiddleware, authMiddleware.RequireAuth)
+	projectGroup := e.Group("/api/projects", authMiddleware.RequireAuth)
 
 	projectGroup.POST("", h.CreateProject)
 	projectGroup.GET("", h.ListProjects)

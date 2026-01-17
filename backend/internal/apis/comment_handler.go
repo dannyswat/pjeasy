@@ -27,13 +27,14 @@ type UpdateCommentRequest struct {
 }
 
 type CommentResponse struct {
-	ID        int    `json:"id"`
-	ItemID    int    `json:"itemId"`
-	ItemType  string `json:"itemType"`
-	Content   string `json:"content"`
-	CreatedBy int    `json:"createdBy"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID          int    `json:"id"`
+	ItemID      int    `json:"itemId"`
+	ItemType    string `json:"itemType"`
+	Content     string `json:"content"`
+	CreatedBy   int    `json:"createdBy"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+	CreatorName string `json:"creatorName"`
 }
 
 type CommentsListResponse struct {
@@ -44,13 +45,28 @@ type CommentsListResponse struct {
 // toCommentResponse converts a comment model to response
 func toCommentResponse(comment *comments.Comment) CommentResponse {
 	return CommentResponse{
-		ID:        comment.ID,
-		ItemID:    comment.ItemID,
-		ItemType:  comment.ItemType,
-		Content:   comment.Content,
-		CreatedBy: comment.CreatedBy,
-		CreatedAt: comment.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt: comment.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:          comment.ID,
+		ItemID:      comment.ItemID,
+		ItemType:    comment.ItemType,
+		Content:     comment.Content,
+		CreatedBy:   comment.CreatedBy,
+		CreatedAt:   comment.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:   comment.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatorName: "",
+	}
+}
+
+// toCommentWithUserResponse converts a comment with user to response
+func toCommentWithUserResponse(commentWithUser *comments.CommentWithUser) CommentResponse {
+	return CommentResponse{
+		ID:          commentWithUser.Comment.ID,
+		ItemID:      commentWithUser.Comment.ItemID,
+		ItemType:    commentWithUser.Comment.ItemType,
+		Content:     commentWithUser.Comment.Content,
+		CreatedBy:   commentWithUser.Comment.CreatedBy,
+		CreatedAt:   commentWithUser.Comment.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:   commentWithUser.Comment.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		CreatorName: commentWithUser.CreatorName,
 	}
 }
 
@@ -100,14 +116,16 @@ func (h *CommentHandler) GetCommentsByItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Item type is required")
 	}
 
-	comments, err := h.commentService.GetCommentsByItem(itemID, itemType)
+	commentsWithUser, err := h.commentService.GetCommentsByItem(itemID, itemType)
 	if err != nil {
+		// Log the actual error for debugging
+		c.Logger().Errorf("Error fetching comments for %s/%d: %v", itemType, itemID, err)
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	var commentResponses []CommentResponse
-	for _, comment := range comments {
-		commentResponses = append(commentResponses, toCommentResponse(&comment))
+	for _, commentWithUser := range commentsWithUser {
+		commentResponses = append(commentResponses, toCommentWithUserResponse(&commentWithUser))
 	}
 
 	if commentResponses == nil {
@@ -197,12 +215,12 @@ func (h *CommentHandler) DeleteComment(c echo.Context) error {
 
 // RegisterRoutes registers the comment routes
 func (h *CommentHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
-	comments := e.Group("/api/:itemType/:itemId/comments", LoggingMiddleware, authMiddleware.RequireAuth)
+	comments := e.Group("/api/comments/:itemType/:itemId", authMiddleware.RequireAuth)
 
 	comments.POST("", h.CreateComment)
 	comments.GET("", h.GetCommentsByItem)
 
-	commentItem := e.Group("/api/comments/:commentId", LoggingMiddleware, authMiddleware.RequireAuth)
+	commentItem := e.Group("/api/comments/:commentId", authMiddleware.RequireAuth)
 
 	commentItem.GET("", h.GetComment)
 	commentItem.PUT("", h.UpdateComment)

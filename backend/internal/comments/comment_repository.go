@@ -44,6 +44,7 @@ func (r *CommentRepository) GetByItem(itemID int, itemType string) ([]Comment, e
 	err := r.uow.GetDB().Where("item_id = ? AND item_type = ?", itemID, itemType).
 		Order("created_at ASC").
 		Find(&comments).Error
+
 	return comments, err
 }
 

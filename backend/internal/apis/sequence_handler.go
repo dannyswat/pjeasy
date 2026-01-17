@@ -76,7 +76,7 @@ func (h *SequenceHandler) ListProjectSequences(c echo.Context) error {
 
 // RegisterRoutes registers the sequence routes
 func (h *SequenceHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
-	sequences := e.Group("/api/projects/:projectId/sequences", LoggingMiddleware, authMiddleware.RequireAuth)
+	sequences := e.Group("/api/projects/:projectId/sequences", authMiddleware.RequireAuth)
 
 	sequences.GET("", h.ListProjectSequences, projectMiddleware.RequireProjectMember)
 	sequences.POST("/generate", h.GenerateProjectSequences, projectMiddleware.RequireProjectAdmin)

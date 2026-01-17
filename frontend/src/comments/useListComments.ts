@@ -19,7 +19,7 @@ export function useListComments(itemId: number, itemType: string) {
     try {
       setIsLoading(true)
       setError(null)
-      const data = await getSecureApi<CommentsListResponse>(`/api/${itemType}/${itemId}/comments`)
+      const data = await getSecureApi<CommentsListResponse>(`/api/comments/${itemType}/${itemId}`)
 
       setComments(data.comments)
       setTotal(data.total)

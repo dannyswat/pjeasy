@@ -94,6 +94,9 @@ func (s *APIServer) SetupAPIServer() error {
 	// Global Unit of Work for read operations
 	s.globalUOW = s.uowFactory.NewUnitOfWork()
 
+	// Register global middleware
+	s.echo.Use(LoggingMiddleware)
+
 	// Register custom validator
 	s.echo.Validator = NewValidator()
 
@@ -116,11 +119,11 @@ func (s *APIServer) SetupAPIServer() error {
 
 	// Initialize idea service
 	ideaRepo := ideas.NewIdeaRepository(s.globalUOW)
-	s.ideaService = ideas.NewIdeaService(ideaRepo, memberRepo, projectRepo)
+	s.ideaService = ideas.NewIdeaService(ideaRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
 
 	// Initialize comment service
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
-	s.commentService = comments.NewCommentService(commentRepo)
+	s.commentService = comments.NewCommentService(commentRepo, userRepo)
 
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)

@@ -6,6 +6,7 @@ export interface CommentResponse {
   createdBy: number
   createdAt: string
   updatedAt: string
+  creatorName: string
 }
 
 export interface CreateCommentRequest {

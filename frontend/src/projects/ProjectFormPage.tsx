@@ -135,10 +135,10 @@ export default function ProjectFormPage() {
 
   if (isEditMode && isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-8">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p className="mt-3 text-sm text-gray-600">Loading...</p>
         </div>
       </div>
     )
@@ -147,24 +147,24 @@ export default function ProjectFormPage() {
   const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember || generateSequences.isPending
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-2xl font-semibold text-gray-900">
               {isEditMode ? 'Edit Project' : 'Create New Project'}
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-sm text-gray-600 mt-0.5">
               {isEditMode ? 'Update project details and manage members' : 'Create a new project and start collaborating'}
             </p>
           </div>
           {isEditMode && projectId && (
             <button
               onClick={() => navigate(`/projects/${projectId}/ideas`)}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition flex items-center"
+              className="bg-violet-600 text-white px-4 py-2 text-sm font-medium rounded hover:bg-violet-700 transition flex items-center"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
               Ideas
@@ -175,8 +175,8 @@ export default function ProjectFormPage() {
 
       {/* Messages */}
       {successMessage && (
-        <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-start">
-          <svg className="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-2 rounded flex items-start">
+          <svg className="w-4 h-4 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
           <span className="text-sm">{successMessage}</span>
@@ -184,8 +184,8 @@ export default function ProjectFormPage() {
       )}
 
       {errorMessage && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">
-          <svg className="w-5 h-5 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded flex items-start">
+          <svg className="w-4 h-4 mr-2 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
           </svg>
           <span className="text-sm">{errorMessage}</span>
@@ -193,11 +193,11 @@ export default function ProjectFormPage() {
       )}
 
       {/* Project Form */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Project Details</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-white rounded border border-gray-200 p-4 mb-4">
+        <h2 className="text-base font-semibold mb-3">Project Details</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block text-xs font-medium text-gray-700 mb-1.5">
               Project Name *
             </label>
             <input
@@ -205,7 +205,7 @@ export default function ProjectFormPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               placeholder="Enter project name"
               required
               disabled={isPending}
@@ -213,25 +213,25 @@ export default function ProjectFormPage() {
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="description" className="block text-xs font-medium text-gray-700 mb-1.5">
               Description
             </label>
             <textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               placeholder="Enter project description"
               disabled={isPending}
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               type="submit"
               disabled={isPending}
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+              className="bg-indigo-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-indigo-700 transition disabled:bg-gray-400"
             >
               {isEditMode ? 'Update Project' : 'Create Project'}
             </button>
@@ -239,7 +239,7 @@ export default function ProjectFormPage() {
               type="button"
               onClick={() => navigate('/projects')}
               disabled={isPending}
-              className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition disabled:bg-gray-200"
+              className="bg-gray-100 text-gray-700 px-4 py-1.5 text-sm font-medium rounded hover:bg-gray-200 transition disabled:bg-gray-200"
             >
               Cancel
             </button>
@@ -250,7 +250,7 @@ export default function ProjectFormPage() {
                     type="button"
                     onClick={handleUnarchive}
                     disabled={isPending}
-                    className="ml-auto bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                    className="ml-auto bg-sky-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-sky-700 transition disabled:bg-gray-400"
                   >
                     Unarchive
                   </button>
@@ -260,9 +260,9 @@ export default function ProjectFormPage() {
                       type="button"
                       onClick={handleGenerateSequences}
                       disabled={isPending}
-                      className="ml-auto bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition disabled:bg-gray-400 flex items-center"
+                      className="ml-auto bg-violet-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-violet-700 transition disabled:bg-gray-400 flex items-center"
                     >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
                       </svg>
                       Generate Sequences
@@ -271,7 +271,7 @@ export default function ProjectFormPage() {
                       type="button"
                       onClick={handleArchive}
                       disabled={isPending}
-                      className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 transition disabled:bg-gray-400"
+                      className="bg-orange-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-orange-700 transition disabled:bg-gray-400"
                     >
                       Archive
                     </button>
@@ -285,18 +285,18 @@ export default function ProjectFormPage() {
 
       {/* Members Section - Only in Edit Mode */}
       {isEditMode && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Project Members</h2>
+        <div className="bg-white rounded border border-gray-200 p-4">
+          <h2 className="text-base font-semibold mb-3">Project Members</h2>
 
           {/* Add Member Form */}
-          <form onSubmit={handleAddMember} className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Add New Member</h3>
-            <div className="flex gap-3">
+          <form onSubmit={handleAddMember} className="mb-4 p-3 bg-gray-50 rounded">
+            <h3 className="text-xs font-medium text-gray-700 mb-2">Add New Member</h3>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={newMemberUserId}
                 onChange={(e) => setNewMemberUserId(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 placeholder="Login ID"
                 disabled={isPending}
               />
@@ -305,15 +305,15 @@ export default function ProjectFormPage() {
                   type="checkbox"
                   checked={newMemberIsAdmin}
                   onChange={(e) => setNewMemberIsAdmin(e.target.checked)}
-                  className="mr-2 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  className="mr-1.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   disabled={isPending}
                 />
-                <span className="text-sm text-gray-700">Admin</span>
+                <span className="text-xs text-gray-700">Admin</span>
               </label>
               <button
                 type="submit"
                 disabled={isPending}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+                className="bg-indigo-600 text-white px-3 py-1.5 text-sm font-medium rounded hover:bg-indigo-700 transition disabled:bg-gray-400"
               >
                 Add
               </button>
@@ -321,25 +321,25 @@ export default function ProjectFormPage() {
           </form>
 
           {/* Members List */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {members.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">No members yet</p>
+              <p className="text-gray-500 text-xs text-center py-3">No members yet</p>
             ) : (
               members.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="flex items-center justify-between p-2.5 border border-gray-200 rounded hover:bg-gray-50"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center font-semibold text-green-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
                       {member.user.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{member.user.name}</p>
-                      <p className="text-sm text-gray-500">{member.user.loginId}</p>
+                      <p className="text-sm font-medium text-gray-900">{member.user.name}</p>
+                      <p className="text-xs text-gray-500">{member.user.loginId}</p>
                     </div>
                     {member.isAdmin && (
-                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                      <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
                         Admin
                       </span>
                     )}
@@ -347,7 +347,7 @@ export default function ProjectFormPage() {
                   <button
                     onClick={() => handleRemoveMember(member.userId, member.user.name)}
                     disabled={isPending}
-                    className="text-red-600 hover:text-red-900 disabled:text-gray-400 text-sm"
+                    className="text-red-600 hover:text-red-900 disabled:text-gray-400 text-xs font-medium"
                   >
                     Remove
                   </button>

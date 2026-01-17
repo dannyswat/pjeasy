@@ -84,8 +84,28 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
 
   return (
     <div className="space-y-6">
+      {/* New Comment Form */}
+      <div className="space-y-4" >
+        <h4 className="text-md font-semibold text-gray-900 mb-3">Add a comment</h4>
+        <form onSubmit={handleSubmitNew} className="space-y-3">
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            rows={4}
+            placeholder="Write your comment here..."
+          />
+          <button
+            type="submit"
+            disabled={!newComment.trim() || createComment.isPending}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {createComment.isPending ? 'Posting...' : 'Post Comment'}
+          </button>
+        </form>
+      </div>
       {/* Comments List */}
-      <div className="space-y-4">
+      <div className="border-t border-gray-200 pt-6">
         <h3 className="text-lg font-semibold text-gray-900">
           Comments ({comments.length})
         </h3>
@@ -95,8 +115,9 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
             No comments yet. Be the first to comment!
           </p>
         ) : (
+          
           <div className="space-y-4">
-            {comments.map((comment) => (
+            {comments.reverse().map((comment) => (
               <div
                 key={comment.id}
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200"
@@ -129,11 +150,16 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
                 ) : (
                   <>
                     <div className="flex justify-between items-start mb-2">
-                      <div className="text-sm text-gray-500">
-                        {new Date(comment.createdAt).toLocaleString()}
-                        {comment.createdAt !== comment.updatedAt && (
-                          <span className="ml-2 italic">(edited)</span>
-                        )}
+                      <div>
+                        <div className="text-sm font-semibold text-gray-900">
+                          {comment.creatorName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(comment.createdAt).toLocaleString()}
+                          {comment.createdAt !== comment.updatedAt && (
+                            <span className="ml-2 italic">(edited)</span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex space-x-2">
                         <button
@@ -157,27 +183,6 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
             ))}
           </div>
         )}
-      </div>
-
-      {/* New Comment Form */}
-      <div className="border-t border-gray-200 pt-6">
-        <h4 className="text-md font-semibold text-gray-900 mb-3">Add a comment</h4>
-        <form onSubmit={handleSubmitNew} className="space-y-3">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            rows={4}
-            placeholder="Write your comment here..."
-          />
-          <button
-            type="submit"
-            disabled={!newComment.trim() || createComment.isPending}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {createComment.isPending ? 'Posting...' : 'Post Comment'}
-          </button>
-        </form>
       </div>
     </div>
   )

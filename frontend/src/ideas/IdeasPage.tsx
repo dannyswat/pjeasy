@@ -19,6 +19,7 @@ export default function IdeasPage() {
   const [editingIdea, setEditingIdea] = useState<IdeaResponse | null>(null)
   const [viewingIdea, setViewingIdea] = useState<IdeaResponse | null>(null)
   const [quickCreateTitle, setQuickCreateTitle] = useState('')
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false)
   const pageSize = 20
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
@@ -124,53 +125,105 @@ export default function IdeasPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-4">
       {/* Show idea detail as full page */}
       {viewingIdea ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Back Button */}
           <button
             onClick={() => setViewingIdea(null)}
-            className="flex items-center text-blue-600 hover:text-blue-800 transition"
+            className="flex items-center text-indigo-600 hover:text-indigo-700 transition text-sm font-medium"
           >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Ideas
           </button>
 
           {/* Idea Detail */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="border-b border-gray-200 pb-4 mb-6">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center space-x-3">
-                  <h1 className="text-3xl font-bold text-gray-900">{viewingIdea.title}</h1>
-                  <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+            
+            <div className="mb-1">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-xl font-semibold text-gray-900">{viewingIdea.title}</h1>
+                  <span className="text-xs text-gray-500">[{viewingIdea.refNum}]</span>
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                     viewingIdea.status === 'Open' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                      : 'bg-gray-50 text-gray-600 border border-gray-200'
                   }`}>
                     {viewingIdea.status}
                   </span>
                 </div>
               </div>
             </div>
+            {/* Actions */}
+            <div className="flex items-center justify-end space-x-2 pb-3 border-b border-gray-200 mb-5">
+              <button
+                onClick={() => handleStatusChange(viewingIdea.id, viewingIdea.status === 'Open' ? 'Closed' : 'Open')}
+                className={`px-3 py-1.5 text-xs font-medium rounded transition ${
+                  viewingIdea.status === 'Open'
+                    ? 'bg-gray-50 text-gray-700 border border-gray-300 hover:bg-gray-100'
+                    : 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                }`}
+              >
+                {viewingIdea.status === 'Open' ? 'Close' : 'Reopen'}
+              </button>
+              
+              <button
+                onClick={() => {
+                  setEditingIdea(viewingIdea)
+                  setViewingIdea(null)
+                }}
+                className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
+              >
+                Edit
+              </button>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setShowDeleteMenu(!showDeleteMenu)}
+                  onBlur={() => setTimeout(() => setShowDeleteMenu(false), 200)}
+                  className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition"
+                  title="More actions"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+                
+                {showDeleteMenu && (
+                  <div className="absolute right-0 mt-1 w-40 bg-white rounded shadow-lg border border-gray-200 z-10">
+                    <button
+                      onClick={() => {
+                        setShowDeleteMenu(false)
+                        handleDelete(viewingIdea.id)
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded transition"
+                    >
+                      Delete Idea
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Description */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Description</h3>
-              <p className="text-gray-600 whitespace-pre-wrap">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
+              <p className="text-sm text-gray-600 whitespace-pre-wrap">
                 {viewingIdea.description || 'No description provided'}
               </p>
             </div>
 
             {/* Tags */}
             {viewingIdea.tags && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-3">Tags</h3>
-                <div className="flex flex-wrap gap-2">
+              <div className="mb-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Tags</h3>
+                <div className="flex flex-wrap gap-1.5">
                   {viewingIdea.tags.split(',').map((tag, idx) => (
-                    <span key={idx} className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-full">
+                    <span key={idx} className="px-2 py-0.5 text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">
                       {tag.trim()}
                     </span>
                   ))}
@@ -179,9 +232,9 @@ export default function IdeasPage() {
             )}
 
             {/* Metadata */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-700 mb-3">Information</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">Information</h3>
+              <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-gray-500">Created:</span>
                   <span className="ml-2 text-gray-900">
@@ -197,40 +250,8 @@ export default function IdeasPage() {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200 mb-6">
-              <button
-                onClick={() => handleStatusChange(viewingIdea.id, viewingIdea.status === 'Open' ? 'Closed' : 'Open')}
-                className={`px-4 py-2 text-sm rounded-lg transition ${
-                  viewingIdea.status === 'Open'
-                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
-                }`}
-              >
-                {viewingIdea.status === 'Open' ? 'Close Idea' : 'Reopen Idea'}
-              </button>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    setEditingIdea(viewingIdea)
-                    setViewingIdea(null)
-                  }}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(viewingIdea.id)}
-                  className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-
             {/* Comments Section */}
-            <div className="border-t border-gray-200 pt-6">
+            <div className="border-t border-gray-200 pt-4">
               <Comments itemId={viewingIdea.id} itemType="ideas" />
             </div>
           </div>
@@ -238,34 +259,34 @@ export default function IdeasPage() {
       ) : (
         <>
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Ideas</h1>
-            <p className="text-gray-600 mt-2">Manage project ideas and feature requests</p>
+          <div className="mb-4">
+            <h1 className="text-2xl font-semibold text-gray-900">Ideas</h1>
+            <p className="text-sm text-gray-600 mt-1">Manage project ideas and feature requests</p>
           </div>
 
           {/* Quick Create */}
-          <div className="mb-6">
-            <form onSubmit={handleQuickCreate} className="flex gap-3">
+          <div className="mb-4">
+            <form onSubmit={handleQuickCreate} className="flex gap-2">
               <input
                 type="text"
                 value={quickCreateTitle}
                 onChange={(e) => setQuickCreateTitle(e.target.value)}
                 placeholder="Type an idea and press Enter to add quickly..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
               <button
                 type="submit"
                 disabled={!quickCreateTitle.trim() || createIdea.isPending}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-1.5 text-sm font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center"
+                className="px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition flex items-center"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 Detailed
@@ -274,15 +295,15 @@ export default function IdeasPage() {
           </div>
 
           {/* Filters */}
-          <div className="mb-6 flex items-center space-x-4">
-            <label className="text-sm font-medium text-gray-700">Filter by Status:</label>
+          <div className="mb-4 flex items-center space-x-3">
+            <label className="text-xs font-medium text-gray-700">Status:</label>
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value)
                 setPage(1)
               }}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="">All</option>
               <option value={IdeaStatus.OPEN}>Open</option>
@@ -292,56 +313,56 @@ export default function IdeasPage() {
 
           {/* Ideas List */}
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex justify-center items-center py-8">
               <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-                <p className="mt-4 text-gray-600">Loading ideas...</p>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <p className="mt-3 text-sm text-gray-600">Loading ideas...</p>
               </div>
             </div>
           ) : ideas.length === 0 ? (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
-              <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-gray-50 border border-gray-200 rounded p-8 text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
-              <h3 className="mt-4 text-lg font-medium text-gray-900">No ideas yet</h3>
-              <p className="mt-2 text-gray-500">Get started by creating your first idea.</p>
+              <h3 className="mt-3 text-base font-medium text-gray-900">No ideas yet</h3>
+              <p className="mt-1 text-sm text-gray-500">Get started by creating your first idea.</p>
             </div>
           ) : (
             <>
-              <div className="bg-white rounded-lg shadow-md divide-y divide-gray-200">
+              <div className="bg-white rounded border border-gray-200 divide-y divide-gray-200">
                 {ideas.map((idea) => (
                   <div 
                     key={idea.id} 
-                    className="flex items-center justify-between p-4 hover:bg-gray-50 transition group"
+                    className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition group"
                   >
                     <div 
                       className="flex-1 cursor-pointer" 
                       onClick={() => setViewingIdea(idea)}
                     >
-                      <div className="flex items-center space-x-3">
-                        <h3 className="text-base font-medium text-gray-900 group-hover:text-green-600 transition">
-                          {idea.title}
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
+                          <span className="text-gray-500 mr-1.5 text-xs">[{idea.refNum}]</span><span>{idea.title}</span>
                         </h3>
-                        <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
                           idea.status === IdeaStatus.OPEN 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                            : 'bg-gray-50 text-gray-600 border border-gray-200'
                         }`}>
                           {idea.status}
                         </span>
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center space-x-1 ml-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           setEditingIdea(idea)
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
+                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded transition"
                         title="Edit"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
@@ -351,10 +372,10 @@ export default function IdeasPage() {
                           e.stopPropagation()
                           handleDelete(idea.id)
                         }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
                         title="Delete"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
@@ -365,25 +386,25 @@ export default function IdeasPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-between">
-                  <p className="text-sm text-gray-600">
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-xs text-gray-600">
                     Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} ideas
                   </p>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => setPage(page - 1)}
                       disabled={page === 1}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Previous
                     </button>
-                    <span className="px-4 py-2 bg-green-600 text-white rounded-lg">
+                    <span className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded">
                       Page {page} of {totalPages}
                     </span>
                     <button
                       onClick={() => setPage(page + 1)}
                       disabled={page === totalPages}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-1.5 text-xs font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Next
                     </button>

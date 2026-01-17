@@ -13,7 +13,7 @@ export function useCreateComment() {
     mutationFn: async ({ itemId, itemType, content }: CreateCommentParams) => {
       const request: CreateCommentRequest = { content }
       
-      const data = await postSecureApi<CommentResponse>(`/api/${itemType}/${itemId}/comments`, request);
+      const data = await postSecureApi<CommentResponse>(`/api/comments/${itemType}/${itemId}`, request);
       return data
     },
     onError: (error) => {

@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Backend API",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/backend/cmd/api/main.go",
+      "cwd": "${workspaceFolder}/backend",
+      "showLog": true,
+      "trace": "verbose"
+    },
+    {
+      "name": "Attach to Backend Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": "${command:pickProcess}"
+    }
+  ]
+}

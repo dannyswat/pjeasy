@@ -3,16 +3,26 @@ package comments
 import (
 	"errors"
 	"time"
+
+	"github.com/dannyswat/pjeasy/internal/users"
 )
 
 type CommentService struct {
 	commentRepo *CommentRepository
+	userRepo    *users.UserRepository
 }
 
-func NewCommentService(commentRepo *CommentRepository) *CommentService {
+func NewCommentService(commentRepo *CommentRepository, userRepo *users.UserRepository) *CommentService {
 	return &CommentService{
 		commentRepo: commentRepo,
+		userRepo:    userRepo,
 	}
+}
+
+// CommentWithUser represents a comment with user information
+type CommentWithUser struct {
+	Comment     Comment
+	CreatorName string
 }
 
 // CreateComment creates a new comment
@@ -101,8 +111,31 @@ func (s *CommentService) DeleteComment(commentID int, userID int) error {
 }
 
 // GetCommentsByItem retrieves all comments for an item
-func (s *CommentService) GetCommentsByItem(itemID int, itemType string) ([]Comment, error) {
-	return s.commentRepo.GetByItem(itemID, itemType)
+func (s *CommentService) GetCommentsByItem(itemID int, itemType string) ([]CommentWithUser, error) {
+	comments, err := s.commentRepo.GetByItem(itemID, itemType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fetch user information for each comment
+	var commentsWithUser []CommentWithUser
+	for _, comment := range comments {
+		user, err := s.userRepo.GetByID(comment.CreatedBy)
+		if err != nil {
+			// If user not found, use a default name
+			commentsWithUser = append(commentsWithUser, CommentWithUser{
+				Comment:     comment,
+				CreatorName: "Unknown User",
+			})
+			continue
+		}
+		commentsWithUser = append(commentsWithUser, CommentWithUser{
+			Comment:     comment,
+			CreatorName: user.Name,
+		})
+	}
+
+	return commentsWithUser, nil
 }
 
 // GetCommentsByItemWithPagination retrieves comments for an item with pagination

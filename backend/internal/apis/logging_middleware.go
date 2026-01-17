@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -20,13 +21,28 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Calculate latency
 		latency := time.Since(start)
 
-		// Log the request details
-		c.Logger().Infof("%s %s %d %s %s",
+		// Get the actual status code
+		status := res.Status
+		errMsg := ""
+		if err != nil {
+			// If there's an error, Echo might have set it to an HTTP error
+			if he, ok := err.(*echo.HTTPError); ok {
+				status = he.Code
+				errMsg = fmt.Sprintf(" [Error: %v]", he.Message)
+			} else {
+				errMsg = fmt.Sprintf(" [Error: %v]", err)
+			}
+		}
+
+		// Log the request details to stdout
+		fmt.Printf("[%s] %s %s %d %v %s%s\n",
+			start.Format("2006-01-02 15:04:05"),
 			req.Method,
 			req.URL.Path,
-			res.Status,
+			status,
 			latency,
 			req.RemoteAddr,
+			errMsg,
 		)
 
 		return err

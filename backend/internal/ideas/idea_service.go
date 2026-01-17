@@ -5,19 +5,25 @@ import (
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/projects"
+	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/sequences"
 )
 
 type IdeaService struct {
-	ideaRepo    *IdeaRepository
-	memberRepo  *projects.ProjectMemberRepository
-	projectRepo *projects.ProjectRepository
+	ideaRepo     *IdeaRepository
+	memberRepo   *projects.ProjectMemberRepository
+	projectRepo  *projects.ProjectRepository
+	sequenceRepo *sequences.SequenceRepository
+	uowFactory   *repositories.UnitOfWorkFactory
 }
 
-func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository) *IdeaService {
+func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *IdeaService {
 	return &IdeaService{
-		ideaRepo:    ideaRepo,
-		memberRepo:  memberRepo,
-		projectRepo: projectRepo,
+		ideaRepo:     ideaRepo,
+		memberRepo:   memberRepo,
+		projectRepo:  projectRepo,
+		sequenceRepo: sequenceRepo,
+		uowFactory:   uowFactory,
 	}
 }
 
@@ -41,8 +47,23 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, tags string,
 		return nil, errors.New("user is not a member of this project")
 	}
 
+	uow := s.uowFactory.NewUnitOfWork()
+	// Begin transaction to generate RefNum and create idea
+	if err := uow.BeginTransaction(); err != nil {
+		return nil, err
+	}
+	defer uow.RollbackTransactionIfError()
+
+	// Generate reference number
+	refNum, err := s.sequenceRepo.GetNextNumber(uow, projectID, "ideas")
+	if err != nil {
+		uow.RollbackTransaction()
+		return nil, err
+	}
+
 	now := time.Now()
 	idea := &Idea{
+		RefNum:      refNum,
 		ProjectID:   projectID,
 		Title:       title,
 		Description: description,
@@ -53,7 +74,14 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, tags string,
 		UpdatedAt:   now,
 	}
 
-	if err := s.ideaRepo.Create(idea); err != nil {
+	// Create a new repository instance with the transaction UOW
+	txIdeaRepo := NewIdeaRepository(uow)
+	if err := txIdeaRepo.Create(idea); err != nil {
+		uow.RollbackTransaction()
+		return nil, err
+	}
+
+	if err := uow.CommitTransaction(); err != nil {
 		return nil, err
 	}
 
