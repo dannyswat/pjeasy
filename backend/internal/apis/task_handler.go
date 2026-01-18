@@ -20,27 +20,27 @@ func NewTaskHandler(taskService *tasks.TaskService) *TaskHandler {
 }
 
 type CreateTaskRequest struct {
-	ProjectID      int       `json:"projectId" validate:"required"`
-	Title          string    `json:"title" validate:"required,min=1,max=200"`
-	Description    string    `json:"description"`
-	Status         string    `json:"status" validate:"omitempty,oneof=Open InProgress OnHold Blocked Completed Closed"`
-	Priority       string    `json:"priority" validate:"omitempty,oneof=Immediate Urgent High Normal Low"`
-	EstimatedHours float64   `json:"estimatedHours" validate:"gte=0"`
-	AssigneeID     *int      `json:"assigneeId"`
-	Deadline       *string   `json:"deadline"`
-	SprintID       *int      `json:"sprintId"`
-	Tags           string    `json:"tags"`
+	ProjectID      int     `json:"projectId" validate:"required"`
+	Title          string  `json:"title" validate:"required,min=1,max=200"`
+	Description    string  `json:"description"`
+	Status         string  `json:"status" validate:"omitempty,oneof=Open InProgress OnHold Blocked Completed Closed"`
+	Priority       string  `json:"priority" validate:"omitempty,oneof=Immediate Urgent High Normal Low"`
+	EstimatedHours float64 `json:"estimatedHours" validate:"gte=0"`
+	AssigneeID     *int    `json:"assigneeId"`
+	Deadline       *string `json:"deadline"`
+	SprintID       *int    `json:"sprintId"`
+	Tags           string  `json:"tags"`
 }
 
 type UpdateTaskRequest struct {
-	Title          string   `json:"title" validate:"required,min=1,max=200"`
-	Description    string   `json:"description"`
-	Priority       string   `json:"priority" validate:"omitempty,oneof=Immediate Urgent High Normal Low"`
-	EstimatedHours float64  `json:"estimatedHours" validate:"gte=0"`
-	AssigneeID     *int     `json:"assigneeId"`
-	Deadline       *string  `json:"deadline"`
-	SprintID       *int     `json:"sprintId"`
-	Tags           string   `json:"tags"`
+	Title          string  `json:"title" validate:"required,min=1,max=200"`
+	Description    string  `json:"description"`
+	Priority       string  `json:"priority" validate:"omitempty,oneof=Immediate Urgent High Normal Low"`
+	EstimatedHours float64 `json:"estimatedHours" validate:"gte=0"`
+	AssigneeID     *int    `json:"assigneeId"`
+	Deadline       *string `json:"deadline"`
+	SprintID       *int    `json:"sprintId"`
+	Tags           string  `json:"tags"`
 }
 
 type UpdateTaskStatusRequest struct {
@@ -52,8 +52,8 @@ type UpdateTaskAssigneeRequest struct {
 }
 
 type TaskResponse struct {
-	ID             int       `json:"id"`
-	RefNum         string    `json:"refNum"`
+	ID int `json:"id"`
+
 	ProjectID      int       `json:"projectId"`
 	Title          string    `json:"title"`
 	Description    string    `json:"description"`
@@ -85,7 +85,6 @@ func toTaskResponse(task *tasks.Task) TaskResponse {
 
 	return TaskResponse{
 		ID:             task.ID,
-		RefNum:         task.RefNum,
 		ProjectID:      task.ProjectID,
 		Title:          task.Title,
 		Description:    task.Description,
@@ -127,9 +126,9 @@ func (h *TaskHandler) CreateTask(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	var deadline *time.Time
@@ -177,9 +176,9 @@ func (h *TaskHandler) UpdateTask(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	var deadline *time.Time
@@ -226,9 +225,9 @@ func (h *TaskHandler) UpdateTaskStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	task, err := h.taskService.UpdateTaskStatus(taskID, req.Status, userID)
@@ -251,9 +250,9 @@ func (h *TaskHandler) UpdateTaskAssignee(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	task, err := h.taskService.UpdateTaskAssignee(taskID, req.AssigneeID, userID)
@@ -271,9 +270,9 @@ func (h *TaskHandler) DeleteTask(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID")
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	if err := h.taskService.DeleteTask(taskID, userID); err != nil {
@@ -290,9 +289,9 @@ func (h *TaskHandler) GetTask(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID")
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	task, err := h.taskService.GetTask(taskID, userID)
@@ -328,9 +327,9 @@ func (h *TaskHandler) GetProjectTasks(c echo.Context) error {
 
 	status := c.QueryParam("status")
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	taskList, total, err := h.taskService.GetProjectTasks(projectID, status, page, pageSize, userID)
@@ -360,9 +359,9 @@ func (h *TaskHandler) GetMyTasks(c echo.Context) error {
 		}
 	}
 
-	userID, ok := c.Get("userID").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "Unauthorized")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	taskList, total, err := h.taskService.GetMyTasks(page, pageSize, userID)

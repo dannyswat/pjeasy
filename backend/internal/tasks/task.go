@@ -7,7 +7,6 @@ import (
 // Task represents a task in the system
 type Task struct {
 	ID             int        `gorm:"primaryKey;autoIncrement" json:"id"`
-	RefNum         string     `gorm:"column:ref_num;not null;size:50;uniqueIndex" json:"refNum"`
 	ProjectID      int        `gorm:"not null;index" json:"projectId"`
 	Title          string     `gorm:"not null;size:255" json:"title"`
 	Description    string     `gorm:"type:text" json:"description"`

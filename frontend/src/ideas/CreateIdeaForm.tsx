@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
+import HtmlEditor from '../components/HtmlEditor'
 
 interface CreateIdeaFormProps {
   onSubmit: (data: { title: string; description: string; tags: string }) => Promise<void>
@@ -47,11 +48,10 @@ export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: Create
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Description
             </label>
-            <textarea
+            <HtmlEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={6}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              onChange={setDescription}
+              placeholder="Enter idea description..."
             />
           </div>
           

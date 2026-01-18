@@ -72,23 +72,8 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 		}
 	}
 
-	uow := s.uowFactory.NewUnitOfWork()
-	// Begin transaction to generate RefNum and create task
-	if err := uow.BeginTransaction(); err != nil {
-		return nil, err
-	}
-	defer uow.RollbackTransactionIfError()
-
-	// Generate reference number
-	refNum, err := s.sequenceRepo.GetNextNumber(uow, projectID, "tasks")
-	if err != nil {
-		uow.RollbackTransaction()
-		return nil, err
-	}
-
 	now := time.Now()
 	task := &Task{
-		RefNum:         refNum,
 		ProjectID:      projectID,
 		Title:          title,
 		Description:    description,
@@ -104,14 +89,7 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 		UpdatedAt:      now,
 	}
 
-	// Create a new repository instance with the transaction UOW
-	txTaskRepo := NewTaskRepository(uow)
-	if err := txTaskRepo.Create(task); err != nil {
-		uow.RollbackTransaction()
-		return nil, err
-	}
-
-	if err := uow.CommitTransaction(); err != nil {
+	if err := s.taskRepo.Create(task); err != nil {
 		return nil, err
 	}
 

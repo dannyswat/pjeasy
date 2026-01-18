@@ -175,9 +175,12 @@ func (h *SessionHandler) RevokeSession(c echo.Context) error {
 func (h *SessionHandler) RevokeAllSessions(c echo.Context) error {
 	// TODO: Get userID from authenticated context
 	// For now, we'll expect it in the request
-	userID := c.Get("user_id").(int)
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
 
-	err := h.sessionService.RevokeAllUserSessions(userID)
+	err = h.sessionService.RevokeAllUserSessions(userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to revoke sessions")
 	}

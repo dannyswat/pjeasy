@@ -121,9 +121,9 @@ func (h *AdminHandler) UnassignAdmin(c echo.Context) error {
 
 // CheckAdmin checks if the current user is an admin
 func (h *AdminHandler) CheckAdmin(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	isAdmin, err := h.adminService.IsUserAdmin(userID)

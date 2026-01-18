@@ -199,7 +199,6 @@ export default function TasksPage() {
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center space-x-2">
                   <h1 className="text-xl font-semibold text-gray-900">{viewingTask.title}</h1>
-                  <span className="text-xs text-gray-500">[{viewingTask.refNum}]</span>
                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getStatusColor(viewingTask.status)}`}>
                     {TaskStatusDisplay[viewingTask.status as keyof typeof TaskStatusDisplay]}
                   </span>
@@ -271,9 +270,12 @@ export default function TasksPage() {
             {/* Description */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                {viewingTask.description || 'No description provided'}
-              </p>
+              <div 
+                className="text-sm text-gray-600 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: viewingTask.description || '<p class="text-gray-500 italic">No description provided</p>' 
+                }}
+              />
             </div>
 
             {/* Task Details */}
@@ -435,7 +437,6 @@ export default function TasksPage() {
                     >
                       <div className="flex items-center space-x-2">
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
-                          <span className="text-gray-500 mr-1.5 text-xs">[{task.refNum}]</span>
                           <span>{task.title}</span>
                         </h3>
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(task.status)}`}>

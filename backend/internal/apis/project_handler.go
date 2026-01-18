@@ -64,9 +64,9 @@ type ProjectWithMembersResponse struct {
 
 // CreateProject creates a new project
 func (h *ProjectHandler) CreateProject(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	req := new(CreateProjectRequest)
@@ -98,9 +98,9 @@ func (h *ProjectHandler) CreateProject(c echo.Context) error {
 
 // UpdateProject updates a project
 func (h *ProjectHandler) UpdateProject(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectIDStr := c.Param("id")
@@ -188,9 +188,9 @@ func (h *ProjectHandler) GetProject(c echo.Context) error {
 
 // ListProjects returns paginated list of projects
 func (h *ProjectHandler) ListProjects(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	page, _ := strconv.Atoi(c.QueryParam("page"))
@@ -240,9 +240,9 @@ func (h *ProjectHandler) ListProjects(c echo.Context) error {
 
 // AddMember adds a member to a project
 func (h *ProjectHandler) AddMember(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectIDStr := c.Param("id")
@@ -271,9 +271,9 @@ func (h *ProjectHandler) AddMember(c echo.Context) error {
 
 // RemoveMember removes a member from a project
 func (h *ProjectHandler) RemoveMember(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectIDStr := c.Param("id")
@@ -299,9 +299,9 @@ func (h *ProjectHandler) RemoveMember(c echo.Context) error {
 
 // UpdateMemberRole updates a member's role
 func (h *ProjectHandler) UpdateMemberRole(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectIDStr := c.Param("id")
@@ -332,9 +332,9 @@ func (h *ProjectHandler) UpdateMemberRole(c echo.Context) error {
 
 // ArchiveProject archives a project
 func (h *ProjectHandler) ArchiveProject(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectIDStr := c.Param("id")
@@ -354,9 +354,9 @@ func (h *ProjectHandler) ArchiveProject(c echo.Context) error {
 
 // UnarchiveProject unarchives a project
 func (h *ProjectHandler) UnarchiveProject(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectIDStr := c.Param("id")

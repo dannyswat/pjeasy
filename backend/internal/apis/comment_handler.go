@@ -72,9 +72,9 @@ func toCommentWithUserResponse(commentWithUser *comments.CommentWithUser) Commen
 
 // CreateComment creates a new comment on an item
 func (h *CommentHandler) CreateComment(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	itemID, err := strconv.Atoi(c.Param("itemId"))
@@ -155,9 +155,9 @@ func (h *CommentHandler) GetComment(c echo.Context) error {
 
 // UpdateComment updates an existing comment
 func (h *CommentHandler) UpdateComment(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	commentID, err := strconv.Atoi(c.Param("commentId"))
@@ -190,9 +190,9 @@ func (h *CommentHandler) UpdateComment(c echo.Context) error {
 
 // DeleteComment deletes a comment
 func (h *CommentHandler) DeleteComment(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	commentID, err := strconv.Atoi(c.Param("commentId"))

@@ -5,6 +5,7 @@
 *.dll
 *.so
 *.dylib
+__debug_*
 
 # Test binary, built with `go test -c`
 *.test
@@ -84,6 +85,9 @@ logs
 tmp/
 temp/
 *.tmp
+
+# Uploads
+/backend/uploads/
 
 # Database
 *.db

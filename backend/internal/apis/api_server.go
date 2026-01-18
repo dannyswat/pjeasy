@@ -155,5 +155,8 @@ func (s *APIServer) SetupAPIServer() error {
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
+	// Register upload routes
+	RegisterUploadRoutes(s.echo, s, s.authMiddleware)
+
 	return nil
 }

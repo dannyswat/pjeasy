@@ -72,9 +72,9 @@ func toIdeaResponse(idea *ideas.Idea) IdeaResponse {
 
 // CreateIdea creates a new idea
 func (h *IdeaHandler) CreateIdea(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectID, err := strconv.Atoi(c.Param("projectId"))
@@ -102,9 +102,9 @@ func (h *IdeaHandler) CreateIdea(c echo.Context) error {
 
 // UpdateIdea updates an idea
 func (h *IdeaHandler) UpdateIdea(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	ideaID, err := strconv.Atoi(c.Param("id"))
@@ -132,9 +132,9 @@ func (h *IdeaHandler) UpdateIdea(c echo.Context) error {
 
 // UpdateIdeaStatus updates an idea's status
 func (h *IdeaHandler) UpdateIdeaStatus(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	ideaID, err := strconv.Atoi(c.Param("id"))
@@ -162,9 +162,9 @@ func (h *IdeaHandler) UpdateIdeaStatus(c echo.Context) error {
 
 // DeleteIdea deletes an idea
 func (h *IdeaHandler) DeleteIdea(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	ideaID, err := strconv.Atoi(c.Param("id"))
@@ -181,9 +181,9 @@ func (h *IdeaHandler) DeleteIdea(c echo.Context) error {
 
 // GetIdea retrieves a single idea
 func (h *IdeaHandler) GetIdea(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	ideaID, err := strconv.Atoi(c.Param("id"))
@@ -202,9 +202,9 @@ func (h *IdeaHandler) GetIdea(c echo.Context) error {
 
 // GetProjectIdeas retrieves all ideas for a project
 func (h *IdeaHandler) GetProjectIdeas(c echo.Context) error {
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	projectID, err := strconv.Atoi(c.Param("projectId"))

@@ -1,6 +1,5 @@
 export interface TaskResponse {
   id: number
-  refNum: string
   projectId: number
   title: string
   description: string

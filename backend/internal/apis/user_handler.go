@@ -57,9 +57,9 @@ func (h *UserHandler) Register(c echo.Context) error {
 
 func (h *UserHandler) Me(c echo.Context) error {
 	// Get user ID from context (set by auth middleware)
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
 	}
 
 	// Get user from service

@@ -69,9 +69,9 @@ func (m *AuthMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 func (m *AuthMiddleware) RequireAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// First ensure user is authenticated
-		userID, ok := c.Get("user_id").(int)
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+		userID, err := GetUserIDFromContext(c)
+		if err != nil {
+			return err
 		}
 
 		// Check if user is an admin
@@ -88,6 +88,14 @@ func (m *AuthMiddleware) RequireAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func GetUserIDFromContext(c echo.Context) (int, error) {
+	userID, ok := c.Get("user_id").(int)
+	if !ok {
+		return 0, echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+	}
+	return userID, nil
+}
+
 // ProjectMiddleware handles project-level authorization
 type ProjectMiddleware struct {
 	memberCache *projects.ProjectMemberCache
@@ -102,9 +110,9 @@ func NewProjectMiddleware(memberCache *projects.ProjectMemberCache) *ProjectMidd
 // RequireProjectMember ensures the user is a member of the project
 func (m *ProjectMiddleware) RequireProjectMember(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		userID, ok := c.Get("user_id").(int)
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+		userID, err := GetUserIDFromContext(c)
+		if err != nil {
+			return err
 		}
 
 		projectIDStr := c.Param("projectId")
@@ -118,6 +126,9 @@ func (m *ProjectMiddleware) RequireProjectMember(next echo.HandlerFunc) echo.Han
 		}
 
 		isMember, err := m.memberCache.IsUserMember(projectID, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to verify project membership")
+		}
 
 		if !isMember {
 			return echo.NewHTTPError(http.StatusForbidden, "Project membership required")
@@ -128,12 +139,20 @@ func (m *ProjectMiddleware) RequireProjectMember(next echo.HandlerFunc) echo.Han
 	}
 }
 
+func GetProjectIDFromContext(c echo.Context) (int, error) {
+	projectID, ok := c.Get("project_id").(int)
+	if !ok {
+		return 0, echo.NewHTTPError(http.StatusBadRequest, "Project ID not found in context")
+	}
+	return projectID, nil
+}
+
 // RequireProjectAdmin ensures the user is an admin of the project
 func (m *ProjectMiddleware) RequireProjectAdmin(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		userID, ok := c.Get("user_id").(int)
-		if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+		userID, err := GetUserIDFromContext(c)
+		if err != nil {
+			return err
 		}
 
 		projectIDStr := c.Param("projectId")
@@ -147,6 +166,9 @@ func (m *ProjectMiddleware) RequireProjectAdmin(next echo.HandlerFunc) echo.Hand
 		}
 
 		isAdmin, err := m.memberCache.IsUserAdmin(projectID, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to verify project admin status")
+		}
 
 		if !isAdmin {
 			return echo.NewHTTPError(http.StatusForbidden, "Project admin access required")

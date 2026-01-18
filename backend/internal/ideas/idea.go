@@ -7,8 +7,8 @@ import (
 // Idea represents an idea in the system
 type Idea struct {
 	ID          int       `gorm:"primaryKey;autoIncrement" json:"id"`
-	RefNum      string    `gorm:"column:ref_num;not null;size:50;uniqueIndex" json:"refNum"`
-	ProjectID   int       `gorm:"not null;index" json:"projectId"`
+	RefNum      string    `gorm:"column:ref_num;not null;size:50;uniqueIndex:idx_project_refnum,composite:projectId" json:"refNum"`
+	ProjectID   int       `gorm:"not null;index;uniqueIndex:idx_project_refnum,composite:refNum" json:"projectId"`
 	Title       string    `gorm:"not null;size:255" json:"title"`
 	Description string    `gorm:"type:text" json:"description"`
 	Status      string    `gorm:"not null;size:50;default:'Open'" json:"status"` // Open, Closed

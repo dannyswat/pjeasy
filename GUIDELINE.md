@@ -256,9 +256,9 @@ type IdeaResponse struct {
 // Handler method pattern
 func (h *IdeaHandler) CreateIdea(c echo.Context) error {
     // 1. Get user from context
-    userID, ok := c.Get("user_id").(int)
-    if !ok {
-        return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+    userID, err := apis.GetUserIDFromContext(c)
+    if err != nil {
+      return err
     }
 
     // 2. Parse path parameters
@@ -342,9 +342,9 @@ func (m *AuthMiddleware) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 func (m *AuthMiddleware) RequireAdmin(next echo.HandlerFunc) echo.HandlerFunc {
     return func(c echo.Context) error {
         // Requires RequireAuth to be called first
-        userID, ok := c.Get("user_id").(int)
-        if !ok {
-            return echo.NewHTTPError(http.StatusUnauthorized, "User not authenticated")
+        userID, err := GetUserIDFromContext(c)
+        if err != nil {
+          return err
         }
         // ... check admin status
         return next(c)
