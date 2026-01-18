@@ -3,12 +3,11 @@ import { fetchApi } from '../apis/fetch'
 
 interface DeleteTaskParams {
   taskId: number
-  projectId: number
 }
 
 export function useDeleteTask() {
   return useMutation({
-    mutationFn: async ({ taskId, projectId }: DeleteTaskParams) => {
+    mutationFn: async ({ taskId }: DeleteTaskParams) => {
       return fetchApi<void>(`/api/tasks/${taskId}`, {
         method: 'DELETE',
       }, true)

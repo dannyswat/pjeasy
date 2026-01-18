@@ -131,7 +131,6 @@ export default function TasksPage() {
     try {
       await deleteTask.mutateAsync({
         taskId,
-        projectId: projectIdNum,
       })
       setViewingTask(null)
       refetch()
