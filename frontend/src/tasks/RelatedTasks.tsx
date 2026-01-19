@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useListTasksByItem } from '../tasks/useListTasksByItem'
-import { useCreateTask } from '../tasks/useCreateTask'
-import { useUpdateTaskStatus } from '../tasks/useUpdateTaskStatus'
-import { type TaskResponse, TaskStatusDisplay } from '../tasks/taskTypes'
-import CreateTaskForm from '../tasks/CreateTaskForm'
+import { useListTasksByItem } from './useListTasksByItem'
+import { useCreateTask } from './useCreateTask'
+import { useUpdateTaskStatus } from './useUpdateTaskStatus'
+import { type TaskResponse, TaskStatusDisplay } from './taskTypes'
+import CreateTaskForm from './CreateTaskForm'
 import { UserLabel } from '../components/UserLabel'
 
 interface RelatedTasksProps {

@@ -14,7 +14,6 @@ export default function ProjectMemberSelect({
   projectId,
   value,
   onChange,
-  label = 'Assignee',
   placeholder = 'Select a member',
   showAssignToMe = true,
 }: ProjectMemberSelectProps) {
@@ -28,32 +27,20 @@ export default function ProjectMemberSelect({
   }
 
   if (isLoading) {
-    return (
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-        <div className="text-sm text-gray-500">Loading members...</div>
-      </div>
-    )
+    return <div className="text-sm text-gray-500">Loading members...</div>
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-sm font-medium text-gray-700">
-          {label}
-        </label>
-        {showAssignToMe && user && (
-          <button
-            type="button"
-            onClick={handleAssignToMe}
-            className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-          >
-            Assign to me
-          </button>
-        )}
-      </div>
+    <div className="relative">
+      {showAssignToMe && user && (
+        <button
+          type="button"
+          onClick={handleAssignToMe}
+          className="absolute right-0 -top-6 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+        >
+          Assign to me
+        </button>
+      )}
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : undefined)}

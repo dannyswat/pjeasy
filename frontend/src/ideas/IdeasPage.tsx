@@ -9,7 +9,7 @@ import { IdeaStatus, type IdeaResponse } from './ideaTypes'
 import CreateIdeaForm from './CreateIdeaForm'
 import EditIdeaForm from './EditIdeaForm'
 import Comments from '../comments/Comments'
-import RelatedTasks from './RelatedTasks'
+import RelatedTasks from '../tasks/RelatedTasks'
 
 export default function IdeasPage() {
   const { projectId } = useParams<{ projectId: string }>()

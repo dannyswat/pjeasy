@@ -110,12 +110,17 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <ProjectMemberSelect
-              projectId={task.projectId}
-              value={assigneeId}
-              onChange={setAssigneeId}
-              showAssignToMe={true}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assignee
+              </label>
+              <ProjectMemberSelect
+                projectId={task.projectId}
+                value={assigneeId}
+                onChange={setAssigneeId}
+                showAssignToMe={true}
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

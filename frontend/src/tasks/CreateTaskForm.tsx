@@ -111,12 +111,17 @@ export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDe
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <ProjectMemberSelect
-              projectId={projectId}
-              value={assigneeId}
-              onChange={setAssigneeId}
-              showAssignToMe={true}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assignee
+              </label>
+              <ProjectMemberSelect
+                projectId={projectId}
+                value={assigneeId}
+                onChange={setAssigneeId}
+                showAssignToMe={true}
+              />
+            </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

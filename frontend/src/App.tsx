@@ -8,6 +8,7 @@ import SystemAdminPage from './admins/SystemAdminPage'
 import ProjectsListPage from './projects/ProjectsListPage'
 import ProjectFormPage from './projects/ProjectFormPage'
 import IdeasPage from './ideas/IdeasPage'
+import IssuesPage from './issues/IssuesPage'
 import TasksPage from './tasks/TasksPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
@@ -140,6 +141,16 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <IdeasPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/issues"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <IssuesPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }
