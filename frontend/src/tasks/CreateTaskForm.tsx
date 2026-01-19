@@ -11,7 +11,7 @@ interface CreateTaskFormProps {
     title: string
     description: string
     priority: string
-    estimatedHours: number
+    estimatedHours?: number
     assigneeId?: number
     deadline?: string
     tags: string
@@ -24,7 +24,7 @@ export default function CreateTaskForm({ projectId, onSubmit, onCancel, isPendin
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<string>(TaskPriority.NORMAL)
-  const [estimatedHours, setEstimatedHours] = useState(0)
+  const [estimatedHours, setEstimatedHours] = useState('')
   const [assigneeId, setAssigneeId] = useState<number | undefined>()
   const [deadline, setDeadline] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -35,7 +35,7 @@ export default function CreateTaskForm({ projectId, onSubmit, onCancel, isPendin
       title,
       description,
       priority,
-      estimatedHours,
+      estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
       assigneeId,
       deadline: deadline || undefined,
       tags: tags.join(','),
@@ -100,7 +100,7 @@ export default function CreateTaskForm({ projectId, onSubmit, onCancel, isPendin
               <input
                 type="number"
                 value={estimatedHours}
-                onChange={(e) => setEstimatedHours(parseFloat(e.target.value) || 0)}
+                onChange={(e) => setEstimatedHours(e.target.value)}
                 min="0"
                 step="0.5"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"

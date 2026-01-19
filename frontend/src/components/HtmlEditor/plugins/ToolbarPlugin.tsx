@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext'
 import {
   $getSelection,
@@ -39,6 +39,11 @@ export default function ToolbarPlugin() {
   const [isStrikethrough, setIsStrikethrough] = useState(false)
   const [isLink, setIsLink] = useState(false)
   const [blockType, setBlockType] = useState<string>('paragraph')
+  const [showTablePicker, setShowTablePicker] = useState(false)
+  const [hoveredRows, setHoveredRows] = useState(0)
+  const [hoveredCols, setHoveredCols] = useState(0)
+  const [pickerPosition, setPickerPosition] = useState({ top: 0, left: 0 })
+  const tableButtonRef = useRef<HTMLButtonElement>(null)
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection()
@@ -92,6 +97,25 @@ export default function ToolbarPlugin() {
     )
   }, [editor, updateToolbar])
 
+  // Close table picker on outside click
+  useEffect(() => {
+    if (!showTablePicker) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (
+        tableButtonRef.current &&
+        !tableButtonRef.current.contains(target) &&
+        !(target as HTMLElement).closest('.table-picker-popup')
+      ) {
+        setShowTablePicker(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showTablePicker])
+
   const formatHeading = (headingSize: HeadingTagType | 'paragraph') => {
     editor.update(() => {
       const selection = $getSelection()
@@ -141,21 +165,12 @@ export default function ToolbarPlugin() {
     input.click()
   }
 
-  const insertTable = () => {
-    const rows = prompt('Enter number of rows:', '3')
-    const cols = prompt('Enter number of columns:', '3')
-    if (rows && cols) {
-      const rowCount = parseInt(rows, 10)
-      const colCount = parseInt(cols, 10)
-      if (rowCount > 0 && colCount > 0 && rowCount <= 20 && colCount <= 10) {
-        editor.dispatchCommand(INSERT_TABLE_COMMAND, {
-          columns: String(colCount),
-          rows: String(rowCount),
-        })
-      } else {
-        alert('Please enter valid numbers (rows: 1-20, columns: 1-10)')
-      }
-    }
+  const insertTable = (rows: number, cols: number) => {
+    editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+      columns: String(cols),
+      rows: String(rows),
+    })
+    setShowTablePicker(false)
   }
 
   return (
@@ -274,9 +289,21 @@ export default function ToolbarPlugin() {
 
       {/* Table */}
       <button
+        ref={tableButtonRef}
         type="button"
         className="toolbar-button"
-        onClick={insertTable}
+        onClick={() => {
+          if (!showTablePicker && tableButtonRef.current) {
+            const rect = tableButtonRef.current.getBoundingClientRect()
+            const toolbar = tableButtonRef.current.closest('.toolbar')
+            const toolbarRect = toolbar?.getBoundingClientRect()
+            setPickerPosition({
+              top: tableButtonRef.current.offsetTop + tableButtonRef.current.offsetHeight + 4,
+              left: toolbarRect ? rect.left - toolbarRect.left : tableButtonRef.current.offsetLeft,
+            })
+          }
+          setShowTablePicker(!showTablePicker)
+        }}
         title="Insert Table"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -287,6 +314,61 @@ export default function ToolbarPlugin() {
           <line x1="10" y1="2" x2="10" y2="14" stroke="currentColor" strokeWidth="1.5" />
         </svg>
       </button>
+
+      {/* Table Picker Popup */}
+      {showTablePicker && (
+        <div
+          className="table-picker-popup"
+          style={{
+            position: 'absolute',
+            top: `${pickerPosition.top}px`,
+            left: `${pickerPosition.left - 40}px`,
+            backgroundColor: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ marginBottom: '8px', fontSize: '12px', color: '#666' }}>
+            {hoveredRows > 0 && hoveredCols > 0
+              ? `${hoveredRows} x ${hoveredCols}`
+              : 'Select table size'}
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(10, 20px)',
+              gap: '2px',
+            }}
+          >
+            {Array.from({ length: 100 }, (_, i) => {
+              const row = Math.floor(i / 10) + 1
+              const col = (i % 10) + 1
+              const isHighlighted = row <= hoveredRows && col <= hoveredCols
+              return (
+                <div
+                  key={i}
+                  onMouseEnter={() => {
+                    setHoveredRows(row)
+                    setHoveredCols(col)
+                  }}
+                  onClick={() => insertTable(row, col)}
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    border: '1px solid #ddd',
+                    backgroundColor: isHighlighted ? '#4a9eff' : 'white',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.1s',
+                  }}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

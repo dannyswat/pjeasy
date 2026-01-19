@@ -12,7 +12,7 @@ interface EditTaskFormProps {
     title: string
     description: string
     priority: string
-    estimatedHours: number
+    estimatedHours?: number
     assigneeId?: number
     deadline?: string
     tags: string
@@ -25,7 +25,7 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description)
   const [priority, setPriority] = useState(task.priority)
-  const [estimatedHours, setEstimatedHours] = useState(task.estimatedHours || 0)
+  const [estimatedHours, setEstimatedHours] = useState(task.estimatedHours?.toString() || '')
   const [assigneeId, setAssigneeId] = useState<number | undefined>(task.assigneeId)
   const [deadline, setDeadline] = useState(task.deadline || '')
   const [tags, setTags] = useState<string[]>(task.tags ? task.tags.split(',').map(t => t.trim()).filter(Boolean) : [])
@@ -36,7 +36,7 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
       title,
       description,
       priority,
-      estimatedHours,
+      estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
       assigneeId,
       deadline: deadline || undefined,
       tags: tags.join(','),
@@ -101,7 +101,7 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
               <input
                 type="number"
                 value={estimatedHours}
-                onChange={(e) => setEstimatedHours(parseFloat(e.target.value) || 0)}
+                onChange={(e) => setEstimatedHours(e.target.value)}
                 min="0"
                 step="0.5"
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
