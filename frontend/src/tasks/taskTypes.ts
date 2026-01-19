@@ -9,6 +9,8 @@ export interface TaskResponse {
   assigneeId?: number
   deadline?: string
   sprintId?: number
+  itemType?: string
+  itemId?: number
   tags?: string
   createdBy: number
   createdAt: string
@@ -25,6 +27,8 @@ export interface CreateTaskRequest {
   assigneeId?: number
   deadline?: string
   sprintId?: number
+  itemType?: string
+  itemId?: number
   tags?: string
 }
 

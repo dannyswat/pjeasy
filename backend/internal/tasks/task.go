@@ -16,6 +16,8 @@ type Task struct {
 	AssigneeID     *int       `gorm:"index" json:"assigneeId,omitempty"`                  // Assigned user ID (nullable)
 	Deadline       *time.Time `json:"deadline,omitempty"`                                 // Optional deadline
 	SprintID       *int       `gorm:"index" json:"sprintId,omitempty"`                    // Optional sprint association
+	ItemType       string     `gorm:"size:50;index:idx_item" json:"itemType,omitempty"`   // Type of related item (e.g., "idea", "epic")
+	ItemID         *int       `gorm:"index:idx_item" json:"itemId,omitempty"`             // ID of related item
 	Tags           string     `gorm:"type:text" json:"tags,omitempty"`                    // Comma-separated tags
 	CreatedBy      int        `gorm:"not null;index" json:"createdBy"`
 	CreatedAt      time.Time  `gorm:"not null" json:"createdAt"`

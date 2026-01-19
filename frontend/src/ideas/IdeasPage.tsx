@@ -9,6 +9,7 @@ import { IdeaStatus, type IdeaResponse } from './ideaTypes'
 import CreateIdeaForm from './CreateIdeaForm'
 import EditIdeaForm from './EditIdeaForm'
 import Comments from '../comments/Comments'
+import RelatedTasks from './RelatedTasks'
 
 export default function IdeasPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -253,8 +254,17 @@ export default function IdeasPage() {
               </div>
             </div>
 
+            {/* Related Tasks Section */}
+            <RelatedTasks 
+              projectId={projectIdNum} 
+              itemType="idea" 
+              itemId={viewingIdea.id}
+              itemRefNum={viewingIdea.refNum}
+              itemTitle={viewingIdea.title}
+            />
+
             {/* Comments Section */}
-            <div className="border-t border-gray-200 pt-4">
+            <div className="border-t border-gray-200 pt-4 mt-4">
               <Comments itemId={viewingIdea.id} itemType="ideas" />
             </div>
           </div>

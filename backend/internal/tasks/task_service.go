@@ -28,7 +28,7 @@ func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMember
 }
 
 // CreateTask creates a new task
-func (s *TaskService) CreateTask(projectID int, title, description, status, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, createdBy int) (*Task, error) {
+func (s *TaskService) CreateTask(projectID int, title, description, status, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, itemType string, itemID *int, createdBy int) (*Task, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -83,6 +83,8 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 		AssigneeID:     assigneeID,
 		Deadline:       deadline,
 		SprintID:       sprintID,
+		ItemType:       itemType,
+		ItemID:         itemID,
 		Tags:           tags,
 		CreatedBy:      createdBy,
 		CreatedAt:      now,
@@ -309,6 +311,36 @@ func (s *TaskService) GetMyTasks(page, pageSize int, userID int) ([]Task, int64,
 	offset := (page - 1) * pageSize
 
 	tasks, total, err := s.taskRepo.GetByAssigneeID(userID, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return tasks, total, nil
+}
+
+// GetTasksByItemReference retrieves tasks linked to a specific item (e.g., idea) with pagination
+func (s *TaskService) GetTasksByItemReference(projectID int, itemType string, itemID int, page, pageSize int, userID int) ([]Task, int64, error) {
+	// Validate project exists
+	project, err := s.projectRepo.GetByID(projectID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if project == nil {
+		return nil, 0, errors.New("project not found")
+	}
+
+	// Check if user is a member of the project
+	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !isMember {
+		return nil, 0, errors.New("user is not a member of this project")
+	}
+
+	offset := (page - 1) * pageSize
+
+	tasks, total, err := s.taskRepo.GetByItemReference(projectID, itemType, itemID, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}

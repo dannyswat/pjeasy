@@ -9,6 +9,7 @@ import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from '
 import CreateTaskForm from './CreateTaskForm'
 import EditTaskForm from './EditTaskForm'
 import Comments from '../comments/Comments'
+import { UserLabel } from '../components/UserLabel'
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -70,7 +71,7 @@ export default function TasksPage() {
     title: string
     description: string
     priority: string
-    estimatedHours: number
+    estimatedHours?: number
     assigneeId?: number
     deadline?: string
     tags: string 
@@ -91,7 +92,7 @@ export default function TasksPage() {
     title: string
     description: string
     priority: string
-    estimatedHours: number
+    estimatedHours?: number
     assigneeId?: number
     deadline?: string
     tags: string
@@ -289,8 +290,8 @@ export default function TasksPage() {
                 )}
                 {viewingTask.assigneeId && (
                   <div>
-                    <span className="text-gray-500">Assignee ID:</span>
-                    <span className="ml-2 text-gray-900">{viewingTask.assigneeId}</span>
+                    <span className="text-gray-500">Assignee:</span>
+                    <span className="ml-2 text-gray-900"><UserLabel userId={viewingTask.assigneeId} /></span>
                   </div>
                 )}
                 {viewingTask.deadline && (
@@ -452,7 +453,12 @@ export default function TasksPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-1 ml-3">
+                    <div className="flex items-center space-x-2 ml-3">
+                      {task.assigneeId && (
+                        <span className="text-xs text-gray-600">
+                          👤 <UserLabel userId={task.assigneeId} />
+                        </span>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation()

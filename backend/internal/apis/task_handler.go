@@ -29,6 +29,8 @@ type CreateTaskRequest struct {
 	AssigneeID     *int    `json:"assigneeId"`
 	Deadline       *string `json:"deadline"`
 	SprintID       *int    `json:"sprintId"`
+	ItemType       string  `json:"itemType"`
+	ItemID         *int    `json:"itemId"`
 	Tags           string  `json:"tags"`
 }
 
@@ -63,6 +65,8 @@ type TaskResponse struct {
 	AssigneeID     *int      `json:"assigneeId"`
 	Deadline       *string   `json:"deadline"`
 	SprintID       *int      `json:"sprintId"`
+	ItemType       string    `json:"itemType"`
+	ItemID         *int      `json:"itemId"`
 	Tags           string    `json:"tags"`
 	CreatedBy      int       `json:"createdBy"`
 	CreatedAt      time.Time `json:"createdAt"`
@@ -94,6 +98,8 @@ func toTaskResponse(task *tasks.Task) TaskResponse {
 		AssigneeID:     task.AssigneeID,
 		Deadline:       deadline,
 		SprintID:       task.SprintID,
+		ItemType:       task.ItemType,
+		ItemID:         task.ItemID,
 		Tags:           task.Tags,
 		CreatedBy:      task.CreatedBy,
 		CreatedAt:      task.CreatedAt,
@@ -151,6 +157,8 @@ func (h *TaskHandler) CreateTask(c echo.Context) error {
 		req.AssigneeID,
 		deadline,
 		req.SprintID,
+		req.ItemType,
+		req.ItemID,
 		userID,
 	)
 	if err != nil {
@@ -372,12 +380,64 @@ func (h *TaskHandler) GetMyTasks(c echo.Context) error {
 	return c.JSON(http.StatusOK, toTaskListResponse(taskList, total, page, pageSize))
 }
 
+// GetTasksByItemReference retrieves tasks linked to a specific item (e.g., idea)
+func (h *TaskHandler) GetTasksByItemReference(c echo.Context) error {
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	itemType := c.QueryParam("itemType")
+	if itemType == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "itemType is required")
+	}
+
+	itemIDStr := c.QueryParam("itemId")
+	if itemIDStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "itemId is required")
+	}
+
+	itemID, err := strconv.Atoi(itemIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid item ID")
+	}
+
+	page := 1
+	if p := c.QueryParam("page"); p != "" {
+		page, err = strconv.Atoi(p)
+		if err != nil || page < 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid page number")
+		}
+	}
+
+	pageSize := 20
+	if ps := c.QueryParam("pageSize"); ps != "" {
+		pageSize, err = strconv.Atoi(ps)
+		if err != nil || pageSize < 1 || pageSize > 100 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid page size")
+		}
+	}
+
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	taskList, total, err := h.taskService.GetTasksByItemReference(projectID, itemType, itemID, page, pageSize, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, toTaskListResponse(taskList, total, page, pageSize))
+}
+
 // RegisterRoutes registers task-related routes
 func (h *TaskHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
 	tasks := e.Group("/api/projects/:projectId/tasks", authMiddleware.RequireAuth, projectMiddleware.RequireProjectMember)
 
 	tasks.POST("", h.CreateTask)
 	tasks.GET("", h.GetProjectTasks)
+	tasks.GET("/by-item", h.GetTasksByItemReference)
 
 	taskItem := e.Group("/api/tasks/:id", authMiddleware.RequireAuth)
 

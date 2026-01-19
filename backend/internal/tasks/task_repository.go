@@ -136,3 +136,25 @@ func (r *TaskRepository) UpdateAssignee(id int, assigneeID *int) error {
 		Where("id = ?", id).
 		Update("assignee_id", assigneeID).Error
 }
+
+// GetByItemReference returns tasks for a specific item (e.g., idea) with pagination
+func (r *TaskRepository) GetByItemReference(projectID int, itemType string, itemID int, offset, limit int) ([]Task, int64, error) {
+	var tasks []Task
+	var total int64
+
+	query := r.uow.GetDB().Model(&Task{}).
+		Where("project_id = ? AND item_type = ? AND item_id = ?", projectID, itemType, itemID)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&tasks).Error
+
+	return tasks, total, err
+}

@@ -78,7 +78,31 @@ func (h *UserHandler) Me(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
+func (h *UserHandler) GetUserByID(c echo.Context) error {
+	// Parse user ID from URL parameter
+	userID := 0
+	if err := echo.PathParamsBinder(c).Int("id", &userID).BindError(); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID")
+	}
+
+	// Get user from service
+	user, err := h.userService.GetUserByID(userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "User not found")
+	}
+
+	response := &UserResponse{
+		ID:              user.ID,
+		LoginID:         user.LoginID,
+		Name:            user.Name,
+		ProfileImageURL: user.ProfileImageURL,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
 func (h *UserHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware) {
 	e.POST("/api/users/register", h.Register) // No logging for registration (security)
 	e.GET("/api/users/me", h.Me, authMiddleware.RequireAuth)
+	e.GET("/api/users/:id", h.GetUserByID, authMiddleware.RequireAuth)
 }
