@@ -13,6 +13,8 @@ import TasksPage from './tasks/TasksPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
+import IssueDetailPage from './issues/IssueDetailPage'
+import IdeaDetailPage from './ideas/IdeaDetailPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -146,11 +148,31 @@ function App() {
             }
           />
           <Route
+            path="/projects/:projectId/ideas/:ideaId"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <IdeaDetailPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/projects/:projectId/issues"
             element={
               <ProtectedRoute>
                 <DefaultLayout>
                   <IssuesPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/issues/:issueId"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <IssueDetailPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

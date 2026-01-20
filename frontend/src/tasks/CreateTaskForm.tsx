@@ -9,6 +9,7 @@ interface CreateTaskFormProps {
   projectId: number
   defaultTitle?: string
   defaultDescription?: string
+  defaultPriority?: string
   onSubmit: (data: {
     title: string
     description: string
@@ -22,10 +23,10 @@ interface CreateTaskFormProps {
   isPending: boolean
 }
 
-export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDescription = '', onSubmit, onCancel, isPending }: CreateTaskFormProps) {
+export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDescription = '', defaultPriority, onSubmit, onCancel, isPending }: CreateTaskFormProps) {
   const [title, setTitle] = useState(defaultTitle)
   const [description, setDescription] = useState(defaultDescription)
-  const [priority, setPriority] = useState<string>(TaskPriority.NORMAL)
+  const [priority, setPriority] = useState<string>(defaultPriority || TaskPriority.NORMAL)
   const [estimatedHours, setEstimatedHours] = useState('')
   const [assigneeId, setAssigneeId] = useState<number | undefined>()
   const [deadline, setDeadline] = useState('')

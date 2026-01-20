@@ -24,7 +24,7 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
   const [description, setDescription] = useState(issue.description)
   const [priority, setPriority] = useState(issue.priority)
   const [assignedTo, setAssignedTo] = useState<number | undefined>(issue.assignedTo)
-  const [points, setPoints] = useState(issue.points)
+  const [points, setPoints] = useState<number | undefined>(issue.points)
   const [tags, setTags] = useState<string[]>(issue.tags ? issue.tags.split(',').map(t => t.trim()) : [])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -34,7 +34,7 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
       description,
       priority,
       assignedTo,
-      points,
+      points: points ?? 0,
       tags: tags.join(','),
     })
   }
@@ -91,13 +91,14 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Points
+                Points (optional)
               </label>
               <input
                 type="number"
-                value={points}
-                onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+                value={points ?? ''}
+                onChange={(e) => setPoints(e.target.value === '' ? undefined : parseInt(e.target.value))}
                 min="0"
+                placeholder="Enter points"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>

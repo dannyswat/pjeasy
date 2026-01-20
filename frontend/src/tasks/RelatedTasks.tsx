@@ -12,6 +12,7 @@ interface RelatedTasksProps {
   itemId: number
   itemRefNum?: string
   itemTitle?: string
+  itemPriority?: string
 }
 
 // Predefined task templates for ideas
@@ -24,7 +25,15 @@ const IDEA_TASK_TEMPLATES = [
   { title: 'Review and approve', description: 'Review the idea with stakeholders and get approval' },
 ]
 
-export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, itemTitle }: RelatedTasksProps) {
+// Predefined task templates for issues
+const ISSUE_TASK_TEMPLATES = [
+  { title: 'Fix issue', description: 'Implement the fix for this issue' },
+  { title: 'Validate fixes', description: 'Test and validate that the issue has been resolved' },
+]
+
+export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, itemTitle, itemPriority }: RelatedTasksProps) {
+  // Select templates based on item type
+  const templates = itemType === 'issues' ? ISSUE_TASK_TEMPLATES : IDEA_TASK_TEMPLATES
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<{ title: string; description: string } | null>(null)
@@ -33,7 +42,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
   const updateTaskStatus = useUpdateTaskStatus()
 
   const handleSelectTemplate = (template: { title: string; description: string }) => {
-    // Prepend idea reference to task title
+    // Prepend item reference to task title
     const taskTitle = itemRefNum && itemTitle 
       ? `[${itemRefNum}] ${template.title} - ${itemTitle}`
       : template.title
@@ -124,7 +133,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
             <div className="absolute right-0 mt-1 w-80 bg-white rounded shadow-lg border border-gray-200 z-20 p-3">
               <h4 className="text-xs font-semibold text-gray-700 mb-2">Create from template:</h4>
               <div className="space-y-1 max-h-64 overflow-y-auto">
-                {IDEA_TASK_TEMPLATES.map((template, idx) => (
+                {templates.map((template, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSelectTemplate(template)}
@@ -146,6 +155,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
           projectId={projectId}
           defaultTitle={selectedTemplate.title}
           defaultDescription={selectedTemplate.description}
+          defaultPriority={itemPriority}
           onSubmit={handleCreateTask}
           onCancel={() => {
             setShowCreateModal(false)

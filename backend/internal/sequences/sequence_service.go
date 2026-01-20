@@ -21,6 +21,8 @@ type SequenceDefinition struct {
 func (s *SequenceService) GetDefaultSequenceDefinitions() []SequenceDefinition {
 	return []SequenceDefinition{
 		{ItemType: "ideas", Prefix: "IDEA", PaddedZeroLength: 4},
+		{ItemType: "issues", Prefix: "ISSU", PaddedZeroLength: 4},
+		{ItemType: "features", Prefix: "FEAT", PaddedZeroLength: 4},
 		// Add more default sequences here as needed:
 		// {ItemType: "tasks", Prefix: "TASK", PaddedZeroLength: 4},
 		// {ItemType: "bugs", Prefix: "BUG-{yy}-", PaddedZeroLength: 3},

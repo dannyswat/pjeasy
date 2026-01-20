@@ -22,9 +22,9 @@ interface CreateIssueFormProps {
 export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPending }: CreateIssueFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<string>(IssuePriority.NORMAL)
+  const [priority, setPriority] = useState<string>(IssuePriority.URGENT)
   const [assignedTo, setAssignedTo] = useState<number | undefined>(undefined)
-  const [points, setPoints] = useState(0)
+  const [points, setPoints] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -34,7 +34,7 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
       description,
       priority,
       assignedTo,
-      points,
+      points: points ?? 0,
       tags: tags.join(','),
     })
   }
@@ -91,13 +91,14 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Points
+                Points (optional)
               </label>
               <input
                 type="number"
-                value={points}
-                onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+                value={points ?? ''}
+                onChange={(e) => setPoints(e.target.value === '' ? undefined : parseInt(e.target.value))}
                 min="0"
+                placeholder="Enter points"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               />
             </div>

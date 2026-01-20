@@ -9,6 +9,7 @@ import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from '
 import CreateTaskForm from './CreateTaskForm'
 import EditTaskForm from './EditTaskForm'
 import Comments from '../comments/Comments'
+import ItemLink from '../components/ItemLink'
 import { UserLabel } from '../components/UserLabel'
 
 export default function TasksPage() {
@@ -282,6 +283,11 @@ export default function TasksPage() {
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Task Details</h3>
               <div className="grid grid-cols-2 gap-3 text-xs">
+                {viewingTask.itemType && viewingTask.itemId && (
+                  <div className="col-span-2">
+                    <ItemLink itemType={viewingTask.itemType} itemId={viewingTask.itemId} />
+                  </div>
+                )}
                 {viewingTask.estimatedHours > 0 && (
                   <div>
                     <span className="text-gray-500">Estimated Hours:</span>
