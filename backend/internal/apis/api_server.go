@@ -10,6 +10,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/service_tickets"
 	"github.com/dannyswat/pjeasy/internal/tasks"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
@@ -26,27 +27,29 @@ type APIServer struct {
 	uowFactory *repositories.UnitOfWorkFactory
 	globalUOW  *repositories.UnitOfWork
 
-	userService       *users.UserService
-	sessionService    *user_sessions.SessionService
-	adminService      *userroles.SystemAdminService
-	projectService    *projects.ProjectService
-	ideaService       *ideas.IdeaService
-	issueService      *issues.IssueService
-	commentService    *comments.CommentService
-	sequenceService   *sequences.SequenceService
-	taskService       *tasks.TaskService
-	tokenService      *user_sessions.TokenService
-	userHandler       *UserHandler
-	sessionHandler    *SessionHandler
-	adminHandler      *AdminHandler
-	projectHandler    *ProjectHandler
-	ideaHandler       *IdeaHandler
-	issueHandler      *IssueHandler
-	commentHandler    *CommentHandler
-	sequenceHandler   *SequenceHandler
-	taskHandler       *TaskHandler
-	authMiddleware    *AuthMiddleware
-	projectMiddleware *ProjectMiddleware
+	userService          *users.UserService
+	sessionService       *user_sessions.SessionService
+	adminService         *userroles.SystemAdminService
+	projectService       *projects.ProjectService
+	ideaService          *ideas.IdeaService
+	issueService         *issues.IssueService
+	serviceTicketService *service_tickets.ServiceTicketService
+	commentService       *comments.CommentService
+	sequenceService      *sequences.SequenceService
+	taskService          *tasks.TaskService
+	tokenService         *user_sessions.TokenService
+	userHandler          *UserHandler
+	sessionHandler       *SessionHandler
+	adminHandler         *AdminHandler
+	projectHandler       *ProjectHandler
+	ideaHandler          *IdeaHandler
+	issueHandler         *IssueHandler
+	serviceTicketHandler *ServiceTicketHandler
+	commentHandler       *CommentHandler
+	sequenceHandler      *SequenceHandler
+	taskHandler          *TaskHandler
+	authMiddleware       *AuthMiddleware
+	projectMiddleware    *ProjectMiddleware
 }
 
 func (s *APIServer) StartOrFatal() {
@@ -90,6 +93,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&projects.ProjectMember{},
 		&ideas.Idea{},
 		&issues.Issue{},
+		&service_tickets.ServiceTicket{},
 		&comments.Comment{},
 		&sequences.Sequence{},
 		&sequences.SequenceNumber{},
@@ -133,6 +137,10 @@ func (s *APIServer) SetupAPIServer() error {
 	issueRepo := issues.NewIssueRepository(s.globalUOW)
 	s.issueService = issues.NewIssueService(issueRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
 
+	// Initialize service ticket service
+	serviceTicketRepo := service_tickets.NewServiceTicketRepository(s.globalUOW)
+	s.serviceTicketService = service_tickets.NewServiceTicketService(serviceTicketRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+
 	// Initialize comment service
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
 	s.commentService = comments.NewCommentService(commentRepo, userRepo)
@@ -148,6 +156,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.projectHandler = NewProjectHandler(s.projectService)
 	s.ideaHandler = NewIdeaHandler(s.ideaService)
 	s.issueHandler = NewIssueHandler(s.issueService)
+	s.serviceTicketHandler = NewServiceTicketHandler(s.serviceTicketService)
 	s.commentHandler = NewCommentHandler(s.commentService)
 	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
 	s.taskHandler = NewTaskHandler(s.taskService)
@@ -161,6 +170,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.projectHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.ideaHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.issueHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.serviceTicketHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)

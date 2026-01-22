@@ -9,12 +9,14 @@ import ProjectsListPage from './projects/ProjectsListPage'
 import ProjectFormPage from './projects/ProjectFormPage'
 import IdeasPage from './ideas/IdeasPage'
 import IssuesPage from './issues/IssuesPage'
+import ServiceTicketsPage from './service_tickets/ServiceTicketsPage'
 import TasksPage from './tasks/TasksPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
 import IssueDetailPage from './issues/IssueDetailPage'
 import IdeaDetailPage from './ideas/IdeaDetailPage'
+import ServiceTicketDetailPage from './service_tickets/ServiceTicketDetailPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -173,6 +175,26 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <IssueDetailPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/service-tickets"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ServiceTicketsPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/service-tickets/:ticketId"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ServiceTicketDetailPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }
