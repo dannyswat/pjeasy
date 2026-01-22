@@ -15,7 +15,22 @@ export default function ItemLink({ itemType, itemId }: ItemLinkProps) {
     navigate(itemPath)
   }
 
-  const itemTypeSingular = itemType === 'ideas' ? 'Idea' : itemType === 'issues' ? 'Issue' : itemType
+  const getItemTypeSingular = (type: string) => {
+    switch (type) {
+      case 'ideas':
+        return 'Idea'
+      case 'issues':
+        return 'Issue'
+      case 'tasks':
+        return 'Task'
+      case 'service-tickets':
+        return 'Service Ticket'
+      default:
+        return type
+    }
+  }
+
+  const itemTypeSingular = getItemTypeSingular(itemType)
   
   return (
     <div>

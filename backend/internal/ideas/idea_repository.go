@@ -87,3 +87,25 @@ func (r *IdeaRepository) UpdateStatus(id int, status string) error {
 		Where("id = ?", id).
 		Update("status", status).Error
 }
+
+// GetByItemReference returns ideas for a specific item (e.g., service-ticket) with pagination
+func (r *IdeaRepository) GetByItemReference(projectID int, itemType string, itemID int, offset, limit int) ([]Idea, int64, error) {
+	var ideas []Idea
+	var total int64
+
+	query := r.uow.GetDB().Model(&Idea{}).
+		Where("project_id = ? AND item_type = ? AND item_id = ?", projectID, itemType, itemID)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&ideas).Error
+
+	return ideas, total, err
+}

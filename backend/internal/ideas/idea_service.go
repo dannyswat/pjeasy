@@ -28,7 +28,7 @@ func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMember
 }
 
 // CreateIdea creates a new idea
-func (s *IdeaService) CreateIdea(projectID int, title, description, tags string, createdBy int) (*Idea, error) {
+func (s *IdeaService) CreateIdea(projectID int, title, description, itemType string, itemID *int, tags string, createdBy int) (*Idea, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -68,6 +68,8 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, tags string,
 		Title:       title,
 		Description: description,
 		Status:      IdeaStatusOpen,
+		ItemType:    itemType,
+		ItemID:      itemID,
 		Tags:        tags,
 		CreatedBy:   createdBy,
 		CreatedAt:   now,
@@ -228,6 +230,36 @@ func (s *IdeaService) GetProjectIdeas(projectID int, status string, page, pageSi
 		ideas, total, err = s.ideaRepo.GetByProjectID(projectID, offset, pageSize)
 	}
 
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return ideas, total, nil
+}
+
+// GetIdeasByItemReference retrieves ideas linked to a specific item (e.g., service-ticket) with pagination
+func (s *IdeaService) GetIdeasByItemReference(projectID int, itemType string, itemID int, page, pageSize int, userID int) ([]Idea, int64, error) {
+	// Validate project exists
+	project, err := s.projectRepo.GetByID(projectID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if project == nil {
+		return nil, 0, errors.New("project not found")
+	}
+
+	// Check if user is a member of the project
+	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !isMember {
+		return nil, 0, errors.New("user is not a member of this project")
+	}
+
+	offset := (page - 1) * pageSize
+
+	ideas, total, err := s.ideaRepo.GetByItemReference(projectID, itemType, itemID, offset, pageSize)
 	if err != nil {
 		return nil, 0, err
 	}

@@ -158,3 +158,25 @@ func (r *IssueRepository) GetMaxRefNumByProject(projectID int) (string, error) {
 
 	return result.RefNum, err
 }
+
+// GetByItemReference returns issues for a specific item (e.g., service-ticket) with pagination
+func (r *IssueRepository) GetByItemReference(projectID int, itemType string, itemID int, offset, limit int) ([]Issue, int64, error) {
+	var issues []Issue
+	var total int64
+
+	query := r.uow.GetDB().Model(&Issue{}).
+		Where("project_id = ? AND item_type = ? AND item_id = ?", projectID, itemType, itemID)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&issues).Error
+
+	return issues, total, err
+}

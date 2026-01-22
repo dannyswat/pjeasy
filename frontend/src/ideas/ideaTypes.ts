@@ -5,6 +5,8 @@ export interface IdeaResponse {
   title: string
   description: string
   status: string // 'Open' | 'Closed'
+  itemType?: string
+  itemId?: number
   tags?: string
   createdBy: number
   createdAt: string
@@ -14,6 +16,8 @@ export interface IdeaResponse {
 export interface CreateIdeaRequest {
   title: string
   description: string
+  itemType?: string
+  itemId?: number
   tags?: string
 }
 

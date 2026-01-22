@@ -25,6 +25,8 @@ type CreateIssueRequest struct {
 	AssignedTo  int    `json:"assignedTo"`
 	SprintID    int    `json:"sprintId"`
 	Points      int    `json:"points"`
+	ItemType    string `json:"itemType"`
+	ItemID      *int   `json:"itemId"`
 	Tags        string `json:"tags"`
 }
 
@@ -57,6 +59,8 @@ type IssueResponse struct {
 	AssignedTo  int    `json:"assignedTo,omitempty"`
 	SprintID    int    `json:"sprintId,omitempty"`
 	Points      int    `json:"points"`
+	ItemType    string `json:"itemType,omitempty"`
+	ItemID      *int   `json:"itemId,omitempty"`
 	Tags        string `json:"tags,omitempty"`
 	CreatedBy   int    `json:"createdBy"`
 	CreatedAt   string `json:"createdAt"`
@@ -83,6 +87,8 @@ func toIssueResponse(issue *issues.Issue) IssueResponse {
 		AssignedTo:  issue.AssignedTo,
 		SprintID:    issue.SprintID,
 		Points:      issue.Points,
+		ItemType:    issue.ItemType,
+		ItemID:      issue.ItemID,
 		Tags:        issue.Tags,
 		CreatedBy:   issue.CreatedBy,
 		CreatedAt:   issue.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
@@ -111,7 +117,7 @@ func (h *IssueHandler) CreateIssue(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	issue, err := h.issueService.CreateIssue(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.Tags, userID)
+	issue, err := h.issueService.CreateIssue(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ItemType, req.ItemID, req.Tags, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -339,13 +345,77 @@ func (h *IssueHandler) GetMyIssues(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-// RegisterRoutes registers the issue routes
+// GetIssuesByItemReference retrieves issues linked to a specific item (e.g., service-ticket)
+func (h *IssueHandler) GetIssuesByItemReference(c echo.Context) error {
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	itemType := c.QueryParam("itemType")
+	if itemType == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "itemType is required")
+	}
+
+	itemIDStr := c.QueryParam("itemId")
+	if itemIDStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "itemId is required")
+	}
+
+	itemID, err := strconv.Atoi(itemIDStr)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid item ID")
+	}
+
+	page := 1
+	if p := c.QueryParam("page"); p != "" {
+		page, err = strconv.Atoi(p)
+		if err != nil || page < 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid page number")
+		}
+	}
+
+	pageSize := 20
+	if ps := c.QueryParam("pageSize"); ps != "" {
+		pageSize, err = strconv.Atoi(ps)
+		if err != nil || pageSize < 1 || pageSize > 100 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid page size")
+		}
+	}
+
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	issueList, total, err := h.issueService.GetIssuesByItemReference(projectID, itemType, itemID, page, pageSize, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	issuesResp := make([]IssueResponse, len(issueList))
+	for i, issue := range issueList {
+		issuesResp[i] = toIssueResponse(&issue)
+	}
+
+	response := IssuesListResponse{
+		Issues:   issuesResp,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// RegisterRoutes registers issue-related routes
 func (h *IssueHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddleware, projectMiddleware *ProjectMiddleware) {
 	issuesGroup := e.Group("/api/projects/:projectId/issues", authMiddleware.RequireAuth, projectMiddleware.RequireProjectMember)
 
 	issuesGroup.POST("", h.CreateIssue)
 	issuesGroup.GET("", h.GetProjectIssues)
 	issuesGroup.GET("/my-issues", h.GetMyIssues)
+	issuesGroup.GET("/by-item", h.GetIssuesByItemReference)
 
 	issueItem := e.Group("/api/issues/:id", authMiddleware.RequireAuth)
 

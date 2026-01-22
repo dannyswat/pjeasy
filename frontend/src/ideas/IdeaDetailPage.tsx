@@ -8,6 +8,7 @@ import EditIdeaForm from './EditIdeaForm'
 import Comments from '../comments/Comments'
 import RelatedTasks from '../tasks/RelatedTasks'
 import { useUpdateIdea } from './useUpdateIdea'
+import ItemLink from '../components/ItemLink'
 
 export default function IdeaDetailPage() {
   const { projectId, ideaId } = useParams<{ projectId: string; ideaId: string }>()
@@ -224,6 +225,13 @@ export default function IdeaDetailPage() {
                     </span>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Related Item */}
+            {idea.itemType && idea.itemId && (
+              <div className="mb-4">
+                <ItemLink itemType={idea.itemType} itemId={idea.itemId} />
               </div>
             )}
 

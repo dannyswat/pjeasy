@@ -28,7 +28,7 @@ func NewIssueService(issueRepo *IssueRepository, memberRepo *projects.ProjectMem
 }
 
 // CreateIssue creates a new issue
-func (s *IssueService) CreateIssue(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, tags string, createdBy int) (*Issue, error) {
+func (s *IssueService) CreateIssue(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, itemType string, itemID *int, tags string, createdBy int) (*Issue, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -91,6 +91,8 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 		AssignedTo:  assignedTo,
 		SprintID:    sprintID,
 		Points:      points,
+		ItemType:    itemType,
+		ItemID:      itemID,
 		Tags:        tags,
 		CreatedBy:   createdBy,
 		CreatedAt:   now,
@@ -343,4 +345,34 @@ func (s *IssueService) GetMyIssues(projectID int, userID int, page, pageSize int
 
 	offset := (page - 1) * pageSize
 	return s.issueRepo.GetByProjectIDAndAssignee(projectID, userID, offset, pageSize)
+}
+
+// GetIssuesByItemReference retrieves issues linked to a specific item (e.g., service-ticket) with pagination
+func (s *IssueService) GetIssuesByItemReference(projectID int, itemType string, itemID int, page, pageSize int, userID int) ([]Issue, int64, error) {
+	// Validate project exists
+	project, err := s.projectRepo.GetByID(projectID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if project == nil {
+		return nil, 0, errors.New("project not found")
+	}
+
+	// Check if user is a member of the project
+	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	if err != nil {
+		return nil, 0, err
+	}
+	if !isMember {
+		return nil, 0, errors.New("user is not a member of this project")
+	}
+
+	offset := (page - 1) * pageSize
+
+	issues, total, err := s.issueRepo.GetByItemReference(projectID, itemType, itemID, offset, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return issues, total, nil
 }

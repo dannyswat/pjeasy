@@ -16,7 +16,9 @@ type Issue struct {
 	AssignedTo  int       `gorm:"index" json:"assignedTo,omitempty"`
 	SprintID    int       `gorm:"index" json:"sprintId,omitempty"`
 	Points      int       `gorm:"default:0" json:"points"`
-	Tags        string    `gorm:"type:text" json:"tags,omitempty"` // Comma-separated tags
+	ItemType    string    `gorm:"size:50;index:idx_issue_item" json:"itemType,omitempty"` // Type of related item (e.g., "service-tickets")
+	ItemID      *int      `gorm:"index:idx_issue_item" json:"itemId,omitempty"`           // ID of related item
+	Tags        string    `gorm:"type:text" json:"tags,omitempty"`                        // Comma-separated tags
 	CreatedBy   int       `gorm:"not null;index" json:"createdBy"`
 	CreatedAt   time.Time `gorm:"not null" json:"createdAt"`
 	UpdatedAt   time.Time `gorm:"not null" json:"updatedAt"`

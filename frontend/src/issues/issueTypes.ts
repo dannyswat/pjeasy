@@ -9,6 +9,8 @@ export interface IssueResponse {
   assignedTo?: number
   sprintId?: number
   points: number
+  itemType?: string
+  itemId?: number
   tags?: string
   createdBy: number
   createdAt: string
@@ -22,6 +24,8 @@ export interface CreateIssueRequest {
   assignedTo?: number
   sprintId?: number
   points?: number
+  itemType?: string
+  itemId?: number
   tags?: string
 }
 

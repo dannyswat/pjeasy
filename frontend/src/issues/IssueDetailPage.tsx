@@ -9,6 +9,7 @@ import Comments from '../comments/Comments'
 import RelatedTasks from '../tasks/RelatedTasks'
 import { UserLabel } from '../components/UserLabel'
 import { useUpdateIssue } from './useUpdateIssue'
+import ItemLink from '../components/ItemLink'
 
 export default function IssueDetailPage() {
   const { projectId, issueId } = useParams<{ projectId: string; issueId: string }>()
@@ -279,6 +280,11 @@ export default function IssueDetailPage() {
                   <div>
                     <span className="text-gray-500">Sprint ID:</span>
                     <span className="ml-2 text-gray-900">{issue.sprintId}</span>
+                  </div>
+                )}
+                {issue.itemType && issue.itemId && (
+                  <div className="col-span-2">
+                    <ItemLink itemType={issue.itemType} itemId={issue.itemId} />
                   </div>
                 )}
               </div>

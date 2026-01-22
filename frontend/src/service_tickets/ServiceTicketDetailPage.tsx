@@ -7,6 +7,15 @@ import { useUpdateServiceTicket } from './useUpdateServiceTicket'
 import { ServiceTicketStatus, ServiceTicketPriority, ServiceTicketStatusDisplay, ServiceTicketPriorityDisplay, type ServiceTicketResponse } from './serviceTicketTypes'
 import EditServiceTicketForm from './EditServiceTicketForm'
 import Comments from '../comments/Comments'
+import { useCreateTask } from '../tasks/useCreateTask'
+import { useCreateIssue } from '../issues/useCreateIssue'
+import { useCreateIdea } from '../ideas/useCreateIdea'
+import CreateTaskForm from '../tasks/CreateTaskForm'
+import CreateIssueForm from '../issues/CreateIssueForm'
+import CreateIdeaForm from '../ideas/CreateIdeaForm'
+import RelatedTasks from '../tasks/RelatedTasks'
+import RelatedIssues from '../issues/RelatedIssues'
+import RelatedIdeas from '../ideas/RelatedIdeas'
 
 export default function ServiceTicketDetailPage() {
   const { projectId, ticketId } = useParams<{ projectId: string; ticketId: string }>()
@@ -15,12 +24,19 @@ export default function ServiceTicketDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [editingTicket, setEditingTicket] = useState<ServiceTicketResponse | null>(null)
   const [showDeleteMenu, setShowDeleteMenu] = useState(false)
+  const [showFollowUpMenu, setShowFollowUpMenu] = useState(false)
+  const [showCreateTaskForm, setShowCreateTaskForm] = useState(false)
+  const [showCreateIssueForm, setShowCreateIssueForm] = useState(false)
+  const [showCreateIdeaForm, setShowCreateIdeaForm] = useState(false)
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
   const ticketIdNum = ticketId ? parseInt(ticketId) : 0
   const updateTicketStatus = useUpdateServiceTicketStatus()
   const deleteTicket = useDeleteServiceTicket()
   const updateTicket = useUpdateServiceTicket()
+  const createTask = useCreateTask()
+  const createIssue = useCreateIssue()
+  const createIdea = useCreateIdea()
 
   const fetchTicket = async () => {
     try {
@@ -182,6 +198,64 @@ export default function ServiceTicketDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                   </button>
+                  
+                  {/* Follow-up Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowFollowUpMenu(!showFollowUpMenu)}
+                      onBlur={() => setTimeout(() => setShowFollowUpMenu(false), 200)}
+                      className="p-2 text-indigo-600 hover:bg-indigo-50 rounded transition"
+                      title="Follow-up"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </button>
+                    {showFollowUpMenu && (
+                      <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-lg z-20 w-48">
+                        <div className="p-2">
+                          <p className="text-xs font-medium text-gray-500 mb-2 px-2">Create Follow-up</p>
+                          <button
+                            onClick={() => {
+                              setShowFollowUpMenu(false)
+                              setShowCreateTaskForm(true)
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-indigo-50 rounded transition flex items-center"
+                          >
+                            <svg className="w-3.5 h-3.5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                            </svg>
+                            Create Task
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowFollowUpMenu(false)
+                              setShowCreateIssueForm(true)
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-red-50 rounded transition flex items-center"
+                          >
+                            <svg className="w-3.5 h-3.5 mr-2 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Create Issue
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowFollowUpMenu(false)
+                              setShowCreateIdeaForm(true)
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-emerald-50 rounded transition flex items-center"
+                          >
+                            <svg className="w-3.5 h-3.5 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                            Create Idea
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   <button
                     onClick={() => setShowDeleteMenu(!showDeleteMenu)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded transition relative"
@@ -222,7 +296,12 @@ export default function ServiceTicketDetailPage() {
             {/* Description */}
             <div className="mb-4">
               <h3 className="text-sm font-medium text-gray-700 mb-1">Description</h3>
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">{ticket.description || 'No description provided'}</p>
+              <div 
+                className="text-sm text-gray-600 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: ticket.description || '<p class="text-gray-500 italic">No description provided</p>' 
+                }}
+              />
             </div>
 
             {/* Status Change Section */}
@@ -249,7 +328,111 @@ export default function ServiceTicketDetailPage() {
 
           {/* Comments Section */}
           <Comments itemType="ServiceTicket" itemId={ticket.id} />
+
+          {/* Related Tasks Section */}
+          <RelatedTasks 
+            projectId={projectIdNum}
+            itemType="service-tickets"
+            itemId={ticket.id}
+            itemRefNum={ticket.refNum}
+            itemTitle={ticket.title}
+            itemPriority={ticket.priority}
+          />
+
+          {/* Related Issues Section */}
+          <RelatedIssues 
+            projectId={projectIdNum}
+            itemType="service-tickets"
+            itemId={ticket.id}
+            itemRefNum={ticket.refNum}
+            itemTitle={ticket.title}
+            itemPriority={ticket.priority}
+          />
+
+          {/* Related Ideas Section */}
+          <RelatedIdeas 
+            projectId={projectIdNum}
+            itemType="service-tickets"
+            itemId={ticket.id}
+            itemRefNum={ticket.refNum}
+            itemTitle={ticket.title}
+          />
         </div>
+      )}
+
+      {/* Create Task Modal */}
+      {showCreateTaskForm && ticket && (
+        <CreateTaskForm
+          projectId={projectIdNum}
+          defaultTitle={`[${ticket.refNum}] Follow-up: ${ticket.title}`}
+          defaultDescription={`<p>Follow-up task for service ticket: <strong>${ticket.title}</strong></p>`}
+          defaultPriority={ticket.priority}
+          onSubmit={async (data) => {
+            try {
+              await createTask.mutateAsync({
+                projectId: projectIdNum,
+                ...data,
+                itemType: 'service-tickets',
+                itemId: ticket.id,
+              })
+              setShowCreateTaskForm(false)
+            } catch (error) {
+              console.error('Failed to create task:', error)
+            }
+          }}
+          onCancel={() => setShowCreateTaskForm(false)}
+          isPending={createTask.isPending}
+        />
+      )}
+
+      {/* Create Issue Modal */}
+      {showCreateIssueForm && ticket && (
+        <CreateIssueForm
+          projectId={projectIdNum}
+          onSubmit={async (data) => {
+            try {
+              await createIssue.mutateAsync({
+                projectId: projectIdNum,
+                title: `[${ticket.refNum}] ${data.title}`,
+                description: data.description || `<p>Issue created from service ticket: <strong>${ticket.title}</strong></p>`,
+                priority: data.priority,
+                assignedTo: data.assignedTo,
+                points: data.points,
+                itemType: 'service-tickets',
+                itemId: ticket.id,
+                tags: data.tags,
+              })
+              setShowCreateIssueForm(false)
+            } catch (error) {
+              console.error('Failed to create issue:', error)
+            }
+          }}
+          onCancel={() => setShowCreateIssueForm(false)}
+          isPending={createIssue.isPending}
+        />
+      )}
+
+      {/* Create Idea Modal */}
+      {showCreateIdeaForm && ticket && (
+        <CreateIdeaForm
+          onSubmit={async (data) => {
+            try {
+              await createIdea.mutateAsync({
+                projectId: projectIdNum,
+                title: `[${ticket.refNum}] ${data.title}`,
+                description: data.description || `<p>Idea from service ticket: <strong>${ticket.title}</strong></p>`,
+                itemType: 'service-tickets',
+                itemId: ticket.id,
+                tags: data.tags,
+              })
+              setShowCreateIdeaForm(false)
+            } catch (error) {
+              console.error('Failed to create idea:', error)
+            }
+          }}
+          onCancel={() => setShowCreateIdeaForm(false)}
+          isPending={createIdea.isPending}
+        />
       )}
     </div>
   )
