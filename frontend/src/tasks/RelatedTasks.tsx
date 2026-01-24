@@ -119,7 +119,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
     switch (status) {
       case 'Completed':
         return 'bg-green-50 text-green-700 border-green-200'
-      case 'InProgress':
+      case 'In Progress':
         return 'bg-blue-50 text-blue-700 border-blue-200'
       case 'Blocked':
         return 'bg-red-50 text-red-700 border-red-200'

@@ -4,6 +4,7 @@ import { useListTasks } from './useListTasks'
 import { useCreateTask } from './useCreateTask'
 import { useUpdateTask } from './useUpdateTask'
 import { useUpdateTaskStatus } from './useUpdateTaskStatus'
+import { useUpdateTaskAssignee } from './useUpdateTaskAssignee'
 import { useDeleteTask } from './useDeleteTask'
 import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from './taskTypes'
 import CreateTaskForm from './CreateTaskForm'
@@ -11,6 +12,8 @@ import EditTaskForm from './EditTaskForm'
 import Comments from '../comments/Comments'
 import ItemLink from '../components/ItemLink'
 import { UserLabel } from '../components/UserLabel'
+import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import { useMeApi } from '../auth/useMeApi'
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -22,13 +25,17 @@ export default function TasksPage() {
   const [viewingTask, setViewingTask] = useState<TaskResponse | null>(null)
   const [quickCreateTitle, setQuickCreateTitle] = useState('')
   const [showDeleteMenu, setShowDeleteMenu] = useState(false)
+  const [assigningTaskId, setAssigningTaskId] = useState<number | null>(null)
+  const [selectedAssignee, setSelectedAssignee] = useState<number | undefined>(undefined)
   const pageSize = 20
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
   const { tasks, total, isLoading, refetch } = useListTasks({ projectId: projectIdNum, page, pageSize, status: statusFilter })
+  const { user } = useMeApi()
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const updateTaskStatus = useUpdateTaskStatus()
+  const updateTaskAssignee = useUpdateTaskAssignee()
   const deleteTask = useDeleteTask()
 
   const totalPages = Math.ceil(total / pageSize)
@@ -139,6 +146,33 @@ export default function TasksPage() {
     } catch (error) {
       console.error('Failed to delete task:', error)
     }
+  }
+
+  const handleAssign = async (taskId: number, assigneeId: number | undefined) => {
+    try {
+      await updateTaskAssignee.mutateAsync({
+        taskId,
+        projectId: projectIdNum,
+        assigneeId,
+      })
+      setAssigningTaskId(null)
+      setSelectedAssignee(undefined)
+      refetch()
+      // If viewing task, refresh it
+      if (viewingTask?.id === taskId) {
+        const updatedTask = tasks.find(t => t.id === taskId)
+        if (updatedTask) {
+          setViewingTask(updatedTask)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to assign task:', error)
+    }
+  }
+
+  const handleAssignToMe = async (taskId: number) => {
+    if (!user) return
+    await handleAssign(taskId, user.id)
   }
 
   const getStatusColor = (status: string) => {
@@ -294,12 +328,40 @@ export default function TasksPage() {
                     <span className="ml-2 text-gray-900">{viewingTask.estimatedHours}h</span>
                   </div>
                 )}
-                {viewingTask.assigneeId && (
-                  <div>
-                    <span className="text-gray-500">Assignee:</span>
+                <div>
+                  <span className="text-gray-500">Assignee:</span>
+                  {viewingTask.assigneeId ? (
                     <span className="ml-2 text-gray-900"><UserLabel userId={viewingTask.assigneeId} /></span>
-                  </div>
-                )}
+                  ) : (
+                    <span className="ml-2 text-gray-500 italic">Unassigned</span>
+                  )}
+                  {!viewingTask.assigneeId && (
+                    <div className="mt-2 flex items-center space-x-2">
+                      <ProjectMemberSelect
+                        projectId={projectIdNum}
+                        value={selectedAssignee}
+                        onChange={setSelectedAssignee}
+                        placeholder="Select member"
+                        showAssignToMe={false}
+                      />
+                      <button
+                        onClick={() => handleAssign(viewingTask.id, selectedAssignee)}
+                        disabled={!selectedAssignee}
+                        className="px-3 py-2 text-xs font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Assign
+                      </button>
+                      {user && (
+                        <button
+                          onClick={() => handleAssignToMe(viewingTask.id)}
+                          className="px-3 py-2 text-xs font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                        >
+                          Assign to me
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
                 {viewingTask.deadline && (
                   <div>
                     <span className="text-gray-500">Deadline:</span>
@@ -460,10 +522,61 @@ export default function TasksPage() {
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-3">
-                      {task.assigneeId && (
+                      {task.assigneeId ? (
                         <span className="text-xs text-gray-600">
                           👤 <UserLabel userId={task.assigneeId} />
                         </span>
+                      ) : assigningTaskId === task.id ? (
+                        <div className="flex items-center space-x-2">
+                          <ProjectMemberSelect
+                            projectId={projectIdNum}
+                            value={selectedAssignee}
+                            onChange={setSelectedAssignee}
+                            placeholder="Select"
+                            showAssignToMe={false}
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleAssign(task.id, selectedAssignee)
+                            }}
+                            disabled={!selectedAssignee}
+                            className="px-2 py-1 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition disabled:opacity-50"
+                          >
+                            Assign
+                          </button>
+                          {user && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAssignToMe(task.id)
+                              }}
+                              className="px-2 py-1 text-xs font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                            >
+                              Me
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setAssigningTaskId(null)
+                              setSelectedAssignee(undefined)
+                            }}
+                            className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setAssigningTaskId(task.id)
+                          }}
+                          className="text-xs text-gray-500 hover:text-indigo-600 transition"
+                        >
+                          👤 Unassigned
+                        </button>
                       )}
                       <button
                         onClick={(e) => {

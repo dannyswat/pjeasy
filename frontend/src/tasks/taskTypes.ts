@@ -60,8 +60,8 @@ export interface TasksListResponse {
 
 export const TaskStatus = {
   OPEN: 'Open',
-  IN_PROGRESS: 'InProgress',
-  ON_HOLD: 'OnHold',
+  IN_PROGRESS: 'In Progress',
+  ON_HOLD: 'On Hold',
   BLOCKED: 'Blocked',
   COMPLETED: 'Completed',
   CLOSED: 'Closed',
