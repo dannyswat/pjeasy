@@ -12,7 +12,7 @@ export default function ServiceTicketsPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>(ServiceTicketStatus.OPEN)
+  const [statusFilter, setStatusFilter] = useState<string>(ServiceTicketStatus.NEW)
   const [priorityFilter, setPriorityFilter] = useState<string>('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingTicket, setEditingTicket] = useState<ServiceTicketResponse | null>(null)
@@ -149,6 +149,7 @@ export default function ServiceTicketsPage() {
           className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         >
           <option value="">All</option>
+          <option value={ServiceTicketStatus.NEW}>New</option>
           <option value={ServiceTicketStatus.OPEN}>Open</option>
           <option value={ServiceTicketStatus.FULFILLED}>Fulfilled</option>
           <option value={ServiceTicketStatus.CLOSED}>Closed</option>
@@ -205,7 +206,9 @@ export default function ServiceTicketsPage() {
                       <span className="text-gray-500 mr-1.5 text-xs">[{ticket.refNum}]</span><span>{ticket.title}</span>
                     </h3>
                     <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${
-                      ticket.status === ServiceTicketStatus.OPEN 
+                      ticket.status === ServiceTicketStatus.NEW
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : ticket.status === ServiceTicketStatus.OPEN 
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                         : ticket.status === ServiceTicketStatus.FULFILLED
                         ? 'bg-blue-50 text-blue-700 border-blue-200'

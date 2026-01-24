@@ -11,7 +11,7 @@ type ServiceTicket struct {
 	ProjectID   int       `gorm:"not null;index;uniqueIndex:idx_project_refnum,composite:refNum" json:"projectId"`
 	Title       string    `gorm:"not null;size:255" json:"title"`
 	Description string    `gorm:"type:text" json:"description"`
-	Status      string    `gorm:"not null;size:50;default:'Open'" json:"status"`     // Open, Fulfilled, Closed
+	Status      string    `gorm:"not null;size:50;default:'New'" json:"status"`      // New, Open, Fulfilled, Closed
 	Priority    string    `gorm:"not null;size:50;default:'Normal'" json:"priority"` // Immediate, Urgent, High, Normal, Low
 	CreatedBy   int       `gorm:"not null;index" json:"createdBy"`
 	CreatedAt   time.Time `gorm:"not null" json:"createdAt"`
@@ -25,6 +25,7 @@ func (ServiceTicket) TableName() string {
 
 // ServiceTicketStatus constants
 const (
+	ServiceTicketStatusNew       = "New"
 	ServiceTicketStatusOpen      = "Open"
 	ServiceTicketStatusFulfilled = "Fulfilled"
 	ServiceTicketStatusClosed    = "Closed"
@@ -41,7 +42,8 @@ const (
 
 // IsValidStatus checks if the provided status is valid
 func IsValidStatus(status string) bool {
-	return status == ServiceTicketStatusOpen ||
+	return status == ServiceTicketStatusNew ||
+		status == ServiceTicketStatusOpen ||
 		status == ServiceTicketStatusFulfilled ||
 		status == ServiceTicketStatusClosed
 }

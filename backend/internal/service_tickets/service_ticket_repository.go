@@ -104,3 +104,12 @@ func (r *ServiceTicketRepository) GetByProjectIDWithFilters(projectID int, statu
 
 	return tickets, total, err
 }
+
+// CountByStatus returns the count of service tickets with a specific status for a project
+func (r *ServiceTicketRepository) CountByStatus(projectID int, status string) (int64, error) {
+	var count int64
+	err := r.uow.GetDB().Model(&ServiceTicket{}).
+		Where("project_id = ? AND status = ?", projectID, status).
+		Count(&count).Error
+	return count, err
+}

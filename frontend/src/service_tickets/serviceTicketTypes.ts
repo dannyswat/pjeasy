@@ -4,7 +4,7 @@ export interface ServiceTicketResponse {
   projectId: number
   title: string
   description: string
-  status: string // 'Open' | 'Fulfilled' | 'Closed'
+  status: string // 'New' | 'Open' | 'Fulfilled' | 'Closed'
   priority: string // 'Immediate' | 'Urgent' | 'High' | 'Normal' | 'Low'
   createdBy: number
   createdAt: string
@@ -35,6 +35,7 @@ export interface ServiceTicketsListResponse {
 }
 
 export const ServiceTicketStatus = {
+  NEW: 'New',
   OPEN: 'Open',
   FULFILLED: 'Fulfilled',
   CLOSED: 'Closed',
@@ -53,6 +54,7 @@ export const ServiceTicketPriority = {
 export type ServiceTicketPriorityType = typeof ServiceTicketPriority[keyof typeof ServiceTicketPriority]
 
 export const ServiceTicketStatusDisplay: Record<string, string> = {
+  [ServiceTicketStatus.NEW]: 'New',
   [ServiceTicketStatus.OPEN]: 'Open',
   [ServiceTicketStatus.FULFILLED]: 'Fulfilled',
   [ServiceTicketStatus.CLOSED]: 'Closed',

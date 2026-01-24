@@ -7,23 +7,26 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/service_tickets"
 )
 
 type TaskService struct {
-	taskRepo     *TaskRepository
-	memberRepo   *projects.ProjectMemberRepository
-	projectRepo  *projects.ProjectRepository
-	sequenceRepo *sequences.SequenceRepository
-	uowFactory   *repositories.UnitOfWorkFactory
+	taskRepo          *TaskRepository
+	memberRepo        *projects.ProjectMemberRepository
+	projectRepo       *projects.ProjectRepository
+	sequenceRepo      *sequences.SequenceRepository
+	serviceTicketRepo *service_tickets.ServiceTicketRepository
+	uowFactory        *repositories.UnitOfWorkFactory
 }
 
-func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
+func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, serviceTicketRepo *service_tickets.ServiceTicketRepository, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
 	return &TaskService{
-		taskRepo:     taskRepo,
-		memberRepo:   memberRepo,
-		projectRepo:  projectRepo,
-		sequenceRepo: sequenceRepo,
-		uowFactory:   uowFactory,
+		taskRepo:          taskRepo,
+		memberRepo:        memberRepo,
+		projectRepo:       projectRepo,
+		sequenceRepo:      sequenceRepo,
+		serviceTicketRepo: serviceTicketRepo,
+		uowFactory:        uowFactory,
 	}
 }
 
@@ -93,6 +96,16 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 
 	if err := s.taskRepo.Create(task); err != nil {
 		return nil, err
+	}
+
+	// If task is linked to a service ticket, update the ticket status from "New" to "Open"
+	if itemType == "service-tickets" && itemID != nil {
+		ticket, err := s.serviceTicketRepo.GetByID(*itemID)
+		if err == nil && ticket != nil && ticket.Status == service_tickets.ServiceTicketStatusNew {
+			ticket.Status = service_tickets.ServiceTicketStatusOpen
+			ticket.UpdatedAt = now
+			s.serviceTicketRepo.Update(ticket)
+		}
 	}
 
 	return task, nil

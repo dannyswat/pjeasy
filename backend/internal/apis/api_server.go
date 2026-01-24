@@ -147,7 +147,7 @@ func (s *APIServer) SetupAPIServer() error {
 
 	// Initialize task service
 	taskRepo := tasks.NewTaskRepository(s.globalUOW)
-	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.uowFactory)
 
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+import { useCountNewServiceTickets } from '../service_tickets/useCountNewServiceTickets'
 
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -9,6 +10,10 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
   // Check if we're in a project context
   const projectId = params.projectId || params.id
   const isInProject = location.pathname.includes('/projects/') && projectId && projectId !== 'new'
+  const projectIdNum = projectId ? parseInt(projectId) : 0
+
+  // Get the count of new service tickets for the badge
+  const { count: newTicketsCount } = useCountNewServiceTickets(projectIdNum)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -128,7 +133,12 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                   </svg>
-                  <span>Service Tickets</span>
+                  <span className="flex-1">Service Tickets</span>
+                  {newTicketsCount > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full" title={`${newTicketsCount} new ticket(s) awaiting review`}>
+                      !
+                    </span>
+                  )}
                 </Link>
                 <div className="my-2 border-t border-gray-200"></div>
               </>

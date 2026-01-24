@@ -13,6 +13,7 @@ interface RelatedTasksProps {
   itemRefNum?: string
   itemTitle?: string
   itemPriority?: string
+  onTaskCreated?: () => void
 }
 
 // Predefined task templates for ideas
@@ -31,9 +32,9 @@ const ISSUE_TASK_TEMPLATES = [
   { title: 'Validate fixes', description: 'Test and validate that the issue has been resolved' },
 ]
 
-export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, itemTitle, itemPriority }: RelatedTasksProps) {
-  // Select templates based on item type
-  const templates = itemType === 'issues' ? ISSUE_TASK_TEMPLATES : IDEA_TASK_TEMPLATES
+export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, itemTitle, itemPriority, onTaskCreated }: RelatedTasksProps) {
+  // Select templates based on item type (no templates for service-tickets)
+  const templates = itemType === 'issues' ? ISSUE_TASK_TEMPLATES : itemType === 'ideas' ? IDEA_TASK_TEMPLATES : []
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<{ title: string; description: string } | null>(null)
@@ -52,6 +53,19 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
       description: template.description,
     })
     setShowCreateDropdown(false)
+    setShowCreateModal(true)
+  }
+
+  const handleDirectCreate = () => {
+    // For service tickets - open modal directly without template
+    const taskTitle = itemRefNum && itemTitle 
+      ? `[${itemRefNum}] Follow-up: ${itemTitle}`
+      : 'Follow-up task'
+    
+    setSelectedTemplate({
+      title: taskTitle,
+      description: '',
+    })
     setShowCreateModal(true)
   }
 
@@ -81,6 +95,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
       setShowCreateModal(false)
       setSelectedTemplate(null)
       refetch()
+      onTaskCreated?.()
     } catch (error) {
       console.error('Failed to create task:', error)
     }
@@ -119,7 +134,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
         <h3 className="text-sm font-semibold text-gray-700">Related Tasks</h3>
         <div className="relative">
           <button
-            onClick={() => setShowCreateDropdown(!showCreateDropdown)}
+            onClick={() => templates.length > 0 ? setShowCreateDropdown(!showCreateDropdown) : handleDirectCreate()}
             onBlur={() => setTimeout(() => setShowCreateDropdown(false), 200)}
             className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition flex items-center"
           >

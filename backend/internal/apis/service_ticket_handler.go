@@ -255,6 +255,7 @@ func (h *ServiceTicketHandler) RegisterRoutes(e *echo.Echo, authMiddleware *Auth
 
 	tickets.POST("", h.CreateServiceTicket)
 	tickets.GET("", h.ListServiceTickets)
+	tickets.GET("/count-new", h.CountNewServiceTickets)
 
 	ticketItem := e.Group("/api/service-tickets/:ticketId", authMiddleware.RequireAuth)
 
@@ -262,4 +263,24 @@ func (h *ServiceTicketHandler) RegisterRoutes(e *echo.Echo, authMiddleware *Auth
 	ticketItem.PUT("", h.UpdateServiceTicket)
 	ticketItem.PATCH("/status", h.UpdateServiceTicketStatus)
 	ticketItem.DELETE("", h.DeleteServiceTicket)
+}
+
+// CountNewServiceTickets returns the count of service tickets with status "New"
+func (h *ServiceTicketHandler) CountNewServiceTickets(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	count, err := h.ticketService.CountNewServiceTickets(projectID, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, map[string]int64{"count": count})
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { getSecureApi } from '../apis/fetch'
 import { useUpdateServiceTicketStatus } from './useUpdateServiceTicketStatus'
 import { useDeleteServiceTicket } from './useDeleteServiceTicket'
@@ -16,10 +17,12 @@ import CreateIdeaForm from '../ideas/CreateIdeaForm'
 import RelatedTasks from '../tasks/RelatedTasks'
 import RelatedIssues from '../issues/RelatedIssues'
 import RelatedIdeas from '../ideas/RelatedIdeas'
+import { UserLabel } from '../components/UserLabel'
 
 export default function ServiceTicketDetailPage() {
   const { projectId, ticketId } = useParams<{ projectId: string; ticketId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [ticket, setTicket] = useState<ServiceTicketResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [editingTicket, setEditingTicket] = useState<ServiceTicketResponse | null>(null)
@@ -37,6 +40,17 @@ export default function ServiceTicketDetailPage() {
   const createTask = useCreateTask()
   const createIssue = useCreateIssue()
   const createIdea = useCreateIdea()
+
+  // Refresh the new tickets badge in the menu
+  const refreshNewTicketsBadge = () => {
+    queryClient.invalidateQueries({ queryKey: ['serviceTicketsNewCount', projectIdNum] })
+  }
+
+  // Callback when a task is created for this ticket
+  const handleTaskCreated = () => {
+    fetchTicket() // Refresh ticket to get updated status
+    refreshNewTicketsBadge() // Refresh the badge in the menu
+  }
 
   const fetchTicket = async () => {
     try {
@@ -66,6 +80,7 @@ export default function ServiceTicketDetailPage() {
         status,
       })
       fetchTicket()
+      refreshNewTicketsBadge() // Refresh the badge when status changes
     } catch (error) {
       console.error('Failed to update status:', error)
     }
@@ -176,7 +191,9 @@ export default function ServiceTicketDetailPage() {
                   <h1 className="text-xl font-semibold text-gray-900">{ticket.title}</h1>
                   <span className="text-xs text-gray-500">[{ticket.refNum}]</span>
                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${
-                    ticket.status === ServiceTicketStatus.OPEN 
+                    ticket.status === ServiceTicketStatus.NEW
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : ticket.status === ServiceTicketStatus.OPEN 
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
                       : ticket.status === ServiceTicketStatus.FULFILLED
                       ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -288,7 +305,8 @@ export default function ServiceTicketDetailPage() {
               </div>
               
               <div className="flex items-center space-x-4 text-xs text-gray-500 mb-3">
-                <span>Created {new Date(ticket.createdAt).toLocaleDateString()}</span>
+                <span>Created by <span className="font-medium text-gray-700"><UserLabel userId={ticket.createdBy} /></span></span>
+                <span>on {new Date(ticket.createdAt).toLocaleDateString()}</span>
                 <span>Updated {new Date(ticket.updatedAt).toLocaleDateString()}</span>
               </div>
             </div>
@@ -308,7 +326,7 @@ export default function ServiceTicketDetailPage() {
             <div className="border-t pt-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Change Status</h3>
               <div className="flex space-x-2">
-                {[ServiceTicketStatus.OPEN, ServiceTicketStatus.FULFILLED, ServiceTicketStatus.CLOSED].map((status) => (
+                {[ServiceTicketStatus.NEW, ServiceTicketStatus.OPEN, ServiceTicketStatus.FULFILLED, ServiceTicketStatus.CLOSED].map((status) => (
                   <button
                     key={status}
                     onClick={() => handleStatusChange(status)}
@@ -337,6 +355,7 @@ export default function ServiceTicketDetailPage() {
             itemRefNum={ticket.refNum}
             itemTitle={ticket.title}
             itemPriority={ticket.priority}
+            onTaskCreated={handleTaskCreated}
           />
 
           {/* Related Issues Section */}
@@ -376,6 +395,7 @@ export default function ServiceTicketDetailPage() {
                 itemId: ticket.id,
               })
               setShowCreateTaskForm(false)
+              handleTaskCreated() // Refresh ticket status and badge
             } catch (error) {
               console.error('Failed to create task:', error)
             }
@@ -403,6 +423,7 @@ export default function ServiceTicketDetailPage() {
                 tags: data.tags,
               })
               setShowCreateIssueForm(false)
+              fetchTicket() // Refresh the page to show the new related issue
             } catch (error) {
               console.error('Failed to create issue:', error)
             }

@@ -75,7 +75,7 @@ func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, descrip
 		ProjectID:   projectID,
 		Title:       title,
 		Description: description,
-		Status:      ServiceTicketStatusOpen,
+		Status:      ServiceTicketStatusNew,
 		Priority:    priority,
 		CreatedBy:   createdBy,
 		CreatedAt:   now,
@@ -227,4 +227,18 @@ func (s *ServiceTicketService) ListServiceTickets(projectID, page, pageSize int,
 	offset := (page - 1) * pageSize
 
 	return s.ticketRepo.GetByProjectIDWithFilters(projectID, status, priority, sortBy, offset, pageSize)
+}
+
+// CountNewServiceTickets returns the count of service tickets with status "New" for a project
+func (s *ServiceTicketService) CountNewServiceTickets(projectID int, userID int) (int64, error) {
+	// Check if user has access to the project
+	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	if err != nil {
+		return 0, err
+	}
+	if !isMember {
+		return 0, errors.New("user does not have access to this project")
+	}
+
+	return s.ticketRepo.CountByStatus(projectID, ServiceTicketStatusNew)
 }
