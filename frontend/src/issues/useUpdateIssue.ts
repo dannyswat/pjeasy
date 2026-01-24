@@ -11,7 +11,7 @@ export function useUpdateIssue() {
   const queryClient = useQueryClient()
 
   return useMutation<IssueResponse, Error, UpdateIssueParams>({
-    mutationFn: async ({ issueId, projectId, ...request }: UpdateIssueParams) => {
+    mutationFn: async ({ issueId, ...request }: UpdateIssueParams) => {
       return fetchApi<IssueResponse>(`/api/issues/${issueId}`, {
         method: 'PUT',
         headers: {
@@ -20,7 +20,7 @@ export function useUpdateIssue() {
         body: JSON.stringify(request),
       }, true)
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['issues', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['issue', variables.issueId] })
     },

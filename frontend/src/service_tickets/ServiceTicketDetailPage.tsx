@@ -17,6 +17,7 @@ import CreateIdeaForm from '../ideas/CreateIdeaForm'
 import RelatedTasks from '../tasks/RelatedTasks'
 import RelatedIssues from '../issues/RelatedIssues'
 import RelatedIdeas from '../ideas/RelatedIdeas'
+import RelatedFeatures from '../features/RelatedFeatures'
 import { UserLabel } from '../components/UserLabel'
 
 export default function ServiceTicketDetailPage() {
@@ -375,6 +376,16 @@ export default function ServiceTicketDetailPage() {
             itemId={ticket.id}
             itemRefNum={ticket.refNum}
             itemTitle={ticket.title}
+          />
+
+          {/* Related Features Section */}
+          <RelatedFeatures 
+            projectId={projectIdNum}
+            itemType="service-tickets"
+            itemId={ticket.id}
+            itemRefNum={ticket.refNum}
+            itemTitle={ticket.title}
+            itemPriority={ticket.priority}
           />
         </div>
       )}

@@ -17,6 +17,8 @@ import { useEffect } from 'react'
 import IssueDetailPage from './issues/IssueDetailPage'
 import IdeaDetailPage from './ideas/IdeaDetailPage'
 import ServiceTicketDetailPage from './service_tickets/ServiceTicketDetailPage'
+import FeaturesPage from './features/FeaturesPage'
+import FeatureDetailPage from './features/FeatureDetailPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -175,6 +177,26 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <IssueDetailPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/features"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <FeaturesPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/features/:featureId"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <FeatureDetailPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

@@ -7,6 +7,7 @@ import { type IdeaResponse } from './ideaTypes'
 import EditIdeaForm from './EditIdeaForm'
 import Comments from '../comments/Comments'
 import RelatedTasks from '../tasks/RelatedTasks'
+import RelatedFeatures from '../features/RelatedFeatures'
 import { useUpdateIdea } from './useUpdateIdea'
 import ItemLink from '../components/ItemLink'
 
@@ -256,6 +257,15 @@ export default function IdeaDetailPage() {
 
             {/* Related Tasks Section */}
             <RelatedTasks 
+              projectId={projectIdNum} 
+              itemType="ideas" 
+              itemId={idea.id}
+              itemRefNum={idea.refNum}
+              itemTitle={idea.title}
+            />
+
+            {/* Related Features Section */}
+            <RelatedFeatures 
               projectId={projectIdNum} 
               itemType="ideas" 
               itemId={idea.id}

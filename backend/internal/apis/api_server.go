@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/comments"
+	"github.com/dannyswat/pjeasy/internal/features"
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
@@ -33,6 +34,7 @@ type APIServer struct {
 	projectService       *projects.ProjectService
 	ideaService          *ideas.IdeaService
 	issueService         *issues.IssueService
+	featureService       *features.FeatureService
 	serviceTicketService *service_tickets.ServiceTicketService
 	commentService       *comments.CommentService
 	sequenceService      *sequences.SequenceService
@@ -44,6 +46,7 @@ type APIServer struct {
 	projectHandler       *ProjectHandler
 	ideaHandler          *IdeaHandler
 	issueHandler         *IssueHandler
+	featureHandler       *FeatureHandler
 	serviceTicketHandler *ServiceTicketHandler
 	commentHandler       *CommentHandler
 	sequenceHandler      *SequenceHandler
@@ -93,6 +96,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&projects.ProjectMember{},
 		&ideas.Idea{},
 		&issues.Issue{},
+		&features.Feature{},
 		&service_tickets.ServiceTicket{},
 		&comments.Comment{},
 		&sequences.Sequence{},
@@ -137,6 +141,10 @@ func (s *APIServer) SetupAPIServer() error {
 	issueRepo := issues.NewIssueRepository(s.globalUOW)
 	s.issueService = issues.NewIssueService(issueRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
 
+	// Initialize feature service
+	featureRepo := features.NewFeatureRepository(s.globalUOW)
+	s.featureService = features.NewFeatureService(featureRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+
 	// Initialize service ticket service
 	serviceTicketRepo := service_tickets.NewServiceTicketRepository(s.globalUOW)
 	s.serviceTicketService = service_tickets.NewServiceTicketService(serviceTicketRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
@@ -156,6 +164,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.projectHandler = NewProjectHandler(s.projectService)
 	s.ideaHandler = NewIdeaHandler(s.ideaService)
 	s.issueHandler = NewIssueHandler(s.issueService)
+	s.featureHandler = NewFeatureHandler(s.featureService)
 	s.serviceTicketHandler = NewServiceTicketHandler(s.serviceTicketService)
 	s.commentHandler = NewCommentHandler(s.commentService)
 	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
@@ -170,6 +179,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.projectHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.ideaHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.issueHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.featureHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.serviceTicketHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
