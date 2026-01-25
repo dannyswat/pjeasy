@@ -19,6 +19,7 @@ import IdeaDetailPage from './ideas/IdeaDetailPage'
 import ServiceTicketDetailPage from './service_tickets/ServiceTicketDetailPage'
 import FeaturesPage from './features/FeaturesPage'
 import FeatureDetailPage from './features/FeatureDetailPage'
+import WikiPage from './wiki/WikiPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -197,6 +198,26 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <FeatureDetailPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/wiki"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <WikiPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/wiki/:pageId"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <WikiPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

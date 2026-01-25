@@ -10,6 +10,7 @@ import RelatedTasks from '../tasks/RelatedTasks'
 import { UserLabel } from '../components/UserLabel'
 import { useUpdateIssue } from './useUpdateIssue'
 import ItemLink from '../components/ItemLink'
+import WikiPageChanges from '../wiki/WikiPageChanges'
 
 export default function IssueDetailPage() {
   const { projectId, issueId } = useParams<{ projectId: string; issueId: string }>()
@@ -331,6 +332,14 @@ export default function IssueDetailPage() {
               itemRefNum={issue.refNum}
               itemTitle={issue.title}
               itemPriority={issue.priority}
+            />
+
+            {/* Wiki Page Changes Section */}
+            <WikiPageChanges
+              projectId={projectIdNum}
+              itemType="issue"
+              itemId={issue.id}
+              itemRefNum={issue.refNum}
             />
 
             {/* Comments Section */}

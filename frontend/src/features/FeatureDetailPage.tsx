@@ -10,6 +10,7 @@ import RelatedTasks from '../tasks/RelatedTasks'
 import { UserLabel } from '../components/UserLabel'
 import { useUpdateFeature } from './useUpdateFeature'
 import ItemLink from '../components/ItemLink'
+import WikiPageChanges from '../wiki/WikiPageChanges'
 
 export default function FeatureDetailPage() {
   const { projectId, featureId } = useParams<{ projectId: string; featureId: string }>()
@@ -357,6 +358,14 @@ export default function FeatureDetailPage() {
               itemRefNum={feature.refNum}
               itemTitle={feature.title}
               itemPriority={feature.priority}
+            />
+
+            {/* Wiki Page Changes Section */}
+            <WikiPageChanges
+              projectId={projectIdNum}
+              itemType="feature"
+              itemId={feature.id}
+              itemRefNum={feature.refNum}
             />
 
             {/* Comments Section */}
