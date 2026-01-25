@@ -188,7 +188,10 @@ export default function WikiPageChangesPanel({ pageId, onClose }: WikiPageChange
                       View snapshot
                     </summary>
                     <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-x-auto">
-                      <pre className="whitespace-pre-wrap wrap-break-word">{change.snapshot.substring(0, 500)}{change.snapshot.length > 500 ? '...' : ''}</pre>
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: change.snapshot }}
+                      />
                     </div>
                   </details>
                 </div>

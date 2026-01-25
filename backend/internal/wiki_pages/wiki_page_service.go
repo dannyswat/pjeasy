@@ -442,6 +442,7 @@ func (s *WikiPageService) CreateWikiPageChange(wikiPageID int, itemType string, 
 		ProjectID:    page.ProjectID,
 		ItemType:     itemType,
 		ItemID:       itemID,
+		Base:         page.Content,
 		BaseHash:     page.ContentHash,
 		Delta:        string(deltaJSON),
 		Snapshot:     newContent,
@@ -477,6 +478,70 @@ func (s *WikiPageService) GetWikiPageChange(changeID int, userID int) (*WikiPage
 	}
 	if !isMember {
 		return nil, errors.New("user is not a member of this project")
+	}
+
+	return change, nil
+}
+
+// UpdateWikiPageChange updates the content of a pending wiki page change
+func (s *WikiPageService) UpdateWikiPageChange(changeID int, newContent string, userID int) (*WikiPageChange, error) {
+	change, err := s.changeRepo.GetByID(changeID)
+	if err != nil {
+		return nil, err
+	}
+	if change == nil {
+		return nil, errors.New("wiki page change not found")
+	}
+
+	// Only the creator can update their change
+	if change.CreatedBy != userID {
+		return nil, errors.New("only the creator can update this change")
+	}
+
+	// Only pending changes can be updated
+	if change.Status != WikiPageChangeStatusPending {
+		return nil, errors.New("only pending changes can be updated")
+	}
+
+	// Check if user is a member of the project
+	isMember, err := s.memberRepo.IsUserMember(change.ProjectID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, errors.New("user is not a member of this project")
+	}
+
+	// Get the wiki page for base content
+	page, err := s.pageRepo.GetByID(change.WikiPageID)
+	if err != nil {
+		return nil, err
+	}
+	if page == nil {
+		return nil, errors.New("wiki page not found")
+	}
+
+	// Compute new delta using the original base content (not current page content)
+	delta, err := vchtml.Diff(change.Base, newContent, strconv.Itoa(userID))
+	if err != nil {
+		return nil, errors.New("failed to compute diff: " + err.Error())
+	}
+
+	deltaJSON, err := json.Marshal(delta)
+	if err != nil {
+		return nil, errors.New("failed to serialize delta: " + err.Error())
+	}
+
+	snapshotHash := computeHash(newContent)
+
+	// Update the change (Base and BaseHash remain unchanged)
+	change.Delta = string(deltaJSON)
+	change.Snapshot = newContent
+	change.SnapshotHash = snapshotHash
+	change.UpdatedAt = time.Now()
+
+	if err := s.changeRepo.Update(change); err != nil {
+		return nil, err
 	}
 
 	return change, nil
@@ -585,14 +650,19 @@ func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, 
 			continue
 		}
 
+		originalContent := page.Content
+		originalHash := page.ContentHash
 		currentContent := page.Content
 		currentHash := page.ContentHash
 
+		// Track which changes have been successfully merged in this batch
+		var mergedInBatch []WikiPageChange
+
 		// Apply changes sequentially
-		for _, change := range pageChanges {
+		for i, change := range pageChanges {
 			// Check if the base hash matches
 			if change.BaseHash != currentHash {
-				// Try to merge using vchtml
+				// Try to merge using vchtml Patch first
 				var delta vchtml.Delta
 				if err := json.Unmarshal([]byte(change.Delta), &delta); err != nil {
 					// Mark as conflict if we can't parse delta
@@ -604,18 +674,45 @@ func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, 
 					}
 					continue
 				}
-
+				var mergedContent string
+				var success bool
 				// Try to apply the patch
-				mergedContent, err := vchtml.Patch(currentContent, &delta)
+				mergedContent, err = vchtml.Patch(currentContent, &delta)
 				if err != nil {
-					// Mark as conflict
-					change.Status = WikiPageChangeStatusConflict
-					change.UpdatedAt = now
-					if err := txChangeRepo.Update(&change); err != nil {
-						uow.RollbackTransaction()
-						return err
+					// Patch failed, try to re-diff using stored Base and merge with change delta
+					mergedContent, success = s.tryReDiffAndMerge(change.Base, currentContent, &delta, strconv.Itoa(change.CreatedBy))
+					if !success {
+						// Re-diff merge failed, try MergeAll with original content and all deltas
+						mergedContent, success = s.tryMergeAllFallback(originalContent, originalHash, mergedInBatch, pageChanges[i:], now, txChangeRepo)
+						if !success {
+							// MergeAll failed, mark remaining changes as conflict
+							for j := i; j < len(pageChanges); j++ {
+								pageChanges[j].Status = WikiPageChangeStatusConflict
+								pageChanges[j].UpdatedAt = now
+								if err := txChangeRepo.Update(&pageChanges[j]); err != nil {
+									uow.RollbackTransaction()
+									return err
+								}
+							}
+							// Use whatever content we have so far
+							break
+						}
+
+						// MergeAll succeeded
+						currentContent = mergedContent
+						currentHash = computeHash(currentContent)
+						// Mark all remaining changes as merged
+						for j := i; j < len(pageChanges); j++ {
+							pageChanges[j].Status = WikiPageChangeStatusMerged
+							pageChanges[j].MergedAt = &now
+							pageChanges[j].UpdatedAt = now
+							if err := txChangeRepo.Update(&pageChanges[j]); err != nil {
+								uow.RollbackTransaction()
+								return err
+							}
+						}
+						break
 					}
-					continue
 				}
 
 				currentContent = mergedContent
@@ -634,6 +731,8 @@ func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, 
 				uow.RollbackTransaction()
 				return err
 			}
+
+			mergedInBatch = append(mergedInBatch, change)
 		}
 
 		// Update wiki page with merged content
@@ -649,6 +748,74 @@ func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, 
 	}
 
 	return uow.CommitTransaction()
+}
+
+// tryReDiffAndMerge attempts to merge by computing a diff from Base to current content,
+// then merging that diff with the change's delta
+func (s *WikiPageService) tryReDiffAndMerge(base string, currentContent string, changeDelta *vchtml.Delta, userID string) (string, bool) {
+	// Compute diff from the change's base to current wiki page content
+	baseToCurrent, err := vchtml.Diff(base, currentContent, userID)
+	if err != nil {
+		return "", false
+	}
+
+	// Try to merge the two deltas
+	mergedContent, _, conflicts, err := vchtml.MergeAll(base, []*vchtml.Delta{baseToCurrent, changeDelta})
+	if err != nil {
+		return "", false
+	}
+	if len(conflicts) > 0 {
+		return "", false
+	}
+
+	return mergedContent, true
+}
+
+// tryMergeAllFallback attempts to merge all changes using vchtml.MergeAll
+// Returns the merged content and success status
+func (s *WikiPageService) tryMergeAllFallback(
+	originalContent string,
+	originalHash string,
+	alreadyMerged []WikiPageChange,
+	remainingChanges []WikiPageChange,
+	now time.Time,
+	txChangeRepo *WikiPageChangeRepository,
+) (string, bool) {
+	// Collect all deltas
+	var deltas []*vchtml.Delta
+
+	// Add deltas from already merged changes in this batch
+	for _, change := range alreadyMerged {
+		var delta vchtml.Delta
+		if err := json.Unmarshal([]byte(change.Delta), &delta); err != nil {
+			return "", false
+		}
+		deltas = append(deltas, &delta)
+	}
+
+	// Add deltas from remaining changes
+	for _, change := range remainingChanges {
+		var delta vchtml.Delta
+		if err := json.Unmarshal([]byte(change.Delta), &delta); err != nil {
+			return "", false
+		}
+		deltas = append(deltas, &delta)
+	}
+
+	if len(deltas) == 0 {
+		return originalContent, true
+	}
+
+	// Try MergeAll
+	mergedContent, _, conflicts, err := vchtml.MergeAll(originalContent, deltas)
+	if err != nil {
+		return "", false
+	}
+	if len(conflicts) > 0 {
+		return "", false
+	}
+
+	return mergedContent, true
 }
 
 // ResolveConflict allows manual resolution of a conflicting change
@@ -700,6 +867,7 @@ func (s *WikiPageService) ResolveConflict(changeID int, resolvedContent string, 
 	}
 
 	change.Delta = string(deltaJSON)
+	change.Base = page.Content
 	change.BaseHash = page.ContentHash
 
 	if err := s.changeRepo.Update(change); err != nil {
@@ -736,6 +904,33 @@ func (s *WikiPageService) RejectChange(changeID int, userID int) (*WikiPageChang
 	}
 
 	return change, nil
+}
+
+// DeleteWikiPageChange deletes a pending wiki page change
+func (s *WikiPageService) DeleteWikiPageChange(changeID int, userID int) error {
+	change, err := s.changeRepo.GetByID(changeID)
+	if err != nil {
+		return err
+	}
+	if change == nil {
+		return errors.New("change not found")
+	}
+
+	// Only allow deleting pending changes
+	if change.Status != WikiPageChangeStatusPending {
+		return errors.New("only pending changes can be deleted")
+	}
+
+	// Check if user is a member of the project
+	isMember, err := s.memberRepo.IsUserMember(change.ProjectID, userID)
+	if err != nil {
+		return err
+	}
+	if !isMember {
+		return errors.New("user is not a member of this project")
+	}
+
+	return s.changeRepo.Delete(changeID)
 }
 
 // GetPendingChanges returns all pending changes for a wiki page

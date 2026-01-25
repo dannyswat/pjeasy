@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -21,11 +21,40 @@ import ImagePlugin from './plugins/ImagePlugin'
 import { ImageNode } from './nodes/ImageNode'
 import './HtmlEditor.css'
 
+export interface HtmlEditorRef {
+  resetContent: (html: string) => void
+}
+
 interface HtmlEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   minHeight?: string
+}
+
+// Plugin to expose imperative handle for resetting content
+function ResetContentPlugin({ onResetRef }: { onResetRef: (resetFn: (html: string) => void) => void }) {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    const resetContent = (html: string) => {
+      editor.update(() => {
+        const root = $getRoot()
+        root.clear()
+        
+        if (html) {
+          const parser = new DOMParser()
+          const dom = parser.parseFromString(html, 'text/html')
+          const nodes = $generateNodesFromDOM(editor, dom)
+          $insertNodes(nodes)
+        }
+      })
+    }
+
+    onResetRef(resetContent)
+  }, [editor, onResetRef])
+
+  return null
 }
 
 // Plugin to load initial HTML content
@@ -102,52 +131,71 @@ function onError(error: Error) {
   console.error('Lexical error:', error)
 }
 
-export default function HtmlEditor({
-  value,
-  onChange,
-  placeholder = 'Enter description...',
-  minHeight = '200px',
-}: HtmlEditorProps) {
-  const initialConfig = {
-    namespace: 'HtmlEditor',
-    theme,
-    onError,
-    nodes: [
-      HeadingNode,
-      QuoteNode,
-      ListNode,
-      ListItemNode,
-      LinkNode,
-      AutoLinkNode,
-      TableNode,
-      TableCellNode,
-      TableRowNode,
-      ImageNode,
-    ],
-  }
+const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
+  ({ value, onChange, placeholder = 'Enter description...', minHeight = '200px' }, ref) => {
+    const initialConfig = {
+      namespace: 'HtmlEditor',
+      theme,
+      onError,
+      nodes: [
+        HeadingNode,
+        QuoteNode,
+        ListNode,
+        ListItemNode,
+        LinkNode,
+        AutoLinkNode,
+        TableNode,
+        TableCellNode,
+        TableRowNode,
+        ImageNode,
+      ],
+    }
 
-  return (
-    <div className="html-editor-wrapper" style={{ minHeight }}>
-      <LexicalComposer initialConfig={initialConfig}>
-        <div className="html-editor-container">
-          <ToolbarPlugin />
-          <div className="editor-inner">
-            <RichTextPlugin
-              contentEditable={<ContentEditable className="editor-input" />}
-              placeholder={<div className="editor-placeholder">{placeholder}</div>}
-              ErrorBoundary={LexicalErrorBoundary}
-            />
-            <HistoryPlugin />
-            <ListPlugin />
-            <LinkPlugin />
-            <TablePlugin />
-            <TableActionMenuPlugin />
-            <ImagePlugin />
-            <LoadInitialContentPlugin value={value} />
-            <HtmlChangePlugin onChange={onChange} />
+    // Ref to store reset function
+    const resetContentRef = useRef<(html: string) => void>(null)
+
+    // Callback to set the reset function
+    const handleResetRef = useCallback((fn: (html: string) => void) => {
+      resetContentRef.current = fn
+    }, [])
+
+    // Expose imperative handle
+    useImperativeHandle(ref, () => ({
+      resetContent: (html: string) => {
+        if (resetContentRef.current) {
+          resetContentRef.current(html)
+        }
+      },
+    }))
+
+    return (
+      <div className="html-editor-wrapper" style={{ minHeight }}>
+        <LexicalComposer initialConfig={initialConfig}>
+          <div className="html-editor-container">
+            <ToolbarPlugin />
+            <div className="editor-inner">
+              <RichTextPlugin
+                contentEditable={<ContentEditable className="editor-input" />}
+                placeholder={<div className="editor-placeholder">{placeholder}</div>}
+                ErrorBoundary={LexicalErrorBoundary}
+              />
+              <HistoryPlugin />
+              <ListPlugin />
+              <LinkPlugin />
+              <TablePlugin />
+              <TableActionMenuPlugin />
+              <ImagePlugin />
+              <LoadInitialContentPlugin value={value} />
+              <HtmlChangePlugin onChange={onChange} />
+              <ResetContentPlugin onResetRef={handleResetRef} />
+            </div>
           </div>
-        </div>
-      </LexicalComposer>
-    </div>
-  )
-}
+        </LexicalComposer>
+      </div>
+    )
+  }
+)
+
+HtmlEditor.displayName = 'HtmlEditor'
+
+export default HtmlEditor

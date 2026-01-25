@@ -143,3 +143,12 @@ func (r *WikiPageChangeRepository) GetConflictingChanges(wikiPageID int) ([]Wiki
 		Find(&changes).Error
 	return changes, err
 }
+
+// GetMergedChangesByWikiPageID returns all merged changes for a wiki page ordered by merge time
+func (r *WikiPageChangeRepository) GetMergedChangesByWikiPageID(wikiPageID int) ([]WikiPageChange, error) {
+	var changes []WikiPageChange
+	err := r.uow.GetDB().Where("wiki_page_id = ? AND status = ?", wikiPageID, WikiPageChangeStatusMerged).
+		Order("merged_at ASC").
+		Find(&changes).Error
+	return changes, err
+}

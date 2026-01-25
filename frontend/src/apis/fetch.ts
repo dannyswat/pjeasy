@@ -125,7 +125,10 @@ export async function fetchApi<Type>(
       throw new Error(errorData.message || "Request failed");
     }
 
-    return await response.json();
+    const resStr = await response.text();
+    if (!resStr) return {} as Type;
+
+    return JSON.parse(resStr);
   } catch (error) {
     console.error("Fetch failed:", error);
     throw error;

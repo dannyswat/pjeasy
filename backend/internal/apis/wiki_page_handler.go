@@ -46,6 +46,10 @@ type CreateWikiPageChangeRequest struct {
 	Content  string `json:"content" validate:"required"`
 }
 
+type UpdateWikiPageChangeRequest struct {
+	Content string `json:"content" validate:"required"`
+}
+
 type ResolveConflictRequest struct {
 	Content string `json:"content" validate:"required"`
 }
@@ -468,6 +472,35 @@ func (h *WikiPageHandler) GetWikiPageChange(c echo.Context) error {
 	return c.JSON(http.StatusOK, toWikiPageChangeResponse(change))
 }
 
+// UpdateWikiPageChange updates the content of a pending wiki page change
+func (h *WikiPageHandler) UpdateWikiPageChange(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	changeID, err := strconv.Atoi(c.Param("changeId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid change ID")
+	}
+
+	var req UpdateWikiPageChangeRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	change, err := h.wikiPageService.UpdateWikiPageChange(changeID, req.Content, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, toWikiPageChangeResponse(change))
+}
+
 // ListWikiPageChanges returns changes for a wiki page
 func (h *WikiPageHandler) ListWikiPageChanges(c echo.Context) error {
 	userID, err := GetUserIDFromContext(c)
@@ -638,6 +671,25 @@ func (h *WikiPageHandler) RejectChange(c echo.Context) error {
 	return c.JSON(http.StatusOK, toWikiPageChangeResponse(change))
 }
 
+// DeleteWikiPageChange deletes a pending wiki page change
+func (h *WikiPageHandler) DeleteWikiPageChange(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	changeID, err := strconv.Atoi(c.Param("changeId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid change ID")
+	}
+
+	if err := h.wikiPageService.DeleteWikiPageChange(changeID, userID); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 // PreviewMerge previews what the merged content would look like
 func (h *WikiPageHandler) PreviewMerge(c echo.Context) error {
 	userID, err := GetUserIDFromContext(c)
@@ -684,8 +736,10 @@ func (h *WikiPageHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddl
 	wikiChanges := e.Group("/api/wiki-changes", authMiddleware.RequireAuth)
 	wikiChanges.GET("", h.GetChangesByItem)
 	wikiChanges.GET("/:changeId", h.GetWikiPageChange)
+	wikiChanges.PUT("/:changeId", h.UpdateWikiPageChange)
 	wikiChanges.POST("/:changeId/resolve", h.ResolveConflict)
 	wikiChanges.POST("/:changeId/reject", h.RejectChange)
+	wikiChanges.DELETE("/:changeId", h.DeleteWikiPageChange)
 	wikiChanges.GET("/:changeId/preview", h.PreviewMerge)
 	wikiChanges.POST("/merge", h.MergeChanges)
 }

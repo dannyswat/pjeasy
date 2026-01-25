@@ -13,6 +13,7 @@ type WikiPageChange struct {
 	ProjectID    int        `gorm:"not null;index" json:"projectId"`
 	ItemType     string     `gorm:"not null;size:50;index:idx_wiki_change_item" json:"itemType"` // "feature" or "issue"
 	ItemID       int        `gorm:"not null;index:idx_wiki_change_item" json:"itemId"`           // ID of the feature or issue
+	Base         string     `gorm:"type:text" json:"base"`                                       // Original content before the change
 	BaseHash     string     `gorm:"size:64" json:"baseHash"`                                     // Hash of base content for validation
 	Delta        string     `gorm:"type:text" json:"delta"`                                      // JSON-encoded delta (vchtml format)
 	Snapshot     string     `gorm:"type:text" json:"snapshot"`                                   // Full HTML snapshot at this change

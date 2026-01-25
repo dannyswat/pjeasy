@@ -71,6 +71,10 @@ export interface CreateWikiPageChangeRequest {
   content: string
 }
 
+export interface UpdateWikiPageChangeRequest {
+  content: string
+}
+
 export interface ResolveConflictRequest {
   content: string
 }

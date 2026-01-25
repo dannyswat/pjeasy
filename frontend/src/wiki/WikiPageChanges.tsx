@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useChangesByItem, useCreateWikiPageChange, useMergeChanges } from './useWikiPageChanges'
+import { useChangesByItem, useCreateWikiPageChange, useUpdateWikiPageChange, useMergeChanges, useDeleteWikiPageChange } from './useWikiPageChanges'
 import { useListWikiPages } from './useListWikiPages'
 import { useGetWikiPage } from './useGetWikiPage'
 import { WikiPageChangeStatus, WikiPageChangeStatusDisplay, type WikiPageChangeResponse } from './wikiTypes'
 import { UserLabel } from '../components/UserLabel'
-import HtmlEditor from '../components/HtmlEditor'
+import HtmlEditor, { type HtmlEditorRef } from '../components/HtmlEditor'
 
 interface WikiPageChangesProps {
   projectId: number
@@ -18,24 +18,29 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
   const navigate = useNavigate()
   const [isExpanded, setIsExpanded] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingChange, setEditingChange] = useState<WikiPageChangeResponse | null>(null)
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null)
   const [content, setContent] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const editorRef = useRef<HtmlEditorRef>(null)
 
   const { changes, isLoading, refetch } = useChangesByItem(itemType, itemId)
   const { wikiPages } = useListWikiPages({ projectId, page: 1, pageSize: 100 })
   const { wikiPage: selectedPage, isLoading: isLoadingContent } = useGetWikiPage(selectedPageId || 0)
   const createChange = useCreateWikiPageChange()
+  const updateChange = useUpdateWikiPageChange()
   const mergeChanges = useMergeChanges()
+  const deleteChange = useDeleteWikiPageChange()
 
-  // Preload content when a wiki page is selected
+  // Preload content when a wiki page is selected (for create mode)
   useEffect(() => {
-    if (selectedPageId && selectedPage) {
-        console.log('Selected page content loaded:', selectedPage)
-      setContent(selectedPage.content || '')
-
+    if (selectedPageId && selectedPage && !editingChange) {
+      const newContent = selectedPage.content || ''
+      setContent(newContent)
+      // Reset the editor to properly clear internal state
+      editorRef.current?.resetContent(newContent)
     }
-  }, [selectedPageId, selectedPage])
+  }, [selectedPageId, selectedPage, editingChange])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -97,6 +102,51 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
     }
   }
 
+  const handleEditChange = (change: WikiPageChangeResponse) => {
+    setEditingChange(change)
+    setContent(change.snapshot)
+    setShowCreateForm(true)
+    setError(null)
+    // Reset the editor with the change's content
+    setTimeout(() => {
+      editorRef.current?.resetContent(change.snapshot)
+    }, 0)
+  }
+
+  const handleUpdateChange = async () => {
+    if (!editingChange) return
+    if (!content.trim()) {
+      setError('Content is required')
+      return
+    }
+
+    setError(null)
+    try {
+      await updateChange.mutateAsync({
+        changeId: editingChange.id,
+        itemType: editingChange.itemType,
+        itemId: editingChange.itemId,
+        data: {
+          content: content.trim(),
+        },
+      })
+      setShowCreateForm(false)
+      setEditingChange(null)
+      setContent('')
+      refetch()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update wiki change')
+    }
+  }
+
+  const handleCancelForm = () => {
+    setShowCreateForm(false)
+    setEditingChange(null)
+    setContent('')
+    setSelectedPageId(null)
+    setError(null)
+  }
+
   const pendingCount = changes.filter(c => c.status === WikiPageChangeStatus.PENDING).length
   const conflictCount = changes.filter(c => c.status === WikiPageChangeStatus.CONFLICT).length
 
@@ -147,11 +197,11 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
 
       {isExpanded && (
         <div className="space-y-4">
-          {/* Create Form */}
+          {/* Create/Edit Form */}
           {showCreateForm && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-900 mb-3">
-                Propose Wiki Change for {itemRefNum}
+                {editingChange ? `Edit Wiki Change #${editingChange.id}` : `Propose Wiki Change for ${itemRefNum}`}
               </h4>
               
               {error && (
@@ -161,6 +211,8 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
               )}
 
               <div className="space-y-3">
+                {/* Wiki Page selector - only show when creating */}
+                {!editingChange && (
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Wiki Page <span className="text-red-500">*</span>
@@ -201,18 +253,20 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
                     </p>
                   )}
                 </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
                     Content <span className="text-red-500">*</span>
                   </label>
-                  {isLoadingContent ? (
+                  {isLoadingContent && !editingChange ? (
                     <div className="flex items-center justify-center py-8 border border-gray-300 rounded bg-gray-50">
                       <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
                       <span className="ml-2 text-sm text-gray-600">Loading content...</span>
                     </div>
                   ) : (
                     <HtmlEditor
+                      ref={editorRef}
                       value={content}
                       onChange={setContent}
                       placeholder="Enter the wiki content changes..."
@@ -224,24 +278,30 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowCreateForm(false)
-                      setContent('')
-                      setSelectedPageId(null)
-                      setError(null)
-                    }}
+                    onClick={handleCancelForm}
                     className="px-3 py-1.5 text-sm text-gray-700 border border-gray-300 rounded hover:bg-gray-50 transition"
                   >
                     Cancel
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleCreateChange}
-                    disabled={createChange.isPending}
-                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
-                  >
-                    {createChange.isPending ? 'Creating...' : 'Create Change'}
-                  </button>
+                  {editingChange ? (
+                    <button
+                      type="button"
+                      onClick={handleUpdateChange}
+                      disabled={updateChange.isPending}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      {updateChange.isPending ? 'Updating...' : 'Update Change'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleCreateChange}
+                      disabled={createChange.isPending}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
+                    >
+                      {createChange.isPending ? 'Creating...' : 'Create Change'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -287,13 +347,41 @@ export default function WikiPageChanges({ projectId, itemType, itemId, itemRefNu
                     </div>
                     <div className="flex items-center gap-2">
                       {change.status === WikiPageChangeStatus.PENDING && (
-                        <button
-                          onClick={() => handleMerge(change)}
-                          disabled={mergeChanges.isPending}
-                          className="text-xs text-green-600 hover:text-green-700 font-medium"
-                        >
-                          Merge
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleEditChange(change)}
+                            className="text-xs text-gray-600 hover:text-gray-700 font-medium"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleMerge(change)}
+                            disabled={mergeChanges.isPending}
+                            className="text-xs text-green-600 hover:text-green-700 font-medium"
+                          >
+                            Merge
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (window.confirm('Are you sure you want to delete this change?')) {
+                                try {
+                                  await deleteChange.mutateAsync({
+                                    changeId: change.id,
+                                    itemType: change.itemType,
+                                    itemId: change.itemId,
+                                  })
+                                  refetch()
+                                } catch (err) {
+                                  console.error('Failed to delete change:', err)
+                                }
+                              }
+                            }}
+                            disabled={deleteChange.isPending}
+                            className="text-xs text-red-600 hover:text-red-700 font-medium"
+                          >
+                            Delete
+                          </button>
+                        </>
                       )}
                       {change.status === WikiPageChangeStatus.CONFLICT && (
                         <button

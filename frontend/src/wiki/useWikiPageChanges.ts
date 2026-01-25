@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getSecureApi, postSecureApi } from '../apis/fetch'
+import { deleteSecureApi, getSecureApi, postSecureApi, putSecureApi } from '../apis/fetch'
 import type { 
   WikiPageChangeResponse, 
   WikiPageChangesListResponse, 
   CreateWikiPageChangeRequest,
+  UpdateWikiPageChangeRequest,
   ResolveConflictRequest,
   MergeChangesRequest,
   PreviewMergeResponse,
@@ -152,6 +153,34 @@ export function useCreateWikiPageChange() {
   })
 }
 
+// Hook to update a wiki page change
+interface UpdateChangeParams {
+  changeId: number
+  itemType: string
+  itemId: number
+  data: UpdateWikiPageChangeRequest
+}
+
+export function useUpdateWikiPageChange() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ changeId, data }: UpdateChangeParams) => {
+      return putSecureApi<WikiPageChangeResponse>(
+        `/api/wiki-changes/${changeId}`,
+        data
+      )
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['wikiPageChange', variables.changeId] })
+      queryClient.invalidateQueries({ queryKey: ['wikiPageChanges'] })
+      queryClient.invalidateQueries({ 
+        queryKey: ['wikiPageChanges', 'byItem', variables.itemType, variables.itemId] 
+      })
+    },
+  })
+}
+
 // Hook to resolve a conflict
 interface ResolveConflictParams {
   changeId: number
@@ -197,6 +226,31 @@ export function useRejectChange() {
       queryClient.invalidateQueries({ queryKey: ['wikiPageChange', variables.changeId] })
       queryClient.invalidateQueries({ queryKey: ['wikiPageChanges', variables.pageId] })
       queryClient.invalidateQueries({ queryKey: ['wikiPageChanges', 'pending', variables.pageId] })
+    },
+  })
+}
+
+// Hook to delete a pending change
+interface DeleteChangeParams {
+  changeId: number
+  itemType: string
+  itemId: number
+}
+
+export function useDeleteWikiPageChange() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ changeId }: DeleteChangeParams) => {
+      const response = await deleteSecureApi(`/api/wiki-changes/${changeId}`)
+      return response
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['wikiPageChange', variables.changeId] })
+      queryClient.invalidateQueries({ queryKey: ['wikiPageChanges'] })
+      queryClient.invalidateQueries({ 
+        queryKey: ['wikiPageChanges', 'byItem', variables.itemType, variables.itemId] 
+      })
     },
   })
 }
