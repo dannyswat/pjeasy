@@ -12,6 +12,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/dannyswat/pjeasy/internal/service_tickets"
+	"github.com/dannyswat/pjeasy/internal/sprints"
 	"github.com/dannyswat/pjeasy/internal/tasks"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
@@ -40,6 +41,7 @@ type APIServer struct {
 	commentService       *comments.CommentService
 	sequenceService      *sequences.SequenceService
 	taskService          *tasks.TaskService
+	sprintService        *sprints.SprintService
 	wikiPageService      *wiki_pages.WikiPageService
 	tokenService         *user_sessions.TokenService
 	userHandler          *UserHandler
@@ -53,6 +55,7 @@ type APIServer struct {
 	commentHandler       *CommentHandler
 	sequenceHandler      *SequenceHandler
 	taskHandler          *TaskHandler
+	sprintHandler        *SprintHandler
 	wikiPageHandler      *WikiPageHandler
 	authMiddleware       *AuthMiddleware
 	projectMiddleware    *ProjectMiddleware
@@ -105,6 +108,7 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&sequences.Sequence{},
 		&sequences.SequenceNumber{},
 		&tasks.Task{},
+		&sprints.Sprint{},
 		&wiki_pages.WikiPage{},
 		&wiki_pages.WikiPageChange{},
 	)
@@ -162,6 +166,10 @@ func (s *APIServer) SetupAPIServer() error {
 	taskRepo := tasks.NewTaskRepository(s.globalUOW)
 	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.uowFactory)
 
+	// Initialize sprint service
+	sprintRepo := sprints.NewSprintRepository(s.globalUOW)
+	s.sprintService = sprints.NewSprintService(sprintRepo, taskRepo, memberRepo, projectRepo, s.uowFactory)
+
 	// Initialize wiki page service
 	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
 	wikiPageChangeRepo := wiki_pages.NewWikiPageChangeRepository(s.globalUOW)
@@ -179,6 +187,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.commentHandler = NewCommentHandler(s.commentService)
 	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
 	s.taskHandler = NewTaskHandler(s.taskService)
+	s.sprintHandler = NewSprintHandler(s.sprintService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 	s.projectMiddleware = NewProjectMiddleware(memberCache)
@@ -195,6 +204,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.sprintHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	// Register upload routes

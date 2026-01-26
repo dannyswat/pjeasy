@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useListTasks } from './useListTasks'
 import { useCreateTask } from './useCreateTask'
 import { useUpdateTask } from './useUpdateTask'
@@ -14,6 +14,9 @@ import ItemLink from '../components/ItemLink'
 import { UserLabel } from '../components/UserLabel'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import { useMeApi } from '../auth/useMeApi'
+import { useGetActiveSprint } from '../sprints/useGetActiveSprint'
+import { useAddTaskToSprint } from '../sprints/useAddTaskToSprint'
+import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
 
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -32,11 +35,14 @@ export default function TasksPage() {
   const projectIdNum = projectId ? parseInt(projectId) : 0
   const { tasks, total, isLoading, refetch } = useListTasks({ projectId: projectIdNum, page, pageSize, status: statusFilter })
   const { user } = useMeApi()
+  const { sprint: activeSprint, refetch: refetchSprint } = useGetActiveSprint({ projectId: projectIdNum })
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const updateTaskStatus = useUpdateTaskStatus()
   const updateTaskAssignee = useUpdateTaskAssignee()
   const deleteTask = useDeleteTask()
+  const addTaskToSprint = useAddTaskToSprint()
+  const removeTaskFromSprint = useRemoveTaskFromSprint()
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -173,6 +179,34 @@ export default function TasksPage() {
   const handleAssignToMe = async (taskId: number) => {
     if (!user) return
     await handleAssign(taskId, user.id)
+  }
+
+  const handleAddToSprint = async (taskId: number) => {
+    if (!activeSprint) return
+
+    try {
+      await addTaskToSprint.mutateAsync({
+        sprintId: activeSprint.id,
+        taskId,
+      })
+      refetch()
+      refetchSprint()
+    } catch (error) {
+      console.error('Failed to add task to sprint:', error)
+    }
+  }
+
+  const handleRemoveFromSprint = async (taskId: number, sprintId: number) => {
+    try {
+      await removeTaskFromSprint.mutateAsync({
+        sprintId,
+        taskId,
+      })
+      refetch()
+      refetchSprint()
+    } catch (error) {
+      console.error('Failed to remove task from sprint:', error)
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -424,6 +458,30 @@ export default function TasksPage() {
             <p className="text-sm text-gray-600 mt-1">Manage project tasks and track progress</p>
           </div>
 
+          {/* Active Sprint Banner */}
+          {activeSprint && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                  <span className="text-sm font-medium text-green-900">Active Sprint: {activeSprint.name}</span>
+                  {activeSprint.endDate && (
+                    <span className="text-xs text-green-700 ml-3">Ends: {activeSprint.endDate}</span>
+                  )}
+                </div>
+                <Link
+                  to={`/projects/${projectId}/sprints/${activeSprint.id}/board`}
+                  className="text-sm font-medium text-green-700 hover:text-green-800 flex items-center"
+                >
+                  View Board
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Quick Create */}
           <div className="mb-4">
             <form onSubmit={handleQuickCreate} className="flex gap-2">
@@ -513,6 +571,11 @@ export default function TasksPage() {
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(task.priority)}`}>
                           {task.priority}
                         </span>
+                        {task.sprintId && (
+                          <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 border border-green-200" title={`In Sprint`}>
+                            🏃 Sprint
+                          </span>
+                        )}
                         {task.estimatedHours > 0 && (
                           <span className="text-xs text-gray-500">
                             {task.estimatedHours}h
@@ -591,6 +654,37 @@ export default function TasksPage() {
                         </svg>
                       </button>
                       
+                      {/* Sprint Actions */}
+                      {task.sprintId ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveFromSprint(task.id, task.sprintId!)
+                          }}
+                          className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition"
+                          title="Remove from Sprint"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12H9" />
+                          </svg>
+                        </button>
+                      ) : activeSprint ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleAddToSprint(task.id)
+                          }}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded transition"
+                          title={`Add to ${activeSprint.name}`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v6m-3-3h6" />
+                          </svg>
+                        </button>
+                      ) : null}
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation()

@@ -11,6 +11,8 @@ import IdeasPage from './ideas/IdeasPage'
 import IssuesPage from './issues/IssuesPage'
 import ServiceTicketsPage from './service_tickets/ServiceTicketsPage'
 import TasksPage from './tasks/TasksPage'
+import SprintsPage from './sprints/SprintsPage'
+import SprintBoardPage from './sprints/SprintBoardPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
@@ -248,6 +250,26 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <TasksPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/sprints"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <SprintsPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/sprints/:sprintId/board"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <SprintBoardPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

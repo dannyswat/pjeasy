@@ -387,7 +387,7 @@ In Plan → Active → (On Hold) → Completed → Closed
 2. Optional end date set
 3. Optional milestone association
 4. Sprint started
-5. Tasks and Features added to sprint
+5. Tasks added to sprint
 6. Sprint progress tracked
 7. Sprint completed
 8. Sprint review generated

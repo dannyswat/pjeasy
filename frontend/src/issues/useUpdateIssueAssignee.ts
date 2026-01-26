@@ -20,7 +20,7 @@ export function useUpdateIssueAssignee() {
         body: JSON.stringify(request),
       }, true)
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['issues', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['issue', variables.issueId] })
     },

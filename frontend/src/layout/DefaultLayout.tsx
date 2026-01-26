@@ -136,6 +136,19 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   <span>Tasks</span>
                 </Link>
                 <Link
+                  to={`/projects/${projectId}/sprints`}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
+                    location.pathname.startsWith(`/projects/${projectId}/sprints`)
+                      ? 'bg-indigo-50 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } transition-colors`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Sprints</span>
+                </Link>
+                <Link
                   to={`/projects/${projectId}/service-tickets`}
                   className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
                     location.pathname === `/projects/${projectId}/service-tickets`
