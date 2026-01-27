@@ -13,6 +13,7 @@ import ServiceTicketsPage from './service_tickets/ServiceTicketsPage'
 import TasksPage from './tasks/TasksPage'
 import SprintsPage from './sprints/SprintsPage'
 import SprintBoardPage from './sprints/SprintBoardPage'
+import ProjectDashboardPage from './project_dashboard/ProjectDashboardPage'
 import { useMeApi } from './auth/useMeApi'
 import { useUserSession } from './auth/useUserSession'
 import { useEffect } from 'react'
@@ -136,6 +137,26 @@ function App() {
           />
           <Route
             path="/projects/:id"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ProjectDashboardPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/dashboard"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ProjectDashboardPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/settings"
             element={
               <ProtectedRoute>
                 <DefaultLayout>

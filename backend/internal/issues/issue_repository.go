@@ -180,3 +180,16 @@ func (r *IssueRepository) GetByItemReference(projectID int, itemType string, ite
 
 	return issues, total, err
 }
+
+// GetByProjectAndAssigneeLimited returns issues assigned to a user in a project (limited)
+func (r *IssueRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int) ([]Issue, error) {
+	var issues []Issue
+
+	err := r.uow.GetDB().Model(&Issue{}).
+		Where("project_id = ? AND assigned_to = ? AND status NOT IN ?", projectID, assigneeID, []string{"Resolved", "Closed"}).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&issues).Error
+
+	return issues, err
+}

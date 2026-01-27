@@ -242,3 +242,9 @@ func (s *ServiceTicketService) CountNewServiceTickets(projectID int, userID int)
 
 	return s.ticketRepo.CountByStatus(projectID, ServiceTicketStatusNew)
 }
+
+// CountByStatus returns the count of service tickets with a specific status for a project
+func (s *ServiceTicketService) CountByStatus(projectID int, status string) (int, error) {
+	count, err := s.ticketRepo.CountByStatus(projectID, status)
+	return int(count), err
+}

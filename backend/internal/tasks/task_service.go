@@ -331,6 +331,11 @@ func (s *TaskService) GetMyTasks(page, pageSize int, userID int) ([]Task, int64,
 	return tasks, total, nil
 }
 
+// GetTasksByAssigneeOrderByDeadline retrieves tasks assigned to a user in a project, ordered by deadline
+func (s *TaskService) GetTasksByAssigneeOrderByDeadline(projectID int, userID int, limit int) ([]Task, error) {
+	return s.taskRepo.GetByProjectAndAssigneeOrderByDeadline(projectID, userID, limit)
+}
+
 // GetTasksByItemReference retrieves tasks linked to a specific item (e.g., idea) with pagination
 func (s *TaskService) GetTasksByItemReference(projectID int, itemType string, itemID int, page, pageSize int, userID int) ([]Task, int64, error) {
 	// Validate project exists

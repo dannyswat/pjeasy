@@ -180,3 +180,16 @@ func (r *FeatureRepository) GetByItemReference(projectID int, itemType string, i
 
 	return features, total, err
 }
+
+// GetByProjectAndAssigneeLimited returns features assigned to a user in a project (limited)
+func (r *FeatureRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int) ([]Feature, error) {
+	var features []Feature
+
+	err := r.uow.GetDB().Model(&Feature{}).
+		Where("project_id = ? AND assigned_to = ? AND status NOT IN ?", projectID, assigneeID, []string{"Completed", "Closed"}).
+		Order("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, created_at DESC").
+		Limit(limit).
+		Find(&features).Error
+
+	return features, err
+}

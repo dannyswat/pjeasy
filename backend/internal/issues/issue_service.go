@@ -347,6 +347,11 @@ func (s *IssueService) GetMyIssues(projectID int, userID int, page, pageSize int
 	return s.issueRepo.GetByProjectIDAndAssignee(projectID, userID, offset, pageSize)
 }
 
+// GetIssuesByAssignee retrieves issues assigned to a user in a project (limited)
+func (s *IssueService) GetIssuesByAssignee(projectID int, userID int, limit int) ([]Issue, error) {
+	return s.issueRepo.GetByProjectAndAssigneeLimited(projectID, userID, limit)
+}
+
 // GetIssuesByItemReference retrieves issues linked to a specific item (e.g., service-ticket) with pagination
 func (s *IssueService) GetIssuesByItemReference(projectID int, itemType string, itemID int, page, pageSize int, userID int) ([]Issue, int64, error) {
 	// Validate project exists

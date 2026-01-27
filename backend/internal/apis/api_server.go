@@ -57,6 +57,7 @@ type APIServer struct {
 	taskHandler          *TaskHandler
 	sprintHandler        *SprintHandler
 	wikiPageHandler      *WikiPageHandler
+	dashboardHandler     *DashboardHandler
 	authMiddleware       *AuthMiddleware
 	projectMiddleware    *ProjectMiddleware
 }
@@ -189,6 +190,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.taskHandler = NewTaskHandler(s.taskService)
 	s.sprintHandler = NewSprintHandler(s.sprintService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
+	s.dashboardHandler = NewDashboardHandler(s.projectService, s.taskService, s.issueService, s.featureService, s.serviceTicketService, s.sprintService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 	s.projectMiddleware = NewProjectMiddleware(memberCache)
 
@@ -206,6 +208,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sprintHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	// Register upload routes
 	RegisterUploadRoutes(s.echo, s, s.authMiddleware)

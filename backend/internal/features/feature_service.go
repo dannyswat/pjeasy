@@ -340,6 +340,11 @@ func (s *FeatureService) GetMyFeatures(projectID int, page, pageSize int, userID
 	return s.featureRepo.GetByProjectIDAndAssignee(projectID, userID, offset, pageSize)
 }
 
+// GetFeaturesByAssignee retrieves features assigned to a user in a project (limited)
+func (s *FeatureService) GetFeaturesByAssignee(projectID int, userID int, limit int) ([]Feature, error) {
+	return s.featureRepo.GetByProjectAndAssigneeLimited(projectID, userID, limit)
+}
+
 // GetFeaturesByItemReference retrieves features related to a specific item
 func (s *FeatureService) GetFeaturesByItemReference(projectID int, itemType string, itemID int, page, pageSize int, requestedBy int) ([]Feature, int64, error) {
 	// Check if user is a member or admin of the project
