@@ -197,7 +197,7 @@ func (s *IdeaService) GetIdea(ideaID int, userID int) (*Idea, error) {
 }
 
 // GetProjectIdeas retrieves all ideas for a project with pagination and optional status filter
-func (s *IdeaService) GetProjectIdeas(projectID int, status string, page, pageSize int, userID int) ([]Idea, int64, error) {
+func (s *IdeaService) GetProjectIdeas(projectID int, statuses []string, page, pageSize int, userID int) ([]Idea, int64, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -221,11 +221,20 @@ func (s *IdeaService) GetProjectIdeas(projectID int, status string, page, pageSi
 	var ideas []Idea
 	var total int64
 
-	if status != "" {
-		if !IsValidStatus(status) {
+	if len(statuses) == 1 {
+		// Single status
+		if !IsValidStatus(statuses[0]) {
 			return nil, 0, errors.New("invalid status")
 		}
-		ideas, total, err = s.ideaRepo.GetByProjectIDAndStatus(projectID, status, offset, pageSize)
+		ideas, total, err = s.ideaRepo.GetByProjectIDAndStatus(projectID, statuses[0], offset, pageSize)
+	} else if len(statuses) > 1 {
+		// Multiple statuses - validate each
+		for _, status := range statuses {
+			if !IsValidStatus(status) {
+				return nil, 0, errors.New("invalid status: " + status)
+			}
+		}
+		ideas, total, err = s.ideaRepo.GetByProjectIDAndStatuses(projectID, statuses, offset, pageSize)
 	} else {
 		ideas, total, err = s.ideaRepo.GetByProjectID(projectID, offset, pageSize)
 	}

@@ -214,7 +214,7 @@ func (s *ServiceTicketService) GetServiceTicket(ticketID int, userID int) (*Serv
 }
 
 // ListServiceTickets returns a paginated list of service tickets for a project
-func (s *ServiceTicketService) ListServiceTickets(projectID, page, pageSize int, status, priority, sortBy string, userID int) ([]ServiceTicket, int64, error) {
+func (s *ServiceTicketService) ListServiceTickets(projectID, page, pageSize int, statuses []string, priority, sortBy string, userID int) ([]ServiceTicket, int64, error) {
 	// Check if user has access to the project
 	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
 	if err != nil {
@@ -224,9 +224,16 @@ func (s *ServiceTicketService) ListServiceTickets(projectID, page, pageSize int,
 		return nil, 0, errors.New("user does not have access to this project")
 	}
 
+	// Validate statuses
+	for _, status := range statuses {
+		if !IsValidStatus(status) {
+			return nil, 0, errors.New("invalid status: " + status)
+		}
+	}
+
 	offset := (page - 1) * pageSize
 
-	return s.ticketRepo.GetByProjectIDWithFilters(projectID, status, priority, sortBy, offset, pageSize)
+	return s.ticketRepo.GetByProjectIDWithFilters(projectID, statuses, priority, sortBy, offset, pageSize)
 }
 
 // CountNewServiceTickets returns the count of service tickets with status "New" for a project

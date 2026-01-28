@@ -81,6 +81,28 @@ func (r *IssueRepository) GetByProjectIDAndStatus(projectID int, status string, 
 	return issues, total, err
 }
 
+// GetByProjectIDAndStatuses returns issues filtered by multiple statuses with pagination
+func (r *IssueRepository) GetByProjectIDAndStatuses(projectID int, statuses []string, offset, limit int) ([]Issue, int64, error) {
+	var issues []Issue
+	var total int64
+
+	query := r.uow.GetDB().Model(&Issue{}).
+		Where("project_id = ? AND status IN ?", projectID, statuses)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&issues).Error
+
+	return issues, total, err
+}
+
 // GetByProjectIDAndPriority returns issues filtered by priority with pagination
 func (r *IssueRepository) GetByProjectIDAndPriority(projectID int, priority string, offset, limit int) ([]Issue, int64, error) {
 	var issues []Issue

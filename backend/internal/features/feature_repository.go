@@ -81,6 +81,28 @@ func (r *FeatureRepository) GetByProjectIDAndStatus(projectID int, status string
 	return features, total, err
 }
 
+// GetByProjectIDAndStatuses returns features filtered by multiple statuses with pagination
+func (r *FeatureRepository) GetByProjectIDAndStatuses(projectID int, statuses []string, offset, limit int) ([]Feature, int64, error) {
+	var features []Feature
+	var total int64
+
+	query := r.uow.GetDB().Model(&Feature{}).
+		Where("project_id = ? AND status IN ?", projectID, statuses)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&features).Error
+
+	return features, total, err
+}
+
 // GetByProjectIDAndPriority returns features filtered by priority with pagination
 func (r *FeatureRepository) GetByProjectIDAndPriority(projectID int, priority string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature

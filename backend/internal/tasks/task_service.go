@@ -279,7 +279,7 @@ func (s *TaskService) GetTask(taskID int, userID int) (*Task, error) {
 }
 
 // GetProjectTasks retrieves all tasks for a project with pagination and optional status filter
-func (s *TaskService) GetProjectTasks(projectID int, status string, page, pageSize int, userID int) ([]Task, int64, error) {
+func (s *TaskService) GetProjectTasks(projectID int, statuses []string, page, pageSize int, userID int) ([]Task, int64, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -303,11 +303,20 @@ func (s *TaskService) GetProjectTasks(projectID int, status string, page, pageSi
 	var tasks []Task
 	var total int64
 
-	if status != "" {
-		if !IsValidStatus(status) {
+	if len(statuses) == 1 {
+		// Single status - use existing method
+		if !IsValidStatus(statuses[0]) {
 			return nil, 0, errors.New("invalid status")
 		}
-		tasks, total, err = s.taskRepo.GetByProjectIDAndStatus(projectID, status, offset, pageSize)
+		tasks, total, err = s.taskRepo.GetByProjectIDAndStatus(projectID, statuses[0], offset, pageSize)
+	} else if len(statuses) > 1 {
+		// Multiple statuses - validate each and use IN query
+		for _, status := range statuses {
+			if !IsValidStatus(status) {
+				return nil, 0, errors.New("invalid status: " + status)
+			}
+		}
+		tasks, total, err = s.taskRepo.GetByProjectIDAndStatuses(projectID, statuses, offset, pageSize)
 	} else {
 		tasks, total, err = s.taskRepo.GetByProjectID(projectID, offset, pageSize)
 	}

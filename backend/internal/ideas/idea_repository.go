@@ -81,6 +81,28 @@ func (r *IdeaRepository) GetByProjectIDAndStatus(projectID int, status string, o
 	return ideas, total, err
 }
 
+// GetByProjectIDAndStatuses returns ideas filtered by multiple statuses with pagination
+func (r *IdeaRepository) GetByProjectIDAndStatuses(projectID int, statuses []string, offset, limit int) ([]Idea, int64, error) {
+	var ideas []Idea
+	var total int64
+
+	query := r.uow.GetDB().Model(&Idea{}).
+		Where("project_id = ? AND status IN ?", projectID, statuses)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&ideas).Error
+
+	return ideas, total, err
+}
+
 // UpdateStatus updates only the status of an idea
 func (r *IdeaRepository) UpdateStatus(id int, status string) error {
 	return r.uow.GetDB().Model(&Idea{}).

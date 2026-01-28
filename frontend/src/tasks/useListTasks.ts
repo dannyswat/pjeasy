@@ -6,7 +6,7 @@ interface UseListTasksParams {
   projectId: number
   page?: number
   pageSize?: number
-  status?: string
+  status?: string | string[]
 }
 
 export function useListTasks({ projectId, page = 1, pageSize = 20, status }: UseListTasksParams) {
@@ -19,7 +19,9 @@ export function useListTasks({ projectId, page = 1, pageSize = 20, status }: Use
       })
 
       if (status) {
-        params.append('status', status)
+        // Support both single status and array of statuses
+        const statusValue = Array.isArray(status) ? status.join(',') : status
+        params.append('status', statusValue)
       }
 
       return fetchApi<TasksListResponse>(`/api/projects/${projectId}/tasks?${params}`, {

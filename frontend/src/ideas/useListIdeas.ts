@@ -6,7 +6,7 @@ interface UseListIdeasParams {
   projectId: number
   page?: number
   pageSize?: number
-  status?: string
+  status?: string | string[]
 }
 
 export function useListIdeas({ projectId, page = 1, pageSize = 20, status }: UseListIdeasParams) {
@@ -19,7 +19,9 @@ export function useListIdeas({ projectId, page = 1, pageSize = 20, status }: Use
       })
 
       if (status) {
-        params.append('status', status)
+        // Support both single status and array of statuses
+        const statusValue = Array.isArray(status) ? status.join(',') : status
+        params.append('status', statusValue)
       }
 
       return fetchApi<IdeasListResponse>(`/api/projects/${projectId}/ideas?${params}`, {

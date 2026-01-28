@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/labstack/echo/v4"
@@ -229,9 +230,14 @@ func (h *IdeaHandler) GetProjectIdeas(c echo.Context) error {
 		pageSize = 20
 	}
 
-	status := c.QueryParam("status")
+	// Parse status - can be comma-separated for multiple statuses
+	statusParam := c.QueryParam("status")
+	var statuses []string
+	if statusParam != "" {
+		statuses = strings.Split(statusParam, ",")
+	}
 
-	ideaList, total, err := h.ideaService.GetProjectIdeas(projectID, status, page, pageSize, userID)
+	ideaList, total, err := h.ideaService.GetProjectIdeas(projectID, statuses, page, pageSize, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

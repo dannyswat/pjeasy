@@ -81,6 +81,28 @@ func (r *TaskRepository) GetByProjectIDAndStatus(projectID int, status string, o
 	return tasks, total, err
 }
 
+// GetByProjectIDAndStatuses returns tasks filtered by multiple statuses with pagination
+func (r *TaskRepository) GetByProjectIDAndStatuses(projectID int, statuses []string, offset, limit int) ([]Task, int64, error) {
+	var tasks []Task
+	var total int64
+
+	query := r.uow.GetDB().Model(&Task{}).
+		Where("project_id = ? AND status IN ?", projectID, statuses)
+
+	// Get total count
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Get paginated results
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&tasks).Error
+
+	return tasks, total, err
+}
+
 // GetByAssigneeID returns tasks assigned to a specific user with pagination
 func (r *TaskRepository) GetByAssigneeID(assigneeID int, offset, limit int) ([]Task, int64, error) {
 	var tasks []Task

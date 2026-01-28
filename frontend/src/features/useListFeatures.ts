@@ -6,7 +6,7 @@ interface ListFeaturesParams {
   projectId: number
   page?: number
   pageSize?: number
-  status?: string
+  status?: string | string[]
   priority?: string
 }
 
@@ -18,7 +18,11 @@ export function useListFeatures({ projectId, page = 1, pageSize = 20, status, pr
         page: page.toString(),
         pageSize: pageSize.toString(),
       })
-      if (status) params.append('status', status)
+      if (status) {
+        // Support both single status and array of statuses
+        const statusValue = Array.isArray(status) ? status.join(',') : status
+        params.append('status', statusValue)
+      }
       if (priority) params.append('priority', priority)
 
       return getSecureApi<FeaturesListResponse>(

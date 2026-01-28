@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/dannyswat/pjeasy/internal/service_tickets"
 	"github.com/labstack/echo/v4"
@@ -222,14 +223,20 @@ func (h *ServiceTicketHandler) ListServiceTickets(c echo.Context) error {
 		pageSize = 20
 	}
 
-	status := c.QueryParam("status")
+	// Parse status - can be comma-separated for multiple statuses
+	statusParam := c.QueryParam("status")
+	var statuses []string
+	if statusParam != "" {
+		statuses = strings.Split(statusParam, ",")
+	}
+
 	priority := c.QueryParam("priority")
 	sortBy := c.QueryParam("sortBy")
 	if sortBy == "" {
 		sortBy = "priority"
 	}
 
-	tickets, total, err := h.ticketService.ListServiceTickets(projectID, page, pageSize, status, priority, sortBy, userID)
+	tickets, total, err := h.ticketService.ListServiceTickets(projectID, page, pageSize, statuses, priority, sortBy, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

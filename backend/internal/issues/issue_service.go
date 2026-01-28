@@ -278,7 +278,7 @@ func (s *IssueService) GetIssue(issueID int, userID int) (*Issue, error) {
 }
 
 // GetProjectIssues retrieves all issues for a project with pagination and optional filters
-func (s *IssueService) GetProjectIssues(projectID int, status string, priority string, page, pageSize int, userID int) ([]Issue, int64, error) {
+func (s *IssueService) GetProjectIssues(projectID int, statuses []string, priority string, page, pageSize int, userID int) ([]Issue, int64, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -302,11 +302,20 @@ func (s *IssueService) GetProjectIssues(projectID int, status string, priority s
 	var issues []Issue
 	var total int64
 
-	if status != "" {
-		if !IsValidStatus(status) {
+	if len(statuses) == 1 {
+		// Single status - use existing method
+		if !IsValidStatus(statuses[0]) {
 			return nil, 0, errors.New("invalid status")
 		}
-		issues, total, err = s.issueRepo.GetByProjectIDAndStatus(projectID, status, offset, pageSize)
+		issues, total, err = s.issueRepo.GetByProjectIDAndStatus(projectID, statuses[0], offset, pageSize)
+	} else if len(statuses) > 1 {
+		// Multiple statuses - validate each and use IN query
+		for _, status := range statuses {
+			if !IsValidStatus(status) {
+				return nil, 0, errors.New("invalid status: " + status)
+			}
+		}
+		issues, total, err = s.issueRepo.GetByProjectIDAndStatuses(projectID, statuses, offset, pageSize)
 	} else if priority != "" {
 		if !IsValidPriority(priority) {
 			return nil, 0, errors.New("invalid priority")

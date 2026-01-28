@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/labstack/echo/v4"
@@ -279,10 +280,16 @@ func (h *IssueHandler) GetProjectIssues(c echo.Context) error {
 		pageSize = 20
 	}
 
-	status := c.QueryParam("status")
+	// Parse status - can be comma-separated for multiple statuses
+	statusParam := c.QueryParam("status")
+	var statuses []string
+	if statusParam != "" {
+		statuses = strings.Split(statusParam, ",")
+	}
+
 	priority := c.QueryParam("priority")
 
-	issueList, total, err := h.issueService.GetProjectIssues(projectID, status, priority, page, pageSize, userID)
+	issueList, total, err := h.issueService.GetProjectIssues(projectID, statuses, priority, page, pageSize, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

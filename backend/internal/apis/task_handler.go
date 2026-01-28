@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/tasks"
@@ -333,14 +334,19 @@ func (h *TaskHandler) GetProjectTasks(c echo.Context) error {
 		}
 	}
 
-	status := c.QueryParam("status")
+	// Parse status - can be comma-separated for multiple statuses
+	statusParam := c.QueryParam("status")
+	var statuses []string
+	if statusParam != "" {
+		statuses = strings.Split(statusParam, ",")
+	}
 
 	userID, err := GetUserIDFromContext(c)
 	if err != nil {
 		return err
 	}
 
-	taskList, total, err := h.taskService.GetProjectTasks(projectID, status, page, pageSize, userID)
+	taskList, total, err := h.taskService.GetProjectTasks(projectID, statuses, page, pageSize, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}

@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/features"
@@ -322,10 +323,16 @@ func (h *FeatureHandler) GetProjectFeatures(c echo.Context) error {
 		pageSize = 20
 	}
 
-	status := c.QueryParam("status")
+	// Parse status - can be comma-separated for multiple statuses
+	statusParam := c.QueryParam("status")
+	var statuses []string
+	if statusParam != "" {
+		statuses = strings.Split(statusParam, ",")
+	}
+
 	priority := c.QueryParam("priority")
 
-	featureList, total, err := h.featureService.GetProjectFeatures(projectID, status, priority, page, pageSize, userID)
+	featureList, total, err := h.featureService.GetProjectFeatures(projectID, statuses, priority, page, pageSize, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

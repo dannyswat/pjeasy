@@ -60,14 +60,16 @@ func (r *ServiceTicketRepository) GetByProjectID(projectID int, offset, limit in
 }
 
 // GetByProjectIDWithFilters returns service tickets filtered by status and priority with pagination
-func (r *ServiceTicketRepository) GetByProjectIDWithFilters(projectID int, status, priority, sortBy string, offset, limit int) ([]ServiceTicket, int64, error) {
+func (r *ServiceTicketRepository) GetByProjectIDWithFilters(projectID int, statuses []string, priority, sortBy string, offset, limit int) ([]ServiceTicket, int64, error) {
 	var tickets []ServiceTicket
 	var total int64
 
 	query := r.uow.GetDB().Model(&ServiceTicket{}).Where("project_id = ?", projectID)
 
-	if status != "" {
-		query = query.Where("status = ?", status)
+	if len(statuses) == 1 {
+		query = query.Where("status = ?", statuses[0])
+	} else if len(statuses) > 1 {
+		query = query.Where("status IN ?", statuses)
 	}
 
 	if priority != "" {

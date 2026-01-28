@@ -6,7 +6,7 @@ interface UseListServiceTicketsParams {
   projectId: number
   page?: number
   pageSize?: number
-  status?: string
+  status?: string | string[]
   priority?: string
   sortBy?: string
 }
@@ -22,7 +22,9 @@ export function useListServiceTickets({ projectId, page = 1, pageSize = 20, stat
       })
 
       if (status) {
-        params.append('status', status)
+        // Support both single status and array of statuses
+        const statusValue = Array.isArray(status) ? status.join(',') : status
+        params.append('status', statusValue)
       }
 
       if (priority) {

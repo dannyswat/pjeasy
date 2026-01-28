@@ -280,7 +280,7 @@ func (s *FeatureService) GetFeature(featureID int, requestedBy int) (*Feature, e
 }
 
 // GetProjectFeatures retrieves all features for a project with optional filters
-func (s *FeatureService) GetProjectFeatures(projectID int, status, priority string, page, pageSize int, requestedBy int) ([]Feature, int64, error) {
+func (s *FeatureService) GetProjectFeatures(projectID int, statuses []string, priority string, page, pageSize int, requestedBy int) ([]Feature, int64, error) {
 	// Check if user is a member or admin of the project
 	isMember, err := s.memberRepo.IsUserMember(projectID, requestedBy)
 	if err != nil {
@@ -293,11 +293,23 @@ func (s *FeatureService) GetProjectFeatures(projectID int, status, priority stri
 	offset := (page - 1) * pageSize
 
 	// Apply filters based on parameters
-	if status != "" && priority != "" {
-		// Both filters - need to combine manually
-		return s.getFeaturesByStatusAndPriority(projectID, status, priority, offset, pageSize)
-	} else if status != "" {
-		return s.featureRepo.GetByProjectIDAndStatus(projectID, status, offset, pageSize)
+	if len(statuses) == 1 && priority != "" {
+		// Single status + priority - need to combine manually
+		return s.getFeaturesByStatusAndPriority(projectID, statuses[0], priority, offset, pageSize)
+	} else if len(statuses) == 1 {
+		// Single status
+		if !IsValidStatus(statuses[0]) {
+			return nil, 0, errors.New("invalid status")
+		}
+		return s.featureRepo.GetByProjectIDAndStatus(projectID, statuses[0], offset, pageSize)
+	} else if len(statuses) > 1 {
+		// Multiple statuses - validate each and use IN query
+		for _, status := range statuses {
+			if !IsValidStatus(status) {
+				return nil, 0, errors.New("invalid status: " + status)
+			}
+		}
+		return s.featureRepo.GetByProjectIDAndStatuses(projectID, statuses, offset, pageSize)
 	} else if priority != "" {
 		return s.featureRepo.GetByProjectIDAndPriority(projectID, priority, offset, pageSize)
 	}

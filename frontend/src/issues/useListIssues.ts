@@ -6,7 +6,7 @@ interface UseListIssuesParams {
   projectId: number
   page?: number
   pageSize?: number
-  status?: string
+  status?: string | string[]
   priority?: string
 }
 
@@ -20,7 +20,9 @@ export function useListIssues({ projectId, page = 1, pageSize = 20, status, prio
       })
 
       if (status) {
-        params.append('status', status)
+        // Support both single status and array of statuses
+        const statusValue = Array.isArray(status) ? status.join(',') : status
+        params.append('status', statusValue)
       }
 
       if (priority) {
