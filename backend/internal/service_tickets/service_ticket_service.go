@@ -255,3 +255,30 @@ func (s *ServiceTicketService) CountByStatus(projectID int, status string) (int,
 	count, err := s.ticketRepo.CountByStatus(projectID, status)
 	return int(count), err
 }
+
+// UpdateServiceTicketStatusByWorkflow updates a service ticket status without user permission checks
+// This is used by the workflow engine for automated status transitions
+func (s *ServiceTicketService) UpdateServiceTicketStatusByWorkflow(ticketID int, status string) error {
+	ticket, err := s.ticketRepo.GetByID(ticketID)
+	if err != nil {
+		return err
+	}
+	if ticket == nil {
+		return errors.New("service ticket not found")
+	}
+
+	// Validate status
+	if !IsValidStatus(status) {
+		return errors.New("invalid status")
+	}
+
+	// Only update if the current status is not already the target status
+	if ticket.Status == status {
+		return nil // Already at target status, no-op
+	}
+
+	ticket.Status = status
+	ticket.UpdatedAt = time.Now()
+
+	return s.ticketRepo.Update(ticket)
+}

@@ -1,6 +1,7 @@
 package issues
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -9,12 +10,18 @@ import (
 	"github.com/dannyswat/pjeasy/internal/sequences"
 )
 
+// StatusChangeHandler defines the interface for handling status change events
+type StatusChangeHandler interface {
+	OnIssueStatusChanged(ctx context.Context, issue *Issue, oldStatus, newStatus string, userID int) error
+}
+
 type IssueService struct {
-	issueRepo    *IssueRepository
-	memberRepo   *projects.ProjectMemberRepository
-	projectRepo  *projects.ProjectRepository
-	sequenceRepo *sequences.SequenceRepository
-	uowFactory   *repositories.UnitOfWorkFactory
+	issueRepo           *IssueRepository
+	memberRepo          *projects.ProjectMemberRepository
+	projectRepo         *projects.ProjectRepository
+	sequenceRepo        *sequences.SequenceRepository
+	uowFactory          *repositories.UnitOfWorkFactory
+	statusChangeHandler StatusChangeHandler
 }
 
 func NewIssueService(issueRepo *IssueRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *IssueService {
@@ -25,6 +32,11 @@ func NewIssueService(issueRepo *IssueRepository, memberRepo *projects.ProjectMem
 		sequenceRepo: sequenceRepo,
 		uowFactory:   uowFactory,
 	}
+}
+
+// SetStatusChangeHandler sets the handler for status change events
+func (s *IssueService) SetStatusChangeHandler(handler StatusChangeHandler) {
+	s.statusChangeHandler = handler
 }
 
 // CreateIssue creates a new issue
@@ -187,12 +199,29 @@ func (s *IssueService) UpdateIssueStatus(issueID int, status string, updatedBy i
 		return nil, errors.New("user is not a member of this project")
 	}
 
+	// Capture old status before update
+	oldStatus := issue.Status
+
 	if err := s.issueRepo.UpdateStatus(issueID, status); err != nil {
 		return nil, err
 	}
 
 	// Reload issue to get updated status
-	return s.issueRepo.GetByID(issueID)
+	updatedIssue, err := s.issueRepo.GetByID(issueID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Trigger workflow event if status actually changed and handler is set
+	if oldStatus != status && s.statusChangeHandler != nil {
+		ctx := context.Background()
+		// Fire and forget - don't fail the main operation if workflow fails
+		go func() {
+			_ = s.statusChangeHandler.OnIssueStatusChanged(ctx, updatedIssue, oldStatus, status, updatedBy)
+		}()
+	}
+
+	return updatedIssue, nil
 }
 
 // UpdateIssueAssignee updates an issue's assignee

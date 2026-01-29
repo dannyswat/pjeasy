@@ -18,6 +18,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
 	"github.com/dannyswat/pjeasy/internal/wiki_pages"
+	"github.com/dannyswat/pjeasy/internal/workflow"
 	"github.com/labstack/echo/v4"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -60,6 +61,7 @@ type APIServer struct {
 	dashboardHandler     *DashboardHandler
 	authMiddleware       *AuthMiddleware
 	projectMiddleware    *ProjectMiddleware
+	workflowEngine       *workflow.WorkflowEngine
 }
 
 func (s *APIServer) StartOrFatal() {
@@ -158,6 +160,14 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize service ticket service
 	serviceTicketRepo := service_tickets.NewServiceTicketRepository(s.globalUOW)
 	s.serviceTicketService = service_tickets.NewServiceTicketService(serviceTicketRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+
+	// Initialize workflow engine and register default rules
+	s.workflowEngine = workflow.NewWorkflowEngine()
+	workflow.RegisterDefaultRules(s.workflowEngine, s.serviceTicketService)
+
+	// Connect workflow engine to issue service
+	issueWorkflowAdapter := workflow.NewIssueWorkflowAdapter(s.workflowEngine)
+	s.issueService.SetStatusChangeHandler(issueWorkflowAdapter)
 
 	// Initialize comment service
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
