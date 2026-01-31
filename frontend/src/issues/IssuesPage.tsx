@@ -165,7 +165,7 @@ export default function IssuesPage() {
           <button
             type="button"
             onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-transparent min-w-[120px] text-left flex items-center justify-between"
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-transparent min-w-30 text-left flex items-center justify-between"
           >
             <span>{statusFilterLabel}</span>
             <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

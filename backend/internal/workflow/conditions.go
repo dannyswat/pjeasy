@@ -146,3 +146,55 @@ func (c *CompositeCondition) Evaluate(ctx context.Context, event Event) (bool, e
 	// For AND: all conditions met; For OR: no condition met
 	return c.operator == "AND", nil
 }
+
+// RelatedItemsChecker is an interface for checking if all related items are completed
+type RelatedItemsChecker interface {
+	// AreAllRelatedItemsCompleted checks if all issues, features, and tasks
+	// related to a service ticket are completed
+	AreAllRelatedItemsCompleted(projectID int, serviceTicketID int) (bool, error)
+}
+
+// AllRelatedItemsCompletedCondition checks if all related items for a service ticket are completed
+type AllRelatedItemsCompletedCondition struct {
+	name    string
+	checker RelatedItemsChecker
+}
+
+// NewAllRelatedItemsCompletedCondition creates a condition that checks if all related items are completed
+func NewAllRelatedItemsCompletedCondition(name string, checker RelatedItemsChecker) *AllRelatedItemsCompletedCondition {
+	return &AllRelatedItemsCompletedCondition{
+		name:    name,
+		checker: checker,
+	}
+}
+
+func (c *AllRelatedItemsCompletedCondition) Name() string {
+	return c.name
+}
+
+func (c *AllRelatedItemsCompletedCondition) Evaluate(ctx context.Context, event Event) (bool, error) {
+	// Get the service ticket ID from the event data
+	itemID, ok := event.Data["itemId"]
+	if !ok {
+		return false, nil
+	}
+
+	var ticketID int
+	switch v := itemID.(type) {
+	case int:
+		ticketID = v
+	case *int:
+		if v == nil {
+			return false, nil
+		}
+		ticketID = *v
+	default:
+		return false, nil
+	}
+
+	if ticketID <= 0 {
+		return false, nil
+	}
+
+	return c.checker.AreAllRelatedItemsCompleted(event.ProjectID, ticketID)
+}

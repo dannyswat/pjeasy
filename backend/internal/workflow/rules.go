@@ -6,8 +6,9 @@ import (
 )
 
 // RegisterDefaultRules registers the default workflow rules
-func RegisterDefaultRules(engine *WorkflowEngine, ticketUpdater ServiceTicketStatusUpdater) {
+func RegisterDefaultRules(engine *WorkflowEngine, ticketUpdater ServiceTicketStatusUpdater, relatedItemsChecker RelatedItemsChecker) {
 	// Rule: When an issue is completed, complete the related service ticket
+	// only if all related issues, features, and tasks are also completed
 	completeServiceTicketRule := &WorkflowRule{
 		Name:      "CompleteServiceTicketOnIssueCompletion",
 		EventType: EventIssueStatusChanged,
@@ -15,9 +16,10 @@ func RegisterDefaultRules(engine *WorkflowEngine, ticketUpdater ServiceTicketSta
 			NewStatusCondition("IsIssueCompleted", "newStatus", issues.IssueStatusCompleted),
 			NewHasLinkedItemCondition("HasServiceTicketLink", "itemType", "service-tickets"),
 			NewHasItemIDCondition("HasValidItemId", "itemId"),
+			NewAllRelatedItemsCompletedCondition("AllRelatedItemsCompleted", relatedItemsChecker),
 		},
 		Actions: []WorkflowAction{
-			NewLogAction("LogIssueCompletion", "Issue completed, triggering service ticket completion"),
+			NewLogAction("LogIssueCompletion", "All related items completed, triggering service ticket fulfillment"),
 			NewCompleteServiceTicketAction(ticketUpdater, service_tickets.ServiceTicketStatusFulfilled),
 		},
 	}

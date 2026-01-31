@@ -34,8 +34,11 @@ The workflow engine provides a flexible, event-driven automation system for PJEa
 // Create the workflow engine
 engine := workflow.NewWorkflowEngine()
 
+// Create the related items checker
+relatedItemsChecker := workflow.NewRelatedItemsChecker(issueRepo, featureRepo, taskRepo)
+
 // Register default rules
-workflow.RegisterDefaultRules(engine, serviceTicketService)
+workflow.RegisterDefaultRules(engine, serviceTicketService, relatedItemsChecker)
 
 // Or create custom rules
 rule := &workflow.WorkflowRule{
@@ -74,7 +77,7 @@ engine.TriggerEvent(ctx, event)
 
 ### CompleteServiceTicketOnIssueCompletion
 
-When an issue is marked as "Completed" and it is linked to a service ticket, the service ticket is automatically marked as "Fulfilled".
+When an issue is marked as "Completed" and it is linked to a service ticket, the service ticket is automatically marked as "Fulfilled" **only if all related items (issues, features, and tasks) are also completed**.
 
 **Trigger**: `issue.status.changed`
 
@@ -82,6 +85,7 @@ When an issue is marked as "Completed" and it is linked to a service ticket, the
 - New status is "Completed"
 - Issue has an item type of "service-tickets"
 - Issue has a valid item ID
+- All related issues, features, and tasks linked to the same service ticket are completed or closed
 
 **Actions**:
 - Log the event

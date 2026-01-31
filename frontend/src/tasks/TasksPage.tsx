@@ -540,7 +540,7 @@ export default function TasksPage() {
               <button
                 type="button"
                 onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[120px] text-left flex items-center justify-between"
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-30 text-left flex items-center justify-between"
               >
                 <span>
                   {statusFilter.length === 0

@@ -161,9 +161,13 @@ func (s *APIServer) SetupAPIServer() error {
 	serviceTicketRepo := service_tickets.NewServiceTicketRepository(s.globalUOW)
 	s.serviceTicketService = service_tickets.NewServiceTicketService(serviceTicketRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
 
+	// Initialize task repository (needed for workflow engine)
+	taskRepo := tasks.NewTaskRepository(s.globalUOW)
+
 	// Initialize workflow engine and register default rules
 	s.workflowEngine = workflow.NewWorkflowEngine()
-	workflow.RegisterDefaultRules(s.workflowEngine, s.serviceTicketService)
+	relatedItemsChecker := workflow.NewRelatedItemsChecker(issueRepo, featureRepo, taskRepo)
+	workflow.RegisterDefaultRules(s.workflowEngine, s.serviceTicketService, relatedItemsChecker)
 
 	// Connect workflow engine to issue service
 	issueWorkflowAdapter := workflow.NewIssueWorkflowAdapter(s.workflowEngine)
@@ -174,7 +178,6 @@ func (s *APIServer) SetupAPIServer() error {
 	s.commentService = comments.NewCommentService(commentRepo, userRepo)
 
 	// Initialize task service
-	taskRepo := tasks.NewTaskRepository(s.globalUOW)
 	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.uowFactory)
 
 	// Initialize sprint service
