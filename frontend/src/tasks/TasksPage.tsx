@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useListTasks } from './useListTasks'
 import { useCreateTask } from './useCreateTask'
@@ -18,11 +18,19 @@ import { useGetActiveSprint } from '../sprints/useGetActiveSprint'
 import { useAddTaskToSprint } from '../sprints/useAddTaskToSprint'
 import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
 
+// Default statuses exclude Completed and Closed
+const defaultTaskStatuses = [
+  TaskStatus.OPEN,
+  TaskStatus.IN_PROGRESS,
+  TaskStatus.ON_HOLD,
+  TaskStatus.BLOCKED,
+]
+
 export default function TasksPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultTaskStatuses)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingTask, setEditingTask] = useState<TaskResponse | null>(null)
   const [viewingTask, setViewingTask] = useState<TaskResponse | null>(null)
@@ -30,10 +38,23 @@ export default function TasksPage() {
   const [showDeleteMenu, setShowDeleteMenu] = useState(false)
   const [assigningTaskId, setAssigningTaskId] = useState<number | null>(null)
   const [selectedAssignee, setSelectedAssignee] = useState<number | undefined>(undefined)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
-  const { tasks, total, isLoading, refetch } = useListTasks({ projectId: projectIdNum, page, pageSize, status: statusFilter })
+  const { tasks, total, isLoading, refetch } = useListTasks({ projectId: projectIdNum, page, pageSize, status: statusFilter.length > 0 ? statusFilter : undefined })
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   const { user } = useMeApi()
   const { sprint: activeSprint, refetch: refetchSprint } = useGetActiveSprint({ projectId: projectIdNum })
   const createTask = useCreateTask()
@@ -515,22 +536,75 @@ export default function TasksPage() {
           {/* Filters */}
           <div className="mb-4 flex items-center space-x-3">
             <label className="text-xs font-medium text-gray-700">Status:</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value)
-                setPage(1)
-              }}
-              className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="">All</option>
-              <option value={TaskStatus.OPEN}>Open</option>
-              <option value={TaskStatus.IN_PROGRESS}>In Progress</option>
-              <option value={TaskStatus.ON_HOLD}>On Hold</option>
-              <option value={TaskStatus.BLOCKED}>Blocked</option>
-              <option value={TaskStatus.COMPLETED}>Completed</option>
-              <option value={TaskStatus.CLOSED}>Closed</option>
-            </select>
+            <div className="relative" ref={statusDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[120px] text-left flex items-center justify-between"
+              >
+                <span>
+                  {statusFilter.length === 0
+                    ? 'All'
+                    : statusFilter.length === Object.values(TaskStatus).length
+                      ? 'All'
+                      : `${statusFilter.length} selected`}
+                </span>
+                <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showStatusDropdown && (
+                <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
+                  <div className="p-2 border-b border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatusFilter(Object.values(TaskStatus))
+                        setPage(1)
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-800 mr-3"
+                    >
+                      Select All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatusFilter([])
+                        setPage(1)
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div className="py-1 max-h-60 overflow-y-auto">
+                    {Object.values(TaskStatus).map((status) => (
+                      <label
+                        key={status}
+                        className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={statusFilter.includes(status)}
+                          onChange={() => {
+                            setStatusFilter(prev =>
+                              prev.includes(status)
+                                ? prev.filter(s => s !== status)
+                                : [...prev, status]
+                            )
+                            setPage(1)
+                          }}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">
+                          {TaskStatusDisplay[status as keyof typeof TaskStatusDisplay] || status}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tasks List */}

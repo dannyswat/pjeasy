@@ -1,19 +1,32 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useListIssues } from './useListIssues'
 import { useUpdateIssue } from './useUpdateIssue'
 import { useDeleteIssue } from './useDeleteIssue'
+import { useCreateIssue } from './useCreateIssue'
 import { IssueStatus, IssuePriority, IssueStatusDisplay, type IssueResponse } from './issueTypes'
 import EditIssueForm from './EditIssueForm'
+import CreateIssueForm from './CreateIssueForm'
 import { UserLabel } from '../components/UserLabel'
+
+// Default statuses exclude Completed and Closed
+const defaultStatuses = [
+  IssueStatus.OPEN,
+  IssueStatus.ASSIGNED,
+  IssueStatus.IN_PROGRESS,
+  IssueStatus.IN_REVIEW,
+]
 
 export default function IssuesPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultStatuses)
   const [priorityFilter, setPriorityFilter] = useState<string>('')
   const [editingIssue, setEditingIssue] = useState<IssueResponse | null>(null)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
@@ -21,11 +34,23 @@ export default function IssuesPage() {
     projectId: projectIdNum, 
     page, 
     pageSize, 
-    status: statusFilter,
+    status: statusFilter.length > 0 ? statusFilter : undefined,
     priority: priorityFilter 
   })
   const updateIssue = useUpdateIssue()
   const deleteIssue = useDeleteIssue()
+  const createIssue = useCreateIssue()
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -96,33 +121,102 @@ export default function IssuesPage() {
     }
   }
 
+  const toggleStatusFilter = (status: string) => {
+    setStatusFilter(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status)
+      } else {
+        return [...prev, status]
+      }
+    })
+    setPage(1)
+  }
+
+  const allStatuses = Object.values(IssueStatus)
+  const statusFilterLabel = statusFilter.length === 0 
+    ? 'All' 
+    : statusFilter.length === allStatuses.length 
+      ? 'All' 
+      : `${statusFilter.length} selected`
+
   return (
     <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold text-gray-900">Issues</h1>
-        <p className="text-sm text-gray-600 mt-1">Track and resolve project issues</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Issues</h1>
+          <p className="text-sm text-gray-600 mt-1">Track and resolve project issues</p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition flex items-center"
+        >
+          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          New Issue
+        </button>
       </div>
 
       {/* Filters */}
       <div className="mb-4 flex items-center space-x-3">
         <label className="text-xs font-medium text-gray-700">Status:</label>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
-            setPage(1)
-          }}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-red-500 focus:border-transparent"
-        >
-          <option value="">All</option>
-          <option value={IssueStatus.OPEN}>Open</option>
-          <option value={IssueStatus.ASSIGNED}>Assigned</option>
-          <option value={IssueStatus.IN_PROGRESS}>In Progress</option>
-          <option value={IssueStatus.IN_REVIEW}>In Review</option>
-          <option value={IssueStatus.COMPLETED}>Completed</option>
-          <option value={IssueStatus.CLOSED}>Closed</option>
-        </select>
+        <div className="relative" ref={statusDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-red-500 focus:border-transparent min-w-[120px] text-left flex items-center justify-between"
+          >
+            <span>{statusFilterLabel}</span>
+            <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showStatusDropdown && (
+            <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
+              <div className="p-2 border-b border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(allStatuses)
+                    setPage(1)
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 mr-3"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter([])
+                    setPage(1)
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="py-1 max-h-60 overflow-y-auto">
+                {allStatuses.map((status) => (
+                  <label
+                    key={status}
+                    className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={statusFilter.includes(status)}
+                      onChange={() => toggleStatusFilter(status)}
+                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      {IssueStatusDisplay[status] || status}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <label className="text-xs font-medium text-gray-700">Priority:</label>
         <select
@@ -253,6 +347,27 @@ export default function IssuesPage() {
             </>
           )
       }
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <CreateIssueForm
+          projectId={projectIdNum}
+          onCancel={() => setShowCreateModal(false)}
+          isPending={createIssue.isPending}
+          onSubmit={async (data) => {
+            try {
+              await createIssue.mutateAsync({
+                projectId: projectIdNum,
+                ...data,
+              })
+              setShowCreateModal(false)
+              refetch()
+            } catch (error) {
+              console.error('Failed to create issue:', error)
+            }
+          }}
+        />
+      )}
 
       {/* Edit Modal */}
       {editingIssue && (

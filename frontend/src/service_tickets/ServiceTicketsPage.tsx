@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useListServiceTickets } from './useListServiceTickets'
 import { useCreateServiceTicket } from './useCreateServiceTicket'
@@ -8,15 +8,23 @@ import { ServiceTicketStatus, ServiceTicketPriority, ServiceTicketStatusDisplay,
 import EditServiceTicketForm from './EditServiceTicketForm'
 import CreateServiceTicketForm from './CreateServiceTicketForm'
 
+// Default statuses exclude Fulfilled and Closed
+const defaultServiceTicketStatuses = [
+  ServiceTicketStatus.NEW,
+  ServiceTicketStatus.OPEN,
+]
+
 export default function ServiceTicketsPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>(ServiceTicketStatus.NEW)
+  const [statusFilter, setStatusFilter] = useState<string[]>(defaultServiceTicketStatuses)
   const [priorityFilter, setPriorityFilter] = useState<string>('')
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingTicket, setEditingTicket] = useState<ServiceTicketResponse | null>(null)
   const [quickCreateTitle, setQuickCreateTitle] = useState('')
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const statusDropdownRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
@@ -24,9 +32,20 @@ export default function ServiceTicketsPage() {
     projectId: projectIdNum, 
     page, 
     pageSize, 
-    status: statusFilter,
+    status: statusFilter.length > 0 ? statusFilter : undefined,
     priority: priorityFilter 
   })
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
+        setShowStatusDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
   const createServiceTicket = useCreateServiceTicket()
   const updateServiceTicket = useUpdateServiceTicket()
   const deleteServiceTicket = useDeleteServiceTicket()
@@ -140,20 +159,75 @@ export default function ServiceTicketsPage() {
       {/* Filters */}
       <div className="mb-4 flex items-center space-x-3">
         <label className="text-xs font-medium text-gray-700">Status:</label>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
-            setPage(1)
-          }}
-          className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-        >
-          <option value="">All</option>
-          <option value={ServiceTicketStatus.NEW}>New</option>
-          <option value={ServiceTicketStatus.OPEN}>Open</option>
-          <option value={ServiceTicketStatus.FULFILLED}>Fulfilled</option>
-          <option value={ServiceTicketStatus.CLOSED}>Closed</option>
-        </select>
+        <div className="relative" ref={statusDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 focus:ring-2 focus:ring-purple-500 focus:border-transparent min-w-[120px] text-left flex items-center justify-between"
+          >
+            <span>
+              {statusFilter.length === 0
+                ? 'All'
+                : statusFilter.length === Object.values(ServiceTicketStatus).length
+                  ? 'All'
+                  : `${statusFilter.length} selected`}
+            </span>
+            <svg className="w-4 h-4 ml-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showStatusDropdown && (
+            <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
+              <div className="p-2 border-b border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(Object.values(ServiceTicketStatus))
+                    setPage(1)
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800 mr-3"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter([])
+                    setPage(1)
+                  }}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="py-1 max-h-60 overflow-y-auto">
+                {Object.values(ServiceTicketStatus).map((status) => (
+                  <label
+                    key={status}
+                    className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={statusFilter.includes(status)}
+                      onChange={() => {
+                        setStatusFilter(prev =>
+                          prev.includes(status)
+                            ? prev.filter(s => s !== status)
+                            : [...prev, status]
+                        )
+                        setPage(1)
+                      }}
+                      className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      {ServiceTicketStatusDisplay[status] || status}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         <label className="text-xs font-medium text-gray-700">Priority:</label>
         <select

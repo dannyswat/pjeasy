@@ -11,7 +11,7 @@ export default function IdeasPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<string>(IdeaStatus.OPEN)
   const [editingIdea, setEditingIdea] = useState<IdeaResponse | null>(null)
   const [quickCreateTitle, setQuickCreateTitle] = useState('')
   const pageSize = 20
