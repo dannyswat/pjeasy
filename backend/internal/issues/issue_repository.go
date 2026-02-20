@@ -203,6 +203,18 @@ func (r *IssueRepository) GetByItemReference(projectID int, itemType string, ite
 	return issues, total, err
 }
 
+// GetByProjectIDAndSprintID returns issues for a specific sprint in a project
+func (r *IssueRepository) GetByProjectIDAndSprintID(projectID int, sprintID int) ([]Issue, error) {
+	var issues []Issue
+
+	err := r.uow.GetDB().Model(&Issue{}).
+		Where("project_id = ? AND sprint_id = ?", projectID, sprintID).
+		Order("created_at DESC").
+		Find(&issues).Error
+
+	return issues, err
+}
+
 // GetByProjectAndAssigneeLimited returns issues assigned to a user in a project (limited)
 func (r *IssueRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int) ([]Issue, error) {
 	var issues []Issue

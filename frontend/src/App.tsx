@@ -23,6 +23,8 @@ import ServiceTicketDetailPage from './service_tickets/ServiceTicketDetailPage'
 import FeaturesPage from './features/FeaturesPage'
 import FeatureDetailPage from './features/FeatureDetailPage'
 import WikiPage from './wiki/WikiPage'
+import ReviewsPage from './reviews/ReviewsPage'
+import ReviewDetailPage from './reviews/ReviewDetailPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -291,6 +293,26 @@ function App() {
               <ProtectedRoute>
                 <DefaultLayout>
                   <SprintBoardPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/reviews"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ReviewsPage />
+                </DefaultLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/reviews/:reviewId"
+            element={
+              <ProtectedRoute>
+                <DefaultLayout>
+                  <ReviewDetailPage />
                 </DefaultLayout>
               </ProtectedRoute>
             }

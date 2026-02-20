@@ -10,6 +10,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/reviews"
 	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/dannyswat/pjeasy/internal/service_tickets"
 	"github.com/dannyswat/pjeasy/internal/sprints"
@@ -43,6 +44,7 @@ type APIServer struct {
 	sequenceService      *sequences.SequenceService
 	taskService          *tasks.TaskService
 	sprintService        *sprints.SprintService
+	reviewService        *reviews.ReviewService
 	wikiPageService      *wiki_pages.WikiPageService
 	tokenService         *user_sessions.TokenService
 	userHandler          *UserHandler
@@ -57,6 +59,7 @@ type APIServer struct {
 	sequenceHandler      *SequenceHandler
 	taskHandler          *TaskHandler
 	sprintHandler        *SprintHandler
+	reviewHandler        *ReviewHandler
 	wikiPageHandler      *WikiPageHandler
 	dashboardHandler     *DashboardHandler
 	authMiddleware       *AuthMiddleware
@@ -112,6 +115,8 @@ func (s *APIServer) AutoMigrate(enabled bool) error {
 		&sequences.SequenceNumber{},
 		&tasks.Task{},
 		&sprints.Sprint{},
+		&reviews.Review{},
+		&reviews.ReviewItem{},
 		&wiki_pages.WikiPage{},
 		&wiki_pages.WikiPageChange{},
 	)
@@ -184,6 +189,10 @@ func (s *APIServer) SetupAPIServer() error {
 	sprintRepo := sprints.NewSprintRepository(s.globalUOW)
 	s.sprintService = sprints.NewSprintService(sprintRepo, taskRepo, memberRepo, projectRepo, s.uowFactory)
 
+	// Initialize review service
+	reviewRepo := reviews.NewReviewRepository(s.globalUOW)
+	s.reviewService = reviews.NewReviewService(reviewRepo, sprintRepo, taskRepo, featureRepo, issueRepo, ideaRepo, memberRepo, projectRepo, s.uowFactory)
+
 	// Initialize wiki page service
 	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
 	wikiPageChangeRepo := wiki_pages.NewWikiPageChangeRepository(s.globalUOW)
@@ -202,6 +211,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
 	s.taskHandler = NewTaskHandler(s.taskService)
 	s.sprintHandler = NewSprintHandler(s.sprintService)
+	s.reviewHandler = NewReviewHandler(s.reviewService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
 	s.dashboardHandler = NewDashboardHandler(s.projectService, s.taskService, s.issueService, s.featureService, s.serviceTicketService, s.sprintService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
@@ -220,6 +230,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sprintHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.reviewHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 

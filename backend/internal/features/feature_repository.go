@@ -203,6 +203,18 @@ func (r *FeatureRepository) GetByItemReference(projectID int, itemType string, i
 	return features, total, err
 }
 
+// GetByProjectIDAndSprintID returns features for a specific sprint in a project
+func (r *FeatureRepository) GetByProjectIDAndSprintID(projectID int, sprintID int) ([]Feature, error) {
+	var features []Feature
+
+	err := r.uow.GetDB().Model(&Feature{}).
+		Where("project_id = ? AND sprint_id = ?", projectID, sprintID).
+		Order("created_at DESC").
+		Find(&features).Error
+
+	return features, err
+}
+
 // GetByProjectAndAssigneeLimited returns features assigned to a user in a project (limited)
 func (r *FeatureRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int) ([]Feature, error) {
 	var features []Feature
