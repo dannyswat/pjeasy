@@ -4,16 +4,22 @@ import {
   $getSelection,
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
+  FORMAT_ELEMENT_COMMAND,
   SELECTION_CHANGE_COMMAND,
   COMMAND_PRIORITY_CRITICAL,
   $createParagraphNode,
+  type ElementFormatType,
 } from 'lexical'
 import {
   $setBlocksType,
+  $patchStyleText,
+  $getSelectionStyleValueForProperty,
 } from '@lexical/selection'
 import {
   $createHeadingNode,
   $isHeadingNode,
+  $createQuoteNode,
+  $isQuoteNode,
   type HeadingTagType,
 } from '@lexical/rich-text'
 import {
@@ -25,13 +31,22 @@ import {
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link'
 import { $findMatchingParent, mergeRegister } from '@lexical/utils'
 import { INSERT_TABLE_COMMAND } from '@lexical/table'
+import { $createCodeNode, $isCodeNode } from '@lexical/code'
 import { $createImageNode } from '../nodes/ImageNode'
 import { $insertNodes } from 'lexical'
 import { uploadImage, validateImageFile, ImageUploadError } from '../imageUpload'
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp']
 
-export default function ToolbarPlugin() {
+const FONT_SIZES = ['12px', '14px', '16px', '18px', '20px', '24px', '28px', '32px', '36px', '48px']
+
+const FONT_COLORS = [
+  '#000000', '#434343', '#666666', '#999999', '#cccccc',
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+  '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
+]
+
+export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen }: { isFullscreen?: boolean; onToggleFullscreen?: () => void }) {
   const [editor] = useLexicalComposerContext()
   const [isBold, setIsBold] = useState(false)
   const [isItalic, setIsItalic] = useState(false)
@@ -39,11 +54,17 @@ export default function ToolbarPlugin() {
   const [isStrikethrough, setIsStrikethrough] = useState(false)
   const [isLink, setIsLink] = useState(false)
   const [blockType, setBlockType] = useState<string>('paragraph')
+  const [fontSize, setFontSize] = useState<string>('')
+  const [fontColor, setFontColor] = useState<string>('#000000')
+  const [elementFormat, setElementFormat] = useState<ElementFormatType>('')
   const [showTablePicker, setShowTablePicker] = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
   const [hoveredRows, setHoveredRows] = useState(0)
   const [hoveredCols, setHoveredCols] = useState(0)
   const [pickerPosition, setPickerPosition] = useState({ top: 0, left: 0 })
+  const [colorPickerPosition, setColorPickerPosition] = useState({ top: 0, left: 0 })
   const tableButtonRef = useRef<HTMLButtonElement>(null)
+  const colorButtonRef = useRef<HTMLButtonElement>(null)
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection()
@@ -52,6 +73,10 @@ export default function ToolbarPlugin() {
       setIsItalic(selection.hasFormat('italic'))
       setIsUnderline(selection.hasFormat('underline'))
       setIsStrikethrough(selection.hasFormat('strikethrough'))
+
+      // Font size and color
+      setFontSize($getSelectionStyleValueForProperty(selection, 'font-size', ''))
+      setFontColor($getSelectionStyleValueForProperty(selection, 'color', '#000000'))
 
       const anchorNode = selection.anchor.getNode()
       const element =
@@ -68,8 +93,24 @@ export default function ToolbarPlugin() {
           setBlockType(parentList ? (parentList as ListNode).getListType() : element.getType())
         } else if ($isHeadingNode(element)) {
           setBlockType(element.getTag())
+        } else if ($isQuoteNode(element)) {
+          setBlockType('quote')
+        } else if ($isCodeNode(element)) {
+          setBlockType('code')
         } else {
           setBlockType(element.getType())
+        }
+
+        // Get element alignment
+        const elementDOM = editor.getElementByKey(element.getKey())
+        if (elementDOM) {
+          const style = window.getComputedStyle(elementDOM)
+          const align = style.textAlign
+          if (align === 'center' || align === 'right' || align === 'justify') {
+            setElementFormat(align as ElementFormatType)
+          } else {
+            setElementFormat('left' as ElementFormatType)
+          }
         }
       }
 
@@ -77,7 +118,7 @@ export default function ToolbarPlugin() {
       const node = anchorNode.getParent()
       setIsLink($isLinkNode(node))
     }
-  }, [])
+  }, [editor])
 
   useEffect(() => {
     return mergeRegister(
@@ -99,22 +140,31 @@ export default function ToolbarPlugin() {
 
   // Close table picker on outside click
   useEffect(() => {
-    if (!showTablePicker) return
+    if (!showTablePicker && !showColorPicker) return
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
       if (
+        showTablePicker &&
         tableButtonRef.current &&
         !tableButtonRef.current.contains(target) &&
         !(target as HTMLElement).closest('.table-picker-popup')
       ) {
         setShowTablePicker(false)
       }
+      if (
+        showColorPicker &&
+        colorButtonRef.current &&
+        !colorButtonRef.current.contains(target) &&
+        !(target as HTMLElement).closest('.color-picker-popup')
+      ) {
+        setShowColorPicker(false)
+      }
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showTablePicker])
+  }, [showTablePicker, showColorPicker])
 
   const formatHeading = (headingSize: HeadingTagType | 'paragraph') => {
     editor.update(() => {
@@ -129,13 +179,67 @@ export default function ToolbarPlugin() {
     })
   }
 
+  const formatBlockquote = () => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        if (blockType === 'quote') {
+          $setBlocksType(selection, () => $createParagraphNode())
+        } else {
+          $setBlocksType(selection, () => $createQuoteNode())
+        }
+      }
+    })
+  }
+
+  const formatCodeBlock = () => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        if (blockType === 'code') {
+          $setBlocksType(selection, () => $createParagraphNode())
+        } else {
+          $setBlocksType(selection, () => $createCodeNode())
+        }
+      }
+    })
+  }
+
+  const applyFontSize = (size: string) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        $patchStyleText(selection, { 'font-size': size || null })
+      }
+    })
+  }
+
+  const applyFontColor = (color: string) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if ($isRangeSelection(selection)) {
+        $patchStyleText(selection, { color })
+      }
+    })
+    setFontColor(color)
+    setShowColorPicker(false)
+  }
+
+  const formatAlignment = (alignment: ElementFormatType) => {
+    editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, alignment)
+  }
+
   const insertLink = () => {
     if (isLink) {
       editor.dispatchCommand(TOGGLE_LINK_COMMAND, null)
     } else {
       const url = prompt('Enter URL:', 'https://')
       if (url) {
-        editor.dispatchCommand(TOGGLE_LINK_COMMAND, url)
+        editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
+          url,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        })
       }
     }
   }
@@ -187,6 +291,19 @@ export default function ToolbarPlugin() {
         <option value="h3">Heading 3</option>
       </select>
 
+      {/* Font Size */}
+      <select
+        className="toolbar-select"
+        value={fontSize}
+        onChange={(e) => applyFontSize(e.target.value)}
+        title="Font Size"
+      >
+        <option value="">Size</option>
+        {FONT_SIZES.map((size) => (
+          <option key={size} value={size}>{size}</option>
+        ))}
+      </select>
+
       <span className="toolbar-divider" />
 
       {/* Text formatting */}
@@ -223,6 +340,135 @@ export default function ToolbarPlugin() {
         <s>S</s>
       </button>
 
+      {/* Font Color */}
+      <button
+        ref={colorButtonRef}
+        type="button"
+        className="toolbar-button"
+        onClick={() => {
+          if (!showColorPicker && colorButtonRef.current) {
+            const rect = colorButtonRef.current.getBoundingClientRect()
+            const toolbar = colorButtonRef.current.closest('.toolbar')
+            const toolbarRect = toolbar?.getBoundingClientRect()
+            setColorPickerPosition({
+              top: colorButtonRef.current.offsetTop + colorButtonRef.current.offsetHeight + 4,
+              left: toolbarRect ? rect.left - toolbarRect.left : colorButtonRef.current.offsetLeft,
+            })
+          }
+          setShowColorPicker(!showColorPicker)
+        }}
+        title="Font Color"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <text x="3" y="11" fontSize="11" fontWeight="bold" fontFamily="serif">A</text>
+          <rect x="2" y="13" width="12" height="2.5" rx="0.5" fill={fontColor} />
+        </svg>
+      </button>
+
+      {/* Color Picker Popup */}
+      {showColorPicker && (
+        <div
+          className="color-picker-popup"
+          style={{
+            position: 'absolute',
+            top: `${colorPickerPosition.top}px`,
+            left: `${colorPickerPosition.left - 40}px`,
+            backgroundColor: 'white',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            zIndex: 1000,
+          }}
+        >
+          <div style={{ marginBottom: '6px', fontSize: '12px', color: '#666' }}>Font Color</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 24px)', gap: '3px' }}>
+            {FONT_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => applyFontColor(color)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  backgroundColor: color,
+                  border: fontColor === color ? '2px solid #6366f1' : '1px solid #ddd',
+                  borderRadius: '3px',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+                title={color}
+              />
+            ))}
+          </div>
+          <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label style={{ fontSize: '12px', color: '#666' }}>Custom:</label>
+            <input
+              type="color"
+              value={fontColor}
+              onChange={(e) => applyFontColor(e.target.value)}
+              style={{ width: '28px', height: '24px', padding: 0, border: 'none', cursor: 'pointer' }}
+            />
+          </div>
+        </div>
+      )}
+
+      <span className="toolbar-divider" />
+
+      {/* Text Alignment */}
+      <button
+        type="button"
+        className={`toolbar-button ${elementFormat === 'left' || elementFormat === '' ? 'active' : ''}`}
+        onClick={() => formatAlignment('left')}
+        title="Align Left"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="2" y="2" width="12" height="1.5" />
+          <rect x="2" y="5.5" width="8" height="1.5" />
+          <rect x="2" y="9" width="12" height="1.5" />
+          <rect x="2" y="12.5" width="8" height="1.5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`toolbar-button ${elementFormat === 'center' ? 'active' : ''}`}
+        onClick={() => formatAlignment('center')}
+        title="Align Center"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="2" y="2" width="12" height="1.5" />
+          <rect x="4" y="5.5" width="8" height="1.5" />
+          <rect x="2" y="9" width="12" height="1.5" />
+          <rect x="4" y="12.5" width="8" height="1.5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`toolbar-button ${elementFormat === 'right' ? 'active' : ''}`}
+        onClick={() => formatAlignment('right')}
+        title="Align Right"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="2" y="2" width="12" height="1.5" />
+          <rect x="6" y="5.5" width="8" height="1.5" />
+          <rect x="2" y="9" width="12" height="1.5" />
+          <rect x="6" y="12.5" width="8" height="1.5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`toolbar-button ${elementFormat === 'justify' ? 'active' : ''}`}
+        onClick={() => formatAlignment('justify')}
+        title="Justify"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="2" y="2" width="12" height="1.5" />
+          <rect x="2" y="5.5" width="12" height="1.5" />
+          <rect x="2" y="9" width="12" height="1.5" />
+          <rect x="2" y="12.5" width="12" height="1.5" />
+        </svg>
+      </button>
+
       <span className="toolbar-divider" />
 
       {/* Lists */}
@@ -257,6 +503,34 @@ export default function ToolbarPlugin() {
         </svg>
       </button>
 
+      {/* Blockquote */}
+      <button
+        type="button"
+        className={`toolbar-button ${blockType === 'quote' ? 'active' : ''}`}
+        onClick={formatBlockquote}
+        title="Blockquote"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <rect x="2" y="2" width="2" height="12" rx="1" />
+          <rect x="6" y="3" width="8" height="1.5" />
+          <rect x="6" y="7" width="8" height="1.5" />
+          <rect x="6" y="11" width="6" height="1.5" />
+        </svg>
+      </button>
+
+      {/* Code Block */}
+      <button
+        type="button"
+        className={`toolbar-button ${blockType === 'code' ? 'active' : ''}`}
+        onClick={formatCodeBlock}
+        title="Code Block"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M5.854 4.854a.5.5 0 1 0-.708-.708l-3.5 3.5a.5.5 0 0 0 0 .708l3.5 3.5a.5.5 0 0 0 .708-.708L2.707 8l3.147-3.146z" />
+          <path d="M10.146 4.854a.5.5 0 0 1 .708-.708l3.5 3.5a.5.5 0 0 1 0 .708l-3.5 3.5a.5.5 0 0 1-.708-.708L13.293 8l-3.147-3.146z" />
+        </svg>
+      </button>
+
       <span className="toolbar-divider" />
 
       {/* Link */}
@@ -264,7 +538,7 @@ export default function ToolbarPlugin() {
         type="button"
         className={`toolbar-button ${isLink ? 'active' : ''}`}
         onClick={insertLink}
-        title="Insert Link"
+        title="Insert Link (opens in new tab)"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
           <path d="M6.354 5.5H7a.5.5 0 0 1 0 1h-.354a4 4 0 0 0 0 8h.354a.5.5 0 0 1 0 1H6.5a5 5 0 0 1 0-10zm3.292 0H9a.5.5 0 0 1 0 1h.646a4 4 0 0 0 0 8H9a.5.5 0 0 1 0 1h.5a5 5 0 0 0 0-10z" transform="scale(0.8) translate(2, 2)" />
@@ -314,6 +588,28 @@ export default function ToolbarPlugin() {
           <line x1="10" y1="2" x2="10" y2="14" stroke="currentColor" strokeWidth="1.5" />
         </svg>
       </button>
+
+      <span className="toolbar-divider" />
+
+      {/* Fullscreen */}
+      {onToggleFullscreen && (
+        <button
+          type="button"
+          className={`toolbar-button ${isFullscreen ? 'active' : ''}`}
+          onClick={onToggleFullscreen}
+          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        >
+          {isFullscreen ? (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M5.5 1a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-.5.5h-4a.5.5 0 0 1 0-1H5V1.5a.5.5 0 0 1 .5-.5zm5 0a.5.5 0 0 1 .5.5V5h3.5a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5zM1 10.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V11H1.5a.5.5 0 0 1-.5-.5zm9 0a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H11v3.5a.5.5 0 0 1-1 0v-4z" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M1.5 1a.5.5 0 0 0-.5.5v4a.5.5 0 0 0 1 0V2h3.5a.5.5 0 0 0 0-1h-4zm0 14a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 1 0V14h3.5a.5.5 0 0 1 0 1h-4zm13-14a.5.5 0 0 1 .5.5v4a.5.5 0 0 1-1 0V2h-3.5a.5.5 0 0 1 0-1h4zm0 14a.5.5 0 0 0 .5-.5v-4a.5.5 0 0 0-1 0V14h-3.5a.5.5 0 0 0 0 1h4z" />
+            </svg>
+          )}
+        </button>
+      )}
 
       {/* Table Picker Popup */}
       {showTablePicker && (

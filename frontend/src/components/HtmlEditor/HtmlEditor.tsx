@@ -1,4 +1,4 @@
-import { useEffect, useCallback, forwardRef, useImperativeHandle, useRef } from 'react'
+import { useEffect, useCallback, useState, forwardRef, useImperativeHandle, useRef } from 'react'
 import { LexicalComposer } from '@lexical/react/LexicalComposer'
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin'
 import { ContentEditable } from '@lexical/react/LexicalContentEditable'
@@ -13,12 +13,14 @@ import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ListNode, ListItemNode } from '@lexical/list'
 import { LinkNode, AutoLinkNode } from '@lexical/link'
 import { TableNode, TableCellNode, TableRowNode } from '@lexical/table'
+import { CodeNode, CodeHighlightNode } from '@lexical/code'
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html'
-import { $getRoot, $insertNodes, type EditorState } from 'lexical'
+import { $getRoot, $insertNodes, TextNode, type EditorState } from 'lexical'
 import ToolbarPlugin from './plugins/ToolbarPlugin'
 import TableActionMenuPlugin from './plugins/TableActionMenuPlugin'
 import ImagePlugin from './plugins/ImagePlugin'
 import { ImageNode } from './nodes/ImageNode'
+import { ExtendedTextNode } from './nodes/ExtendedTextNode'
 import './HtmlEditor.css'
 
 export interface HtmlEditorRef {
@@ -120,6 +122,40 @@ const theme = {
     strikethrough: 'editor-text-strikethrough',
     code: 'editor-text-code',
   },
+  quote: 'editor-quote',
+  code: 'editor-code-block',
+  codeHighlight: {
+    atrule: 'editor-tokenAttr',
+    attr: 'editor-tokenAttr',
+    boolean: 'editor-tokenProperty',
+    builtin: 'editor-tokenSelector',
+    cdata: 'editor-tokenComment',
+    char: 'editor-tokenSelector',
+    class: 'editor-tokenFunction',
+    'class-name': 'editor-tokenFunction',
+    comment: 'editor-tokenComment',
+    constant: 'editor-tokenProperty',
+    deleted: 'editor-tokenProperty',
+    doctype: 'editor-tokenComment',
+    entity: 'editor-tokenOperator',
+    function: 'editor-tokenFunction',
+    important: 'editor-tokenVariable',
+    inserted: 'editor-tokenSelector',
+    keyword: 'editor-tokenAttr',
+    namespace: 'editor-tokenVariable',
+    number: 'editor-tokenProperty',
+    operator: 'editor-tokenOperator',
+    prolog: 'editor-tokenComment',
+    property: 'editor-tokenProperty',
+    punctuation: 'editor-tokenPunctuation',
+    regex: 'editor-tokenVariable',
+    selector: 'editor-tokenSelector',
+    string: 'editor-tokenSelector',
+    symbol: 'editor-tokenProperty',
+    tag: 'editor-tokenProperty',
+    url: 'editor-tokenOperator',
+    variable: 'editor-tokenVariable',
+  },
   table: 'editor-table',
   tableCell: 'editor-table-cell',
   tableCellHeader: 'editor-table-cell-header',
@@ -133,6 +169,8 @@ function onError(error: Error) {
 
 const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
   ({ value, onChange, placeholder = 'Enter description...', minHeight = '200px' }, ref) => {
+    const [isFullscreen, setIsFullscreen] = useState(false)
+
     const initialConfig = {
       namespace: 'HtmlEditor',
       theme,
@@ -147,6 +185,14 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
         TableNode,
         TableCellNode,
         TableRowNode,
+        CodeNode,
+        CodeHighlightNode,
+        ExtendedTextNode,
+        {
+          replace: TextNode,
+          with: (node: TextNode) => new ExtendedTextNode(node.__text),
+          withKlass: ExtendedTextNode,
+        },
         ImageNode,
       ],
     }
@@ -168,11 +214,21 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
       },
     }))
 
+    // Handle Escape to exit fullscreen
+    useEffect(() => {
+      if (!isFullscreen) return
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') setIsFullscreen(false)
+      }
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [isFullscreen])
+
     return (
-      <div className="html-editor-wrapper" style={{ minHeight }}>
+      <div className={`html-editor-wrapper ${isFullscreen ? 'html-editor-fullscreen' : ''}`} style={isFullscreen ? undefined : { minHeight }}>
         <LexicalComposer initialConfig={initialConfig}>
           <div className="html-editor-container">
-            <ToolbarPlugin />
+            <ToolbarPlugin isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen((f) => !f)} />
             <div className="editor-inner">
               <RichTextPlugin
                 contentEditable={<ContentEditable className="editor-input" />}
