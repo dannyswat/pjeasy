@@ -46,6 +46,17 @@ const FONT_COLORS = [
   '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e',
 ]
 
+const CODE_LANGUAGES = [
+  { label: 'Plain', value: '' },
+  { label: 'JSON', value: 'json' },
+  { label: 'XML/HTML', value: 'markup' },
+  { label: 'JavaScript', value: 'javascript' },
+  { label: 'TypeScript', value: 'typescript' },
+  { label: 'Python', value: 'python' },
+  { label: 'C#', value: 'csharp' },
+  { label: 'C++', value: 'cpp' },
+]
+
 export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen }: { isFullscreen?: boolean; onToggleFullscreen?: () => void }) {
   const [editor] = useLexicalComposerContext()
   const [isBold, setIsBold] = useState(false)
@@ -56,6 +67,7 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen }: { is
   const [blockType, setBlockType] = useState<string>('paragraph')
   const [fontSize, setFontSize] = useState<string>('')
   const [fontColor, setFontColor] = useState<string>('#000000')
+  const [codeLanguage, setCodeLanguage] = useState<string>('')
   const [elementFormat, setElementFormat] = useState<ElementFormatType>('')
   const [showTablePicker, setShowTablePicker] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
@@ -97,8 +109,10 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen }: { is
           setBlockType('quote')
         } else if ($isCodeNode(element)) {
           setBlockType('code')
+          setCodeLanguage(element.getLanguage() ?? '')
         } else {
           setBlockType(element.getType())
+          setCodeLanguage('')
         }
 
         // Get element alignment
@@ -198,11 +212,30 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen }: { is
       if ($isRangeSelection(selection)) {
         if (blockType === 'code') {
           $setBlocksType(selection, () => $createParagraphNode())
+          setCodeLanguage('')
         } else {
           $setBlocksType(selection, () => $createCodeNode())
+          setCodeLanguage('')
         }
       }
     })
+  }
+
+  const applyCodeLanguage = (language: string) => {
+    editor.update(() => {
+      const selection = $getSelection()
+      if (!$isRangeSelection(selection)) return
+
+      const anchorNode = selection.anchor.getNode()
+      const codeNode = $isCodeNode(anchorNode)
+        ? anchorNode
+        : $findMatchingParent(anchorNode, $isCodeNode)
+
+      if ($isCodeNode(codeNode)) {
+        codeNode.setLanguage(language)
+      }
+    })
+    setCodeLanguage(language)
   }
 
   const applyFontSize = (size: string) => {
@@ -530,6 +563,21 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen }: { is
           <path d="M10.146 4.854a.5.5 0 0 1 .708-.708l3.5 3.5a.5.5 0 0 1 0 .708l-3.5 3.5a.5.5 0 0 1-.708-.708L13.293 8l-3.147-3.146z" />
         </svg>
       </button>
+
+      {blockType === 'code' && (
+        <select
+          className="toolbar-select toolbar-select-code-language"
+          value={codeLanguage}
+          onChange={(e) => applyCodeLanguage(e.target.value)}
+          title="Code language"
+        >
+          {CODE_LANGUAGES.map((language) => (
+            <option key={language.value || 'plain'} value={language.value}>
+              {language.label}
+            </option>
+          ))}
+        </select>
+      )}
 
       <span className="toolbar-divider" />
 

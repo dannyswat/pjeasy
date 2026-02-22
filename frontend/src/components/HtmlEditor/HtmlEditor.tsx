@@ -13,7 +13,7 @@ import { HeadingNode, QuoteNode } from '@lexical/rich-text'
 import { ListNode, ListItemNode } from '@lexical/list'
 import { LinkNode, AutoLinkNode } from '@lexical/link'
 import { TableNode, TableCellNode, TableRowNode } from '@lexical/table'
-import { CodeNode, CodeHighlightNode } from '@lexical/code'
+import { CodeNode, CodeHighlightNode, registerCodeHighlighting } from '@lexical/code'
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html'
 import { $getRoot, $insertNodes, TextNode, type EditorState } from 'lexical'
 import ToolbarPlugin from './plugins/ToolbarPlugin'
@@ -22,6 +22,13 @@ import ImagePlugin from './plugins/ImagePlugin'
 import { ImageNode } from './nodes/ImageNode'
 import { ExtendedTextNode } from './nodes/ExtendedTextNode'
 import './HtmlEditor.css'
+import Prism from 'prismjs'
+import loadLanguages from 'prismjs/components/index'
+
+if (!(globalThis as { Prism?: typeof Prism }).Prism) {
+  ;(globalThis as { Prism?: typeof Prism }).Prism = Prism
+  loadLanguages(['markup', 'json', 'javascript', 'typescript', 'python', 'csharp', 'cpp'])
+}
 
 export interface HtmlEditorRef {
   resetContent: (html: string) => void
@@ -97,6 +104,16 @@ function HtmlChangePlugin({ onChange }: { onChange: (html: string) => void }) {
   )
 
   return <OnChangePlugin onChange={handleChange} />
+}
+
+function CodeHighlightingPlugin() {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    return registerCodeHighlighting(editor)
+  }, [editor])
+
+  return null
 }
 
 const theme = {
@@ -239,6 +256,7 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
               <ListPlugin />
               <LinkPlugin />
               <TablePlugin />
+              <CodeHighlightingPlugin />
               <TableActionMenuPlugin />
               <ImagePlugin />
               <LoadInitialContentPlugin value={value} />
