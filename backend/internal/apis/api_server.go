@@ -207,7 +207,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.userHandler = NewUserHandler(s.userService)
 	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
 	s.adminHandler = NewAdminHandler(s.adminService)
-	s.projectHandler = NewProjectHandler(s.projectService)
+	s.projectHandler = NewProjectHandler(s.projectService, s.sequenceService)
 	s.ideaHandler = NewIdeaHandler(s.ideaService)
 	s.issueHandler = NewIssueHandler(s.issueService)
 	s.featureHandler = NewFeatureHandler(s.featureService)

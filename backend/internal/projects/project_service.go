@@ -81,12 +81,6 @@ func (s *ProjectService) CreateProject(name, description string, createdBy int) 
 	// Invalidate cache for this project
 	s.memberCache.InvalidateProject(project.ID)
 
-	// Generate default sequences for the project
-	if err := s.sequenceRepo.CreateSequenceIfNotExists(project.ID, "ideas", "IDEA", 4); err != nil {
-		// Log the error but don't fail project creation
-		// Sequences can be generated later if needed
-	}
-
 	return project, nil
 }
 

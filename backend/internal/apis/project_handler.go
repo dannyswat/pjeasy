@@ -5,16 +5,19 @@ import (
 	"strconv"
 
 	"github.com/dannyswat/pjeasy/internal/projects"
+	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/labstack/echo/v4"
 )
 
 type ProjectHandler struct {
-	projectService *projects.ProjectService
+	projectService  *projects.ProjectService
+	sequenceService *sequences.SequenceService
 }
 
-func NewProjectHandler(projectService *projects.ProjectService) *ProjectHandler {
+func NewProjectHandler(projectService *projects.ProjectService, sequenceService *sequences.SequenceService) *ProjectHandler {
 	return &ProjectHandler{
-		projectService: projectService,
+		projectService:  projectService,
+		sequenceService: sequenceService,
 	}
 }
 
@@ -81,6 +84,11 @@ func (h *ProjectHandler) CreateProject(c echo.Context) error {
 	project, err := h.projectService.CreateProject(req.Name, req.Description, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := h.sequenceService.GenerateProjectSequences(project.ID); err != nil {
+		// Non-fatal: log and continue so the project is still returned
+		c.Logger().Errorf("failed to generate default sequences for project %d: %v", project.ID, err)
 	}
 
 	response := ProjectResponse{

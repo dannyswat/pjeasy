@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useGetProject } from './useGetProject'
 import { useCreateProject } from './useCreateProject'
@@ -9,8 +9,10 @@ import { useGenerateSequences } from './useGenerateSequences'
 
 export default function ProjectFormPage() {
   const navigate = useNavigate()
-  const { id } = useParams<{ id: string }>()
-  const projectId = id ? parseInt(id) : null
+  const { id, projectId: projectIdParam } = useParams<{ id?: string; projectId?: string }>()
+  const rawProjectId = projectIdParam ?? id
+  const parsedProjectId = rawProjectId ? parseInt(rawProjectId, 10) : null
+  const projectId = parsedProjectId && !Number.isNaN(parsedProjectId) ? parsedProjectId : null
   const isEditMode = projectId !== null
 
   const { project, members, isLoading, refetch } = useGetProject(projectId)
@@ -28,6 +30,12 @@ export default function ProjectFormPage() {
   const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    if (!project) return
+    setName(project.name)
+    setDescription(project.description || '')
+  }, [project])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
