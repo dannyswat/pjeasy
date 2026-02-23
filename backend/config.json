@@ -1,0 +1,21 @@
+{
+  "server": {
+    "address": ":8080",
+    "frontendDir": "",
+    "uploadDir": "uploads/images"
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "user": "postgres",
+    "password": "postgres",
+    "dbName": "pjeasy",
+    "sslMode": "disable"
+  },
+  "auth": {
+    "jwtSecret": "your-secret-key-change-this-in-production",
+    "accessTokenDuration": "15m",
+    "refreshTokenDuration": "720h"
+  },
+  "autoMigrate": true
+}

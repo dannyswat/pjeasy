@@ -14,7 +14,6 @@ import (
 
 const (
 	maxUploadSize = 5 * 1024 * 1024 // 5MB
-	uploadDir     = "uploads/images"
 )
 
 var allowedImageTypes = map[string]bool{
@@ -82,12 +81,12 @@ func (s *APIServer) UploadImage(c echo.Context) error {
 	filename := fmt.Sprintf("%d_%s%s", userID, uuid.New().String(), ext)
 
 	// Create upload directory if it doesn't exist
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+	if err := os.MkdirAll(s.config.Server.UploadDir, 0755); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create upload directory")
 	}
 
 	// Create destination file
-	destPath := filepath.Join(uploadDir, filename)
+	destPath := filepath.Join(s.config.Server.UploadDir, filename)
 	dst, err := os.Create(destPath)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save file")
@@ -118,7 +117,7 @@ func (s *APIServer) ServeUploadedImage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid filename")
 	}
 
-	filePath := filepath.Join(uploadDir, filename)
+	filePath := filepath.Join(s.config.Server.UploadDir, filename)
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {

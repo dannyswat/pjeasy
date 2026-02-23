@@ -1,3 +1,5 @@
+github.com/dannyswat/vchtml v0.0.2 h1:m9Y3GEpYuFZxHt9g6n6SBYnUCoOLFhnTsN6DL4OA5m8=
+github.com/dannyswat/vchtml v0.0.2/go.mod h1:8loHVkFPa6aWxpbWlOiUDb6fo543YmNkrZB8ebif338=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

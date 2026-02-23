@@ -2,9 +2,13 @@ package apis
 
 import (
 	"errors"
+	"io/fs"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/comments"
+	"github.com/dannyswat/pjeasy/internal/config"
 	"github.com/dannyswat/pjeasy/internal/features"
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/issues"
@@ -26,7 +30,7 @@ import (
 )
 
 type APIServer struct {
-	Address    string
+	config     *config.Config
 	echo       *echo.Echo
 	gorm       *gorm.DB
 	uowFactory *repositories.UnitOfWorkFactory
@@ -68,20 +72,21 @@ type APIServer struct {
 }
 
 func (s *APIServer) StartOrFatal() {
-	s.echo.Logger.Fatal(s.echo.Start(s.Address))
+	s.echo.Logger.Fatal(s.echo.Start(s.config.Server.Address))
 }
 
-func NewAPIServer() *APIServer {
+func NewAPIServer(cfg *config.Config) *APIServer {
 	return &APIServer{
-		Address: ":8080",
-		echo:    echo.New(),
+		config: cfg,
+		echo:   echo.New(),
 	}
 }
 
-func (s *APIServer) SetupDatabase(config *repositories.DatabaseConfig) error {
+func (s *APIServer) SetupDatabase() error {
+	dbConfig := s.config.Database.ToRepositoryConfig()
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: config.GetPostgresConnectionString(),
+		DSN: dbConfig.GetPostgresConnectionString(),
 	}), &gorm.Config{})
 	if err != nil {
 		return err
@@ -92,8 +97,8 @@ func (s *APIServer) SetupDatabase(config *repositories.DatabaseConfig) error {
 	return nil
 }
 
-func (s *APIServer) AutoMigrate(enabled bool) error {
-	if !enabled {
+func (s *APIServer) AutoMigrate() error {
+	if !s.config.AutoMigrate {
 		return nil
 	}
 	if s.gorm == nil {
@@ -237,5 +242,47 @@ func (s *APIServer) SetupAPIServer() error {
 	// Register upload routes
 	RegisterUploadRoutes(s.echo, s, s.authMiddleware)
 
+	// Serve frontend static files if configured
+	if s.config.Server.FrontendDir != "" {
+		s.setupStaticFileServing(s.config.Server.FrontendDir)
+	}
+
 	return nil
+}
+
+// setupStaticFileServing serves the React SPA from the specified directory.
+// API routes (/api/*) and upload routes (/uploads/*) take precedence.
+// All other routes fall back to index.html for client-side routing.
+func (s *APIServer) setupStaticFileServing(frontendDir string) {
+	// Read index.html once for SPA fallback
+	indexHTML, err := os.ReadFile(frontendDir + "/index.html")
+	if err != nil {
+		s.echo.Logger.Warnf("Frontend directory configured but index.html not found: %s", err)
+		return
+	}
+
+	// Serve static assets (js, css, images, etc.)
+	assetHandler := http.FileServer(http.FS(os.DirFS(frontendDir)))
+
+	// Catch-all route: serve static file if exists, otherwise serve index.html for SPA routing
+	s.echo.GET("/*", echo.WrapHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Try to serve static file first
+		path := r.URL.Path
+		if path == "/" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Write(indexHTML)
+			return
+		}
+
+		// Check if file exists in the frontend directory
+		f, err := fs.Stat(os.DirFS(frontendDir), path[1:]) // strip leading /
+		if err == nil && !f.IsDir() {
+			assetHandler.ServeHTTP(w, r)
+			return
+		}
+
+		// SPA fallback: serve index.html for client-side routing
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(indexHTML)
+	})))
 }
