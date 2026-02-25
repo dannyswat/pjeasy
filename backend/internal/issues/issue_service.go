@@ -92,13 +92,18 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 		return nil, err
 	}
 
+	initialStatus := IssueStatusOpen
+	if assignedTo > 0 {
+		initialStatus = IssueStatusAssigned
+	}
+
 	now := time.Now()
 	issue := &Issue{
 		RefNum:      refNum,
 		ProjectID:   projectID,
 		Title:       title,
 		Description: description,
-		Status:      IssueStatusOpen,
+		Status:      initialStatus,
 		Priority:    priority,
 		AssignedTo:  assignedTo,
 		SprintID:    sprintID,
@@ -163,11 +168,18 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 	issue.Title = title
 	issue.Description = description
 	issue.Priority = priority
-	issue.AssignedTo = assignedTo
 	issue.SprintID = sprintID
 	issue.Points = points
 	issue.Tags = tags
 	issue.UpdatedAt = time.Now()
+
+	// Auto-transition status based on assignment change
+	if assignedTo > 0 && issue.AssignedTo == 0 && issue.Status == IssueStatusOpen {
+		issue.Status = IssueStatusAssigned
+	} else if assignedTo == 0 && issue.AssignedTo > 0 && issue.Status == IssueStatusAssigned {
+		issue.Status = IssueStatusOpen
+	}
+	issue.AssignedTo = assignedTo
 
 	if err := s.issueRepo.Update(issue); err != nil {
 		return nil, err
@@ -254,11 +266,22 @@ func (s *IssueService) UpdateIssueAssignee(issueID int, assignedTo int, updatedB
 		}
 	}
 
+	// Auto-transition status based on assignment change
+	if assignedTo > 0 && issue.AssignedTo == 0 && issue.Status == IssueStatusOpen {
+		if err := s.issueRepo.UpdateStatus(issueID, IssueStatusAssigned); err != nil {
+			return nil, err
+		}
+	} else if assignedTo == 0 && issue.AssignedTo > 0 && issue.Status == IssueStatusAssigned {
+		if err := s.issueRepo.UpdateStatus(issueID, IssueStatusOpen); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.issueRepo.UpdateAssignee(issueID, assignedTo); err != nil {
 		return nil, err
 	}
 
-	// Reload issue to get updated assignee
+	// Reload issue to get updated assignee and status
 	return s.issueRepo.GetByID(issueID)
 }
 
