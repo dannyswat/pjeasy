@@ -80,13 +80,18 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 		return nil, err
 	}
 
+	initialStatus := FeatureStatusOpen
+	if assignedTo > 0 {
+		initialStatus = FeatureStatusAssigned
+	}
+
 	now := time.Now()
 	feature := &Feature{
 		RefNum:      refNum,
 		ProjectID:   projectID,
 		Title:       title,
 		Description: description,
-		Status:      FeatureStatusOpen,
+		Status:      initialStatus,
 		Priority:    priority,
 		AssignedTo:  assignedTo,
 		SprintID:    sprintID,
@@ -152,12 +157,19 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 	feature.Title = title
 	feature.Description = description
 	feature.Priority = priority
-	feature.AssignedTo = assignedTo
 	feature.SprintID = sprintID
 	feature.Points = points
 	feature.Deadline = deadline
 	feature.Tags = tags
 	feature.UpdatedAt = time.Now()
+
+	// Auto-transition status based on assignment change
+	if assignedTo > 0 && feature.AssignedTo == 0 && feature.Status == FeatureStatusOpen {
+		feature.Status = FeatureStatusAssigned
+	} else if assignedTo == 0 && feature.AssignedTo > 0 && feature.Status == FeatureStatusAssigned {
+		feature.Status = FeatureStatusOpen
+	}
+	feature.AssignedTo = assignedTo
 
 	if err := s.featureRepo.Update(feature); err != nil {
 		return nil, err
@@ -227,11 +239,22 @@ func (s *FeatureService) UpdateFeatureAssignee(featureID int, assignedTo int, up
 		}
 	}
 
+	// Auto-transition status based on assignment change
+	if assignedTo > 0 && feature.AssignedTo == 0 && feature.Status == FeatureStatusOpen {
+		if err := s.featureRepo.UpdateStatus(featureID, FeatureStatusAssigned); err != nil {
+			return nil, err
+		}
+	} else if assignedTo == 0 && feature.AssignedTo > 0 && feature.Status == FeatureStatusAssigned {
+		if err := s.featureRepo.UpdateStatus(featureID, FeatureStatusOpen); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.featureRepo.UpdateAssignee(featureID, assignedTo); err != nil {
 		return nil, err
 	}
 
-	// Reload feature to get updated assignee
+	// Reload feature to get updated assignee and status
 	return s.featureRepo.GetByID(featureID)
 }
 

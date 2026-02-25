@@ -4,12 +4,32 @@ import { useCountNewServiceTickets } from '../service_tickets/useCountNewService
 import { useProjectContext } from '../projects/ProjectContext'
 import ProjectSelector from './ProjectSelector'
 import { useCheckAdmin } from '../admins/useCheckAdmin'
+import { useRevokeSession } from '../auth/useRevokeSession'
+import { useUserSession } from '../auth/useUserSession'
 
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const location = useLocation()
   const params = useParams()
   const { selectedProjectId, setSelectedProjectId } = useProjectContext()
+  const { logout } = useRevokeSession()
+  const { getUser } = useUserSession()
+  const currentUser = getUser()
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
+  }
+
+  const handleSignOut = async () => {
+    await logout()
+    window.location.href = '/login'
+  }
   
   // Check if we're in a project context
   const projectId = params.projectId || params.id
@@ -65,8 +85,38 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
               </svg>
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
-                JD
+              <div className="relative">
+                <button
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                  className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700 hover:bg-indigo-200 transition-colors"
+                >
+                  {currentUser ? getInitials(currentUser.name) : '?'}
+                </button>
+                {profileMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setProfileMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20 py-1">
+                      {currentUser && (
+                        <div className="px-4 py-2 border-b border-gray-100">
+                          <p className="text-xs font-semibold text-gray-900 truncate">{currentUser.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{currentUser.loginId}</p>
+                        </div>
+                      )}
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
