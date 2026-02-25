@@ -82,7 +82,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value={FeaturePriority.IMMEDIATE}>Immediate</option>
                 <option value={FeaturePriority.URGENT}>Urgent</option>
@@ -102,21 +102,32 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
                 onChange={(e) => setPoints(e.target.value === '' ? undefined : parseInt(e.target.value))}
                 min="0"
                 placeholder="Enter points"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Deadline (optional)
+              Deadline <span className="text-gray-400 font-normal">(optional)</span>
             </label>
-            <input
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="flex-1 h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              {deadline && (
+                <button
+                  type="button"
+                  onClick={() => setDeadline('')}
+                  className="h-10 px-3 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
           
           <div>

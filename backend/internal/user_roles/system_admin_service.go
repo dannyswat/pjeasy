@@ -94,9 +94,7 @@ func (s *SystemAdminService) AssignAdmin(userID int, expiredAfter *time.Time) (*
 		CreatedAt: time.Now(),
 	}
 
-	if expiredAfter != nil {
-		admin.ExpiredAfter = *expiredAfter
-	}
+	admin.ExpiredAfter = expiredAfter
 
 	err = s.adminRepo.Create(admin)
 	if err != nil {
@@ -150,11 +148,7 @@ func (s *SystemAdminService) UpdateExpiration(userID int, expiredAfter *time.Tim
 		return errors.New("user is not a system admin")
 	}
 
-	if expiredAfter != nil {
-		admin.ExpiredAfter = *expiredAfter
-	} else {
-		admin.ExpiredAfter = time.Time{} // Zero time for no expiration
-	}
+	admin.ExpiredAfter = expiredAfter
 
 	return s.adminRepo.Update(admin)
 }

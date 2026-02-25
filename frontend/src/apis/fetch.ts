@@ -1,3 +1,12 @@
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 interface RefreshTokenResponse {
   user: {
     id: number;
@@ -122,7 +131,14 @@ export async function fetchApi<Type>(
       const errorData = await response
         .json()
         .catch(() => ({ message: "Request failed" }));
-      throw new Error(errorData.message || "Request failed");
+
+      // Redirect to unauthorized page on 403 Forbidden
+      if (response.status === 403 && url.startsWith('/api/projects/')) {
+        window.location.href = '/projects/unauthorized'
+        throw new ApiError(errorData.message || 'Access denied', response.status)
+      }
+
+      throw new ApiError(errorData.message || "Request failed", response.status);
     }
 
     const resStr = await response.text();

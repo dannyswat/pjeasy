@@ -1,19 +1,33 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useCountNewServiceTickets } from '../service_tickets/useCountNewServiceTickets'
+import { useProjectContext } from '../projects/ProjectContext'
+import ProjectSelector from './ProjectSelector'
+import { useCheckAdmin } from '../admins/useCheckAdmin'
 
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const location = useLocation()
   const params = useParams()
+  const { selectedProjectId, setSelectedProjectId } = useProjectContext()
   
   // Check if we're in a project context
   const projectId = params.projectId || params.id
   const isInProject = location.pathname.includes('/projects/') && projectId && projectId !== 'new'
   const projectIdNum = projectId ? parseInt(projectId) : 0
 
+  // Sync context when navigating to a project URL directly
+  useEffect(() => {
+    if (isInProject && projectIdNum && projectIdNum !== selectedProjectId) {
+      setSelectedProjectId(projectIdNum)
+    }
+  }, [isInProject, projectIdNum, selectedProjectId, setSelectedProjectId])
+
   // Get the count of new service tickets for the badge
   const { count: newTicketsCount } = useCountNewServiceTickets(projectIdNum)
+
+  // Check if the current user is a system admin
+  const { isAdmin } = useCheckAdmin()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -37,6 +51,12 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
               </div>
               <h1 className="text-lg font-semibold text-gray-900">PJEasy</h1>
             </Link>
+            {isInProject && (
+              <>
+                <div className="h-5 w-px bg-gray-300"></div>
+                <ProjectSelector />
+              </>
+            )}
           </div>
           <div className="flex items-center space-x-2">
             <button className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600">
@@ -208,55 +228,31 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                 <div className="my-2 border-t border-gray-200"></div>
               </>
             )}
-            
-            {/* Main Navigation */}
-            <Link
-              to="/dashboard"
-              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
-                location.pathname === '/dashboard'
-                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
-              } transition-colors`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              to="/projects"
-              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
-                location.pathname === '/projects' || (location.pathname.startsWith('/projects') && !isInProject)
-                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
-              } transition-colors`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span>Projects</span>
-            </Link>
 
-            {/* Admin Section Divider */}
-            <div className="pt-3 pb-1">
-              <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Administration
-              </div>
-            </div>
+            {/* Admin Section - Only visible to system admins */}
+            {isAdmin && (
+              <>
+                <div className="pt-3 pb-1">
+                  <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Administration
+                  </div>
+                </div>
 
-            <Link
-              to="/admin/system-admins"
-              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
-                location.pathname === '/admin/system-admins'
-                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
-              } transition-colors`}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <span>System Admins</span>
-            </Link>
+                <Link
+                  to="/admin/system-admins"
+                  className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
+                    location.pathname === '/admin/system-admins'
+                      ? 'bg-indigo-50 text-indigo-700 font-medium'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } transition-colors`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                  <span>System Admins</span>
+                </Link>
+              </>
+            )}
           </nav>
         </aside>
 

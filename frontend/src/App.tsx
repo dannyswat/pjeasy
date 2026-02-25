@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import DefaultLayout from './layout/DefaultLayout'
-import DashboardPage from './dashboard/DashboardPage'
 import LoginPage from './auth/LoginPage'
 import RegisterPage from './users/RegisterPage'
 import SystemAdminPage from './admins/SystemAdminPage'
@@ -25,6 +24,9 @@ import FeatureDetailPage from './features/FeatureDetailPage'
 import WikiPage from './wiki/WikiPage'
 import ReviewsPage from './reviews/ReviewsPage'
 import ReviewDetailPage from './reviews/ReviewDetailPage'
+import { ProjectProvider, useProjectContext } from './projects/ProjectContext'
+import NoProjectPage from './projects/NoProjectPage'
+import UnauthorizedPage from './projects/UnauthorizedPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +88,35 @@ function AuthRedirect({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+/**
+ * Redirects to the user's selected/last-visited project dashboard.
+ * Shows NoProjectPage if the user has no projects assigned.
+ */
+function ProjectRedirect() {
+  const { selectedProjectId, isLoading, hasProjects } = useProjectContext()
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p className="mt-3 text-sm text-gray-600">Loading projects...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasProjects) {
+    return <NoProjectPage />
+  }
+
+  if (selectedProjectId) {
+    return <Navigate to={`/projects/${selectedProjectId}`} replace />
+  }
+
+  return <NoProjectPage />
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -111,9 +142,11 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <DashboardPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ProjectRedirect />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -121,9 +154,11 @@ function App() {
             path="/projects"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ProjectsListPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ProjectsListPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -131,9 +166,23 @@ function App() {
             path="/projects/new"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ProjectFormPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ProjectFormPage />
+                  </DefaultLayout>
+                </ProjectProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/unauthorized"
+            element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <UnauthorizedPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -141,9 +190,11 @@ function App() {
             path="/projects/:id"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ProjectDashboardPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ProjectDashboardPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -151,9 +202,11 @@ function App() {
             path="/projects/:projectId/dashboard"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ProjectDashboardPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ProjectDashboardPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -161,9 +214,11 @@ function App() {
             path="/projects/:projectId/settings"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ProjectFormPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ProjectFormPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -171,9 +226,11 @@ function App() {
             path="/projects/:projectId/ideas"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <IdeasPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <IdeasPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -181,9 +238,11 @@ function App() {
             path="/projects/:projectId/ideas/:ideaId"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <IdeaDetailPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <IdeaDetailPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -191,9 +250,11 @@ function App() {
             path="/projects/:projectId/issues"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <IssuesPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <IssuesPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -201,9 +262,11 @@ function App() {
             path="/projects/:projectId/issues/:issueId"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <IssueDetailPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <IssueDetailPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -211,9 +274,11 @@ function App() {
             path="/projects/:projectId/features"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <FeaturesPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <FeaturesPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -221,9 +286,11 @@ function App() {
             path="/projects/:projectId/features/:featureId"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <FeatureDetailPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <FeatureDetailPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -231,9 +298,11 @@ function App() {
             path="/projects/:projectId/wiki"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <WikiPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <WikiPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -241,9 +310,11 @@ function App() {
             path="/projects/:projectId/wiki/:pageId"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <WikiPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <WikiPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -251,9 +322,11 @@ function App() {
             path="/projects/:projectId/service-tickets"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ServiceTicketsPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ServiceTicketsPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -261,9 +334,11 @@ function App() {
             path="/projects/:projectId/service-tickets/:ticketId"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ServiceTicketDetailPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ServiceTicketDetailPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -271,9 +346,11 @@ function App() {
             path="/projects/:projectId/tasks"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <TasksPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <TasksPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -281,9 +358,11 @@ function App() {
             path="/projects/:projectId/sprints"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <SprintsPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <SprintsPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -291,9 +370,11 @@ function App() {
             path="/projects/:projectId/sprints/:sprintId/board"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <SprintBoardPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <SprintBoardPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -301,9 +382,11 @@ function App() {
             path="/projects/:projectId/reviews"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ReviewsPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ReviewsPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -311,9 +394,11 @@ function App() {
             path="/projects/:projectId/reviews/:reviewId"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <ReviewDetailPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ReviewDetailPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />
@@ -321,9 +406,11 @@ function App() {
             path="/admin/system-admins"
             element={
               <ProtectedRoute>
-                <DefaultLayout>
-                  <SystemAdminPage />
-                </DefaultLayout>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <SystemAdminPage />
+                  </DefaultLayout>
+                </ProjectProvider>
               </ProtectedRoute>
             }
           />

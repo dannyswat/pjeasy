@@ -46,10 +46,7 @@ func (h *AdminHandler) ListAdmins(c echo.Context) error {
 
 	response := make([]AdminResponse, 0, len(admins))
 	for _, admin := range admins {
-		var expiredAfter *time.Time
-		if !admin.Admin.ExpiredAfter.IsZero() {
-			expiredAfter = &admin.Admin.ExpiredAfter
-		}
+		expiredAfter := admin.Admin.ExpiredAfter
 
 		response = append(response, AdminResponse{
 			ID:     admin.Admin.ID,
@@ -85,10 +82,7 @@ func (h *AdminHandler) AssignAdmin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	var expiredAfter *time.Time
-	if !admin.ExpiredAfter.IsZero() {
-		expiredAfter = &admin.ExpiredAfter
-	}
+	expiredAfter := admin.ExpiredAfter
 
 	response := map[string]interface{}{
 		"id":           admin.ID,

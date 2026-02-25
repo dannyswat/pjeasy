@@ -44,7 +44,7 @@ export default function ProjectMemberSelect({
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        className="w-full h-10 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       >
         <option value="">{placeholder}</option>
         {members.map((member) => (
