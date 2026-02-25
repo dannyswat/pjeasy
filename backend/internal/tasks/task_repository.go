@@ -182,12 +182,16 @@ func (r *TaskRepository) GetByItemReference(projectID int, itemType string, item
 }
 
 // GetByProjectAndAssigneeOrderByDeadline returns tasks for a user in a project, ordered by deadline (closest first)
-func (r *TaskRepository) GetByProjectAndAssigneeOrderByDeadline(projectID int, assigneeID int, limit int) ([]Task, error) {
+func (r *TaskRepository) GetByProjectAndAssigneeOrderByDeadline(projectID int, assigneeID int, limit int, excludeStatuses []string) ([]Task, error) {
 	var tasks []Task
 
 	// Tasks with deadlines first (ordered by closest deadline), then tasks without deadlines
-	err := r.uow.GetDB().Model(&Task{}).
-		Where("project_id = ? AND assignee_id = ? AND status NOT IN ?", projectID, assigneeID, []string{"Completed", "Closed"}).
+	query := r.uow.GetDB().Model(&Task{}).
+		Where("project_id = ? AND assignee_id = ?", projectID, assigneeID)
+	if len(excludeStatuses) > 0 {
+		query = query.Where("status NOT IN ?", excludeStatuses)
+	}
+	err := query.
 		Order("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, created_at DESC").
 		Limit(limit).
 		Find(&tasks).Error

@@ -216,11 +216,15 @@ func (r *FeatureRepository) GetByProjectIDAndSprintID(projectID int, sprintID in
 }
 
 // GetByProjectAndAssigneeLimited returns features assigned to a user in a project (limited)
-func (r *FeatureRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int) ([]Feature, error) {
+func (r *FeatureRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int, excludeStatuses []string) ([]Feature, error) {
 	var features []Feature
 
-	err := r.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND assigned_to = ? AND status NOT IN ?", projectID, assigneeID, []string{"Completed", "Closed"}).
+	query := r.uow.GetDB().Model(&Feature{}).
+		Where("project_id = ? AND assigned_to = ?", projectID, assigneeID)
+	if len(excludeStatuses) > 0 {
+		query = query.Where("status NOT IN ?", excludeStatuses)
+	}
+	err := query.
 		Order("CASE WHEN deadline IS NULL THEN 1 ELSE 0 END, deadline ASC, created_at DESC").
 		Limit(limit).
 		Find(&features).Error

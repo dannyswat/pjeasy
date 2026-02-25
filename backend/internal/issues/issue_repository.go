@@ -216,11 +216,15 @@ func (r *IssueRepository) GetByProjectIDAndSprintID(projectID int, sprintID int)
 }
 
 // GetByProjectAndAssigneeLimited returns issues assigned to a user in a project (limited)
-func (r *IssueRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int) ([]Issue, error) {
+func (r *IssueRepository) GetByProjectAndAssigneeLimited(projectID int, assigneeID int, limit int, excludeStatuses []string) ([]Issue, error) {
 	var issues []Issue
 
-	err := r.uow.GetDB().Model(&Issue{}).
-		Where("project_id = ? AND assigned_to = ? AND status NOT IN ?", projectID, assigneeID, []string{"Resolved", "Closed"}).
+	query := r.uow.GetDB().Model(&Issue{}).
+		Where("project_id = ? AND assigned_to = ?", projectID, assigneeID)
+	if len(excludeStatuses) > 0 {
+		query = query.Where("status NOT IN ?", excludeStatuses)
+	}
+	err := query.
 		Order("created_at DESC").
 		Limit(limit).
 		Find(&issues).Error

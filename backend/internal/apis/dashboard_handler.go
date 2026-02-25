@@ -88,19 +88,19 @@ func (h *DashboardHandler) GetMemberDashboard(c echo.Context) error {
 	}
 
 	// Get assigned tasks sorted by deadline (closest first)
-	assignedTasks, err := h.taskService.GetTasksByAssigneeOrderByDeadline(projectID, userID, 10)
+	assignedTasks, err := h.taskService.GetTasksByAssigneeOrderByDeadline(projectID, userID, 10, []string{"Completed", "Closed"})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch assigned tasks")
 	}
 
 	// Get assigned issues
-	assignedIssues, err := h.issueService.GetIssuesByAssignee(projectID, userID, 10)
+	assignedIssues, err := h.issueService.GetIssuesByAssignee(projectID, userID, 10, []string{"Completed", "Closed"})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch assigned issues")
 	}
 
 	// Get assigned features
-	assignedFeatures, err := h.featureService.GetFeaturesByAssignee(projectID, userID, 10)
+	assignedFeatures, err := h.featureService.GetFeaturesByAssignee(projectID, userID, 10, []string{"Completed", "Closed"})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch assigned features")
 	}
