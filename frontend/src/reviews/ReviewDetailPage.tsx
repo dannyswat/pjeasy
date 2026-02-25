@@ -23,7 +23,7 @@ export default function ReviewDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
         </div>
@@ -33,7 +33,7 @@ export default function ReviewDetailPage() {
 
   if (!review) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-medium text-red-900 mb-2">Review Not Found</h3>
           <button
@@ -133,7 +133,7 @@ export default function ReviewDetailPage() {
             {title} ({sectionItems.length})
           </h3>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -155,7 +155,7 @@ export default function ReviewDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
       {/* Back Navigation */}
       <button
         onClick={() => navigate(`/projects/${projectId}/reviews`)}
@@ -168,7 +168,7 @@ export default function ReviewDetailPage() {
       </button>
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-6">
         <div>
           <div className="flex items-center space-x-3 mb-2">
             <h1 className="text-2xl font-bold text-gray-900">{review.title}</h1>
@@ -192,7 +192,7 @@ export default function ReviewDetailPage() {
 
         {/* Actions */}
         {review.status === ReviewStatus.DRAFT && (
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleRegenerate}
               className="px-4 py-2 text-sm text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition"

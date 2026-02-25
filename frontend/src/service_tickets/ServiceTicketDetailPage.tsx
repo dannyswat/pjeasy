@@ -326,7 +326,7 @@ export default function ServiceTicketDetailPage() {
             {/* Status Change Section */}
             <div className="border-t pt-4">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Change Status</h3>
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                 {[ServiceTicketStatus.NEW, ServiceTicketStatus.OPEN, ServiceTicketStatus.FULFILLED, ServiceTicketStatus.CLOSED].map((status) => (
                   <button
                     key={status}

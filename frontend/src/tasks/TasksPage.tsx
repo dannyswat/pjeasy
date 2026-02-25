@@ -69,7 +69,7 @@ export default function TasksPage() {
 
   if (!projectId) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-medium text-yellow-900 mb-2">No Project Selected</h3>
           <p className="text-yellow-700 mb-4">Please select a project to view and manage tasks.</p>
@@ -287,7 +287,7 @@ export default function TasksPage() {
             
             <div className="mb-1">
               <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center flex-wrap gap-2">
                   <h1 className="text-xl font-semibold text-gray-900">{viewingTask.title}</h1>
                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getStatusColor(viewingTask.status)}`}>
                     {TaskStatusDisplay[viewingTask.status as keyof typeof TaskStatusDisplay]}
@@ -371,7 +371,7 @@ export default function TasksPage() {
             {/* Task Details */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Task Details</h3>
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 {viewingTask.itemType && viewingTask.itemId && (
                   <div className="col-span-2">
                     <ItemLink itemType={viewingTask.itemType} itemId={viewingTask.itemId} />
@@ -449,7 +449,7 @@ export default function TasksPage() {
             {/* Metadata */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Information</h3>
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-gray-500">Created:</span>
                   <span className="ml-2 text-gray-900">
@@ -482,8 +482,8 @@ export default function TasksPage() {
           {/* Active Sprint Banner */}
           {activeSprint && (
             <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center flex-wrap">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                   <span className="text-sm font-medium text-green-900">Active Sprint: {activeSprint.name}</span>
                   {activeSprint.endDate && (
@@ -534,7 +534,7 @@ export default function TasksPage() {
           </div>
 
           {/* Filters */}
-          <div className="mb-4 flex items-center space-x-3">
+          <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
             <label className="text-xs font-medium text-gray-700">Status:</label>
             <div className="relative" ref={statusDropdownRef}>
               <button
@@ -635,7 +635,7 @@ export default function TasksPage() {
                       className="flex-1 cursor-pointer" 
                       onClick={() => setViewingTask(task)}
                     >
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center flex-wrap gap-1">
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
                           <span>{task.title}</span>
                         </h3>
@@ -658,7 +658,7 @@ export default function TasksPage() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 ml-3">
+                    <div className="flex items-center flex-wrap gap-2 ml-3">
                       {task.assigneeId ? (
                         <span className="text-xs text-gray-600">
                           👤 <UserLabel userId={task.assigneeId} />
@@ -778,7 +778,7 @@ export default function TasksPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-gray-600">
                     Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} tasks
                   </p>

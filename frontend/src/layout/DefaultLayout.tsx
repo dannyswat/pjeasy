@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
+
 import { useCountNewServiceTickets } from '../service_tickets/useCountNewServiceTickets'
 import { useProjectContext } from '../projects/ProjectContext'
 import ProjectSelector from './ProjectSelector'
@@ -8,9 +9,25 @@ import { useRevokeSession } from '../auth/useRevokeSession'
 import { useUserSession } from '../auth/useUserSession'
 
 export default function DefaultLayout({ children }: { children: React.ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const location = useLocation()
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setSidebarOpen(false)
+    }
+  }, [location.pathname])
+
+  // Open sidebar by default on desktop
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)')
+    setSidebarOpen(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setSidebarOpen(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
   const params = useParams()
   const { selectedProjectId, setSelectedProjectId } = useProjectContext()
   const { logout } = useRevokeSession()
@@ -124,11 +141,19 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
       </header>
 
       <div className="flex">
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/30 z-20 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? 'w-56' : 'w-0'
-          } bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden`}
+            sidebarOpen ? 'w-56 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0'
+          } fixed md:static top-[49px] bottom-0 z-30 bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden`}
         >
           <nav className="p-3 space-y-1">
             {/* Project Menu - Show when in project context */}
@@ -307,14 +332,14 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0">
           {children}
         </main>
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-3 px-6">
-        <div className="flex justify-between items-center text-xs text-gray-600">
+      <footer className="bg-white border-t border-gray-200 py-3 px-4 md:px-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-gray-600">
           <p>&copy; {new Date().getFullYear()} PJEasy. All rights reserved.</p>
           <div className="flex space-x-3">
             <a href="#" className="hover:text-indigo-600">Privacy</a>

@@ -54,7 +54,7 @@ export default function ServiceTicketsPage() {
 
   if (!projectId) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-medium text-yellow-900 mb-2">No Project Selected</h3>
           <p className="text-yellow-700 mb-4">Please select a project to view and manage service tickets.</p>
@@ -157,7 +157,7 @@ export default function ServiceTicketsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex items-center space-x-3">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <label className="text-xs font-medium text-gray-700">Status:</label>
         <div className="relative" ref={statusDropdownRef}>
           <button
@@ -275,7 +275,7 @@ export default function ServiceTicketsPage() {
                   className="flex-1 cursor-pointer" 
                   onClick={() => navigate(`/projects/${projectId}/service-tickets/${ticket.id}`)}
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center flex-wrap gap-1">
                     <h3 className="text-sm font-medium text-gray-900 group-hover:text-purple-600 transition">
                       <span className="text-gray-500 mr-1.5 text-xs">[{ticket.refNum}]</span><span>{ticket.title}</span>
                     </h3>
@@ -296,7 +296,7 @@ export default function ServiceTicketsPage() {
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-1 ml-3">
+                <div className="flex items-center flex-wrap gap-1 ml-3">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -329,7 +329,7 @@ export default function ServiceTicketsPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-gray-600">
                 Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} service tickets
               </p>

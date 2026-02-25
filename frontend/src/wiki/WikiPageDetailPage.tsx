@@ -29,7 +29,7 @@ export default function WikiPageDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <p className="mt-4 text-gray-600">Loading wiki page...</p>
@@ -40,7 +40,7 @@ export default function WikiPageDetailPage() {
 
   if (!wikiPage) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-medium text-red-900 mb-2">Wiki Page Not Found</h3>
           <p className="text-red-700 mb-4">The wiki page you're looking for doesn't exist or you don't have access.</p>
@@ -115,7 +115,7 @@ export default function WikiPageDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
       {/* Breadcrumb */}
       <nav className="mb-4">
         <ol className="flex items-center space-x-2 text-sm text-gray-500">

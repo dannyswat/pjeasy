@@ -28,6 +28,7 @@ export default function WikiPage() {
   // State - only for edit mode (create mode is driven by URL)
   const [internalMode, setInternalMode] = useState<'view' | 'edit'>('view')
   const [showChangesPanel, setShowChangesPanel] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
   
   // Derive effective view mode
   const viewMode: ViewMode = isCreateFromUrl ? 'create' : internalMode
@@ -222,9 +223,29 @@ export default function WikiPage() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
+      {/* Mobile sidebar toggle */}
+      <button
+        onClick={() => setShowSidebar(!showSidebar)}
+        className="md:hidden fixed bottom-4 left-4 z-40 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Mobile sidebar backdrop */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 bg-black/30 z-30 md:hidden"
+          onClick={() => setShowSidebar(false)}
+        />
+      )}
+
       {/* Wiki Sidebar */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+      <div className={`${
+        showSidebar ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0 fixed md:static top-0 bottom-0 left-0 z-40 md:z-auto w-64 bg-white border-r border-gray-200 flex flex-col transition-transform duration-300`}>
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-gray-900">Wiki</h2>
@@ -254,6 +275,7 @@ export default function WikiPage() {
                   key={page.id}
                   onClick={() => {
                     setInternalMode('view')
+                    setShowSidebar(false)
                     navigate(`/projects/${projectId}/wiki/${page.id}`)
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
@@ -276,7 +298,7 @@ export default function WikiPage() {
       </div>
       
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto bg-gray-50">
+      <div className="flex-1 overflow-y-auto bg-gray-50 min-w-0">
         {isLoading ? (
           <div className="p-6">
             <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
@@ -442,10 +464,10 @@ export default function WikiPage() {
           // View Mode - Show wiki page content
           <div className="p-6">
             {/* Page Header */}
-            <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+            <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-6">
+              <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h1 className="text-2xl font-bold text-gray-900">{wikiPage.title}</h1>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(wikiPage.status)}`}>
                       {WikiPageStatusDisplay[wikiPage.status] || wikiPage.status}
@@ -461,7 +483,7 @@ export default function WikiPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {pendingChanges.length > 0 && (
                     <button
                       onClick={() => setShowChangesPanel(true)}

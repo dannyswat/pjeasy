@@ -179,7 +179,7 @@ export default function ProjectDashboardPage() {
               </Link>
             </div>
             {managerData.serviceTicketStats && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-red-50 rounded-lg p-4 border border-red-100">
                   <div className="flex items-center justify-between">
                     <div>

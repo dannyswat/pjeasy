@@ -43,7 +43,7 @@ export default function SprintBoardPage() {
 
   if (!projectId || !sprintId) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-medium text-yellow-900 mb-2">Invalid Sprint</h3>
           <p className="text-yellow-700 mb-4">Please select a valid sprint to view the board.</p>
@@ -147,7 +147,8 @@ export default function SprintBoardPage() {
   )
 
   const renderBoardView = () => (
-    <div className="grid grid-cols-6 gap-4 overflow-x-auto pb-4">
+    <div className="overflow-x-auto pb-4">
+      <div className="grid grid-cols-6 gap-4 min-w-[900px]">
       {statusColumns.map((status) => {
         const tasks = tasksByStatus[status] || []
         return (
@@ -171,6 +172,7 @@ export default function SprintBoardPage() {
           </div>
         )
       })}
+      </div>
     </div>
   )
 
@@ -187,7 +189,8 @@ export default function SprintBoardPage() {
               Unassigned
               <span className="ml-2 bg-gray-200 px-2 py-0.5 rounded text-xs">{unassignedTasks.length}</span>
             </h3>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-6 gap-2 min-w-[900px]">
               {statusColumns.map((status) => {
                 const tasks = unassignedTasks.filter(t => t.status === status)
                 return (
@@ -206,6 +209,7 @@ export default function SprintBoardPage() {
                   </div>
                 )
               })}
+              </div>
             </div>
           </div>
         )}
@@ -224,7 +228,8 @@ export default function SprintBoardPage() {
                 {member?.user.name || <UserLabel userId={assigneeId} />}
                 <span className="ml-2 bg-gray-200 px-2 py-0.5 rounded text-xs">{memberTasks.length}</span>
               </h3>
-              <div className="grid grid-cols-6 gap-2">
+              <div className="overflow-x-auto">
+                <div className="grid grid-cols-6 gap-2 min-w-[900px]">
                 {statusColumns.map((status) => {
                   const tasks = memberTasks.filter(t => t.status === status)
                   return (
@@ -240,6 +245,7 @@ export default function SprintBoardPage() {
                     </div>
                   )
                 })}
+                </div>
               </div>
             </div>
           )
@@ -249,9 +255,9 @@ export default function SprintBoardPage() {
   }
 
   return (
-    <div className="max-w-full mx-auto p-6">
+    <div className="max-w-full mx-auto p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate(`/projects/${projectId}/sprints`)}

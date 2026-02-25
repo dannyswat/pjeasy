@@ -56,7 +56,7 @@ export default function FeaturesPage() {
 
   if (!projectId) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-medium text-yellow-900 mb-2">No Project Selected</h3>
           <p className="text-yellow-700 mb-4">Please select a project to view and manage features.</p>
@@ -154,7 +154,7 @@ export default function FeaturesPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex items-center space-x-3">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
         <label className="text-xs font-medium text-gray-700">Status:</label>
         <div className="relative" ref={statusDropdownRef}>
           <button
@@ -269,7 +269,7 @@ export default function FeaturesPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
+                      <div className="flex items-center flex-wrap gap-1 mb-1">
                         <span className="text-xs font-mono text-gray-500">{feature.refNum}</span>
                         <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(feature.status)}`}>
                           {FeatureStatusDisplay[feature.status] || feature.status}
@@ -285,7 +285,7 @@ export default function FeaturesPage() {
                       >
                         {feature.title}
                       </h3>
-                      <div className="flex items-center space-x-3 mt-2 text-xs text-gray-500">
+                      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
                         {feature.assignedTo ? (
                           <span className="flex items-center space-x-1">
                             <span>Assigned to:</span>
@@ -332,7 +332,7 @@ export default function FeaturesPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-gray-600">
             Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, total)} of {total} features
           </p>

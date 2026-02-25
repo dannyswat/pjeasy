@@ -239,7 +239,7 @@ export default function IdeaDetailPage() {
             {/* Metadata */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">Information</h3>
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-gray-500">Created:</span>
                   <span className="ml-2 text-gray-900">
