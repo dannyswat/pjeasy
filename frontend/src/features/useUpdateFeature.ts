@@ -11,7 +11,7 @@ export function useUpdateFeature() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ featureId, projectId, ...data }: UpdateFeatureParams) => {
+    mutationFn: async ({ featureId, ...data }: UpdateFeatureParams) => {
       return putSecureApi<FeatureResponse>(`/api/features/${featureId}`, data)
     },
     onSuccess: (_, variables) => {

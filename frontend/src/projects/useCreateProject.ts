@@ -1,8 +1,10 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '../apis/fetch'
 import type { CreateProjectRequest, ProjectResponse } from './projectTypes'
 
 export function useCreateProject() {
+  const queryClient = useQueryClient()
+
   const mutation = useMutation<ProjectResponse, Error, CreateProjectRequest>({
     mutationFn: async (data: CreateProjectRequest) => {
       return fetchApi<ProjectResponse>('/api/projects', {
@@ -12,6 +14,9 @@ export function useCreateProject() {
         },
         body: JSON.stringify(data),
       }, true)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
   })
 
