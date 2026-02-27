@@ -19,6 +19,7 @@ import { $getRoot, $insertNodes, TextNode, type EditorState } from 'lexical'
 import ToolbarPlugin from './plugins/ToolbarPlugin'
 import TableActionMenuPlugin from './plugins/TableActionMenuPlugin'
 import ImagePlugin from './plugins/ImagePlugin'
+import PasteMarkdownPlugin from './plugins/PasteMarkdownPlugin'
 import { ImageNode } from './nodes/ImageNode'
 import { ExtendedTextNode } from './nodes/ExtendedTextNode'
 import './HtmlEditor.css'
@@ -187,6 +188,7 @@ function onError(error: Error) {
 const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
   ({ value, onChange, placeholder = 'Enter description...', minHeight = '200px' }, ref) => {
     const [isFullscreen, setIsFullscreen] = useState(false)
+    const [showPasteMarkdown, setShowPasteMarkdown] = useState(false)
 
     const initialConfig = {
       namespace: 'HtmlEditor',
@@ -245,7 +247,11 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
       <div className={`html-editor-wrapper ${isFullscreen ? 'html-editor-fullscreen' : ''}`} style={isFullscreen ? undefined : { minHeight }}>
         <LexicalComposer initialConfig={initialConfig}>
           <div className="html-editor-container">
-            <ToolbarPlugin isFullscreen={isFullscreen} onToggleFullscreen={() => setIsFullscreen((f) => !f)} />
+            <ToolbarPlugin
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={() => setIsFullscreen((f) => !f)}
+              onPasteMarkdown={() => setShowPasteMarkdown(true)}
+            />
             <div className="editor-inner">
               <RichTextPlugin
                 contentEditable={<ContentEditable className="editor-input" />}
@@ -259,6 +265,10 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
               <CodeHighlightingPlugin />
               <TableActionMenuPlugin />
               <ImagePlugin />
+              <PasteMarkdownPlugin
+                show={showPasteMarkdown}
+                onClose={() => setShowPasteMarkdown(false)}
+              />
               <LoadInitialContentPlugin value={value} />
               <HtmlChangePlugin onChange={onChange} />
               <ResetContentPlugin onResetRef={handleResetRef} />
