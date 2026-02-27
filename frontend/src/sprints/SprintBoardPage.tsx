@@ -134,13 +134,13 @@ export default function SprintBoardPage() {
 
   const renderBoardView = () => (
     <div className="overflow-x-auto pb-4">
-      <div className="grid grid-cols-6 gap-4 min-w-225">
+      <div className="flex gap-4">
       {statusColumns.map((status) => {
         const tasks = tasksByStatus[status] || []
         return (
           <div
             key={status}
-            className="flex flex-col min-w-50"
+            className="shrink-0 w-64 flex flex-col"
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(status)}
           >

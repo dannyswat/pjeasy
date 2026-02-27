@@ -30,6 +30,7 @@ export default function ProjectFormPage() {
   const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!project) return
@@ -100,6 +101,8 @@ export default function ProjectFormPage() {
     if (!projectId) return
     if (!confirm('Are you sure you want to archive this project?')) return
 
+    setIsActionsMenuOpen(false)
+
     setErrorMessage('')
     setSuccessMessage('')
 
@@ -129,6 +132,8 @@ export default function ProjectFormPage() {
 
   const handleGenerateSequences = async () => {
     if (!projectId) return
+
+    setIsActionsMenuOpen(false)
 
     setErrorMessage('')
     setSuccessMessage('')
@@ -263,27 +268,37 @@ export default function ProjectFormPage() {
                     Unarchive
                   </button>
                 ) : (
-                  <>
+                  <div className="ml-auto relative">
                     <button
                       type="button"
-                      onClick={handleGenerateSequences}
+                      onClick={() => setIsActionsMenuOpen((open) => !open)}
                       disabled={isPending}
-                      className="ml-auto bg-violet-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-violet-700 transition disabled:bg-gray-400 flex items-center"
+                      className="bg-gray-100 text-gray-700 px-2.5 py-1.5 text-sm font-medium rounded hover:bg-gray-200 transition disabled:bg-gray-200"
+                      aria-label="Project actions"
                     >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                      </svg>
-                      Generate Sequences
+                      ...
                     </button>
-                    <button
-                      type="button"
-                      onClick={handleArchive}
-                      disabled={isPending}
-                      className="bg-orange-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-orange-700 transition disabled:bg-gray-400"
-                    >
-                      Archive
-                    </button>
-                  </>
+                    {isActionsMenuOpen && (
+                      <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded shadow-sm z-10 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={handleGenerateSequences}
+                          disabled={isPending}
+                          className="w-full text-left px-3 py-2 text-sm text-violet-700 hover:bg-gray-50 disabled:text-gray-400"
+                        >
+                          Generate Sequences
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleArchive}
+                          disabled={isPending}
+                          className="w-full text-left px-3 py-2 text-sm text-orange-700 hover:bg-gray-50 disabled:text-gray-400"
+                        >
+                          Archive
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </>
             )}
@@ -316,7 +331,7 @@ export default function ProjectFormPage() {
                   className="mr-1.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   disabled={isPending}
                 />
-                <span className="text-xs text-gray-700">Admin</span>
+                <span className="text-xs text-gray-700">Manager</span>
               </label>
               <button
                 type="submit"
@@ -348,7 +363,7 @@ export default function ProjectFormPage() {
                     </div>
                     {member.isAdmin && (
                       <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
-                        Admin
+                        Manager
                       </span>
                     )}
                   </div>

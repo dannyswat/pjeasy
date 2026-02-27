@@ -11,6 +11,7 @@ import IssuesPage from './issues/IssuesPage'
 import ServiceTicketsPage from './service_tickets/ServiceTicketsPage'
 import TasksPage from './tasks/TasksPage'
 import SprintsPage from './sprints/SprintsPage'
+import SprintDefaultPage from './sprints/SprintDefaultPage'
 import SprintBoardPage from './sprints/SprintBoardPage'
 import ProjectDashboardPage from './project_dashboard/ProjectDashboardPage'
 import { useMeApi } from './auth/useMeApi'
@@ -356,6 +357,18 @@ function App() {
           />
           <Route
             path="/projects/:projectId/sprints"
+            element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <SprintDefaultPage />
+                  </DefaultLayout>
+                </ProjectProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/sprints/list"
             element={
               <ProtectedRoute>
                 <ProjectProvider>
