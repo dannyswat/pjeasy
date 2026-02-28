@@ -10,7 +10,7 @@ import { useProjectContext } from './ProjectContext'
 
 export default function ProjectFormPage() {
   const navigate = useNavigate()
-  const { setSelectedProjectId } = useProjectContext()
+  const { projects, setSelectedProjectId } = useProjectContext()
   const { id, projectId: projectIdParam } = useParams<{ id?: string; projectId?: string }>()
   const rawProjectId = projectIdParam ?? id
   const parsedProjectId = rawProjectId ? parseInt(rawProjectId, 10) : null
@@ -110,9 +110,18 @@ export default function ProjectFormPage() {
     setSuccessMessage('')
 
     try {
+      const fallbackProject = projects.find((candidate) => candidate.id !== projectId && !candidate.isArchived)
+
       await archiveProject(projectId)
       setSuccessMessage('Project archived successfully')
-      refetch()
+
+      if (fallbackProject) {
+        setSelectedProjectId(fallbackProject.id)
+        navigate(`/projects/${fallbackProject.id}`)
+        return
+      }
+
+      navigate('/projects')
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to archive project')
     }
