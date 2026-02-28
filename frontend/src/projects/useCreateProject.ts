@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '../apis/fetch'
-import type { CreateProjectRequest, ProjectResponse } from './projectTypes'
+import type { CreateProjectRequest, ProjectResponse, ProjectsListResponse } from './projectTypes'
 
 export function useCreateProject() {
   const queryClient = useQueryClient()
@@ -15,7 +15,20 @@ export function useCreateProject() {
         body: JSON.stringify(data),
       }, true)
     },
-    onSuccess: () => {
+    onSuccess: (newProject) => {
+      queryClient.setQueriesData<ProjectsListResponse>({ queryKey: ['projects'] }, (oldData) => {
+        if (!oldData) return oldData
+
+        const alreadyExists = oldData.projects.some((project) => project.id === newProject.id)
+        if (alreadyExists) return oldData
+
+        return {
+          ...oldData,
+          projects: [newProject, ...oldData.projects],
+          total: oldData.total + 1,
+        }
+      })
+
       queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
   })

@@ -29,7 +29,7 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
     return () => mq.removeEventListener('change', handler)
   }, [])
   const params = useParams()
-  const { selectedProjectId, setSelectedProjectId } = useProjectContext()
+  const { projects, selectedProjectId, setSelectedProjectId } = useProjectContext()
   const { logout } = useRevokeSession()
   const { getUser } = useUserSession()
   const currentUser = getUser()
@@ -52,13 +52,14 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
   const projectId = params.projectId || params.id
   const isInProject = location.pathname.includes('/projects/') && projectId && projectId !== 'new'
   const projectIdNum = projectId ? parseInt(projectId) : 0
+  const routeProjectExists = projects.some((project) => project.id === projectIdNum)
 
   // Sync context when navigating to a project URL directly
   useEffect(() => {
-    if (isInProject && projectIdNum && projectIdNum !== selectedProjectId) {
+    if (isInProject && projectIdNum && routeProjectExists && projectIdNum !== selectedProjectId) {
       setSelectedProjectId(projectIdNum)
     }
-  }, [isInProject, projectIdNum, selectedProjectId, setSelectedProjectId])
+  }, [isInProject, projectIdNum, routeProjectExists, selectedProjectId, setSelectedProjectId])
 
   // Get the count of new service tickets for the badge
   const { count: newTicketsCount } = useCountNewServiceTickets(projectIdNum)
