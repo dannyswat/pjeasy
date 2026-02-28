@@ -155,8 +155,8 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
         {/* Sidebar */}
         <aside
           className={`${
-            sidebarOpen ? 'w-56 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0'
-          } fixed md:static top-12.25 bottom-0 z-30 bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden`}
+            sidebarOpen ? 'left-0 md:w-56' : '-left-56 md:w-0'
+          } fixed md:static md:left-0 top-12.25 bottom-0 z-30 w-56 bg-white border-r border-gray-200 transition-[left,width] duration-300 overflow-hidden`}
         >
           <nav className="p-3 space-y-1">
             {/* Project Menu - Show when in project context */}
