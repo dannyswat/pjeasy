@@ -29,7 +29,7 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
     return () => mq.removeEventListener('change', handler)
   }, [])
   const params = useParams()
-  const { projects, selectedProjectId, setSelectedProjectId } = useProjectContext()
+  const { allProjects, selectedProjectId, setSelectedProjectId } = useProjectContext()
   const { logout } = useRevokeSession()
   const { getUser } = useUserSession()
   const currentUser = getUser()
@@ -52,7 +52,7 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
   const projectId = params.projectId || params.id
   const isInProject = location.pathname.includes('/projects/') && projectId && projectId !== 'new'
   const projectIdNum = projectId ? parseInt(projectId) : 0
-  const routeProjectExists = projects.some((project) => project.id === projectIdNum)
+  const routeProjectExists = allProjects.some((project) => project.id === projectIdNum)
 
   // Sync context when navigating to a project URL directly
   useEffect(() => {

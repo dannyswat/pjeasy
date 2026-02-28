@@ -42,7 +42,7 @@ export default function ProjectSelector() {
     )
   }
 
-  if (!hasProjects) {
+  if (!hasProjects && !selectedProject) {
     return (
       <div className="flex items-center text-xs text-gray-500 px-2 py-1 bg-gray-50 rounded border border-gray-200">
         <svg className="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,6 +52,10 @@ export default function ProjectSelector() {
       </div>
     )
   }
+
+  const visibleProjects = selectedProject?.isArchived
+    ? [selectedProject, ...projects.filter((project) => project.id !== selectedProject.id)]
+    : projects
 
   return (
     <div className="relative w-full min-w-0" ref={dropdownRef}>
@@ -64,6 +68,7 @@ export default function ProjectSelector() {
         </svg>
         <span className="truncate font-medium text-gray-700 flex-1 min-w-0 text-left">
           {selectedProject?.name ?? 'Select project'}
+          {selectedProject?.isArchived ? ' (Archived)' : ''}
         </span>
         <svg className={`w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -75,7 +80,7 @@ export default function ProjectSelector() {
           <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Projects
           </div>
-          {projects.map((project) => (
+          {visibleProjects.map((project) => (
             <button
               key={project.id}
               onClick={() => handleSelectProject(project.id)}
@@ -89,6 +94,11 @@ export default function ProjectSelector() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
               </svg>
               <span className="truncate">{project.name}</span>
+              {project.isArchived && (
+                <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-600 border border-gray-200">
+                  Archived
+                </span>
+              )}
               {project.id === selectedProject?.id && (
                 <svg className="w-4 h-4 text-indigo-500 shrink-0 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

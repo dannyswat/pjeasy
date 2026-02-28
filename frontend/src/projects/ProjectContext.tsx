@@ -4,6 +4,7 @@ import type { ProjectResponse } from '../projects/projectTypes'
 
 interface ProjectContextValue {
   projects: ProjectResponse[]
+  allProjects: ProjectResponse[]
   selectedProjectId: number | null
   selectedProject: ProjectResponse | null
   setSelectedProjectId: (id: number) => void
@@ -17,33 +18,37 @@ const ProjectContext = createContext<ProjectContextValue | null>(null)
 const LAST_PROJECT_KEY = 'pjeasy_last_project_id'
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const { projects, isLoading, refetch } = useListProjects({ pageSize: 100 })
+  const { projects: allProjects, isLoading, refetch } = useListProjects({ pageSize: 100, includeArchived: true })
   const [selectedProjectId, setSelectedProjectIdState] = useState<number | null>(() => {
     const stored = localStorage.getItem(LAST_PROJECT_KEY)
     return stored ? parseInt(stored, 10) : null
   })
+
+  const projects = allProjects.filter((project) => !project.isArchived)
 
   const setSelectedProjectId = useCallback((id: number) => {
     setSelectedProjectIdState(id)
     localStorage.setItem(LAST_PROJECT_KEY, String(id))
   }, [])
 
-  // Auto-select first project if none selected or selected project is not in list
+  // Auto-select first active project if none selected or selected project is not in list
   useEffect(() => {
-    if (isLoading || projects.length === 0) return
+    if (isLoading || allProjects.length === 0) return
 
-    const isValidSelection = selectedProjectId && projects.some(p => p.id === selectedProjectId)
+    const isValidSelection = selectedProjectId && allProjects.some((project) => project.id === selectedProjectId)
     if (!isValidSelection) {
-      setSelectedProjectId(projects[0].id)
+      const nextProjectId = projects[0]?.id ?? allProjects[0].id
+      setSelectedProjectId(nextProjectId)
     }
-  }, [projects, isLoading, selectedProjectId, setSelectedProjectId])
+  }, [projects, allProjects, isLoading, selectedProjectId, setSelectedProjectId])
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId) ?? null
+  const selectedProject = allProjects.find((project) => project.id === selectedProjectId) ?? null
 
   return (
     <ProjectContext.Provider
       value={{
         projects,
+        allProjects,
         selectedProjectId,
         selectedProject,
         setSelectedProjectId,
