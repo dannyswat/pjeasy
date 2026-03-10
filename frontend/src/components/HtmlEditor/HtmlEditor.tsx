@@ -42,50 +42,52 @@ interface HtmlEditorProps {
   minHeight?: string
 }
 
-// Plugin to expose imperative handle for resetting content
-function ResetContentPlugin({ onResetRef }: { onResetRef: (resetFn: (html: string) => void) => void }) {
+function normalizeHtml(html: string): string {
+  return html.trim().replace(/><\/p>/g, '></p>')
+}
+
+// Plugin to keep editor content in sync with external HTML value
+function SyncHtmlContentPlugin({
+  value,
+  onResetRef,
+}: {
+  value: string
+  onResetRef: (resetFn: (html: string) => void) => void
+}) {
   const [editor] = useLexicalComposerContext()
 
-  useEffect(() => {
-    const resetContent = (html: string) => {
+  const applyHtml = useCallback(
+    (html: string) => {
       editor.update(() => {
         const root = $getRoot()
         root.clear()
-        
-        if (html) {
-          const parser = new DOMParser()
-          const dom = parser.parseFromString(html, 'text/html')
-          const nodes = $generateNodesFromDOM(editor, dom)
-          $insertNodes(nodes)
+
+        if (!html.trim()) {
+          return
         }
+
+        const parser = new DOMParser()
+        const dom = parser.parseFromString(html, 'text/html')
+        const nodes = $generateNodesFromDOM(editor, dom)
+        $insertNodes(nodes)
       })
-    }
-
-    onResetRef(resetContent)
-  }, [editor, onResetRef])
-
-  return null
-}
-
-// Plugin to load initial HTML content
-function LoadInitialContentPlugin({ value }: { value: string }) {
-  const [editor] = useLexicalComposerContext()
+    },
+    [editor]
+  )
 
   useEffect(() => {
-    if (value) {
-      editor.update(() => {
-        const root = $getRoot()
-        // Only load if editor is empty
-        if (root.getTextContent().trim() === '') {
-          const parser = new DOMParser()
-          const dom = parser.parseFromString(value, 'text/html')
-          const nodes = $generateNodesFromDOM(editor, dom)
-          root.clear()
-          $insertNodes(nodes)
-        }
-      })
+    const currentHtml = editor.getEditorState().read(() => $generateHtmlFromNodes(editor, null))
+
+    if (normalizeHtml(currentHtml) === normalizeHtml(value)) {
+      return
     }
-  }, []) // Only run once on mount
+
+    applyHtml(value)
+  }, [applyHtml, editor, value])
+
+  useEffect(() => {
+    onResetRef(applyHtml)
+  }, [applyHtml, onResetRef])
 
   return null
 }
@@ -217,7 +219,7 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
     }
 
     // Ref to store reset function
-    const resetContentRef = useRef<(html: string) => void>(null)
+    const resetContentRef = useRef<((html: string) => void) | null>(null)
 
     // Callback to set the reset function
     const handleResetRef = useCallback((fn: (html: string) => void) => {
@@ -269,9 +271,8 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
                 show={showPasteMarkdown}
                 onClose={() => setShowPasteMarkdown(false)}
               />
-              <LoadInitialContentPlugin value={value} />
+              <SyncHtmlContentPlugin value={value} onResetRef={handleResetRef} />
               <HtmlChangePlugin onChange={onChange} />
-              <ResetContentPlugin onResetRef={handleResetRef} />
             </div>
           </div>
         </LexicalComposer>

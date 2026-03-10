@@ -9,6 +9,7 @@ import {
   type Spread,
 } from 'lexical'
 import type { JSX } from 'react'
+import ImageComponent from './ImageComponent'
 
 export interface ImagePayload {
   src: string
@@ -28,10 +29,30 @@ export type SerializedImageNode = Spread<
   SerializedLexicalNode
 >
 
+function sanitizeDimension(value?: number | null): number | undefined {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    return undefined
+  }
+
+  return value
+}
+
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
-    const { src, alt: altText, width, height } = domNode
-    const node = $createImageNode({ src, altText, width, height })
+    if (domNode.dataset.lexicalLinebreak === 'true') {
+      return null
+    }
+
+    const rawSrc = domNode.getAttribute('src')?.trim()
+
+    if (!rawSrc) {
+      return null
+    }
+
+    const altText = domNode.getAttribute('alt') ?? ''
+    const width = sanitizeDimension(domNode.width)
+    const height = sanitizeDimension(domNode.height)
+    const node = $createImageNode({ src: rawSrc, altText, width, height })
     return { node }
   }
   return null
@@ -81,8 +102,8 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     super(key)
     this.__src = src
     this.__altText = altText
-    this.__width = width
-    this.__height = height
+    this.__width = sanitizeDimension(width)
+    this.__height = sanitizeDimension(height)
   }
 
   exportJSON(): SerializedImageNode {
@@ -128,15 +149,20 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return this.__altText
   }
 
+  setWidthAndHeight(width?: number, height?: number): void {
+    const writable = this.getWritable()
+    writable.__width = sanitizeDimension(width)
+    writable.__height = sanitizeDimension(height)
+  }
+
   decorate(): JSX.Element {
     return (
-      <img
+      <ImageComponent
         src={this.__src}
-        alt={this.__altText}
+        altText={this.__altText}
         width={this.__width}
         height={this.__height}
-        style={{ maxWidth: '100%', borderRadius: '0.375rem' }}
-        draggable={false}
+        nodeKey={this.__key}
       />
     )
   }
