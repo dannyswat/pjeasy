@@ -130,8 +130,8 @@ export default function RelatedFeatures({ projectId, itemType, itemId }: Related
               key={feature.id}
               className="bg-gray-50 border border-gray-200 rounded p-3 hover:bg-gray-100 transition"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2 mb-1">
                     <h4 className="text-sm font-medium text-gray-900">
                       <span className="text-gray-500 mr-1.5 text-xs">[{feature.refNum}]</span>
@@ -153,7 +153,7 @@ export default function RelatedFeatures({ projectId, itemType, itemId }: Related
                     </div>
                   )}
                 </div>
-                <div className="flex items-center space-x-2 ml-3">
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                   {feature.assignedTo && (
                     <span className="text-xs text-gray-600">
                       👤 <UserLabel userId={feature.assignedTo} />

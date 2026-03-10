@@ -505,31 +505,33 @@ export default function TasksPage() {
 
           {/* Quick Create */}
           <div className="mb-4">
-            <form onSubmit={handleQuickCreate} className="flex gap-2">
+            <form onSubmit={handleQuickCreate} className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={quickCreateTitle}
                 onChange={(e) => setQuickCreateTitle(e.target.value)}
                 placeholder="Type a task and press Enter to add quickly..."
-                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="flex-1 min-w-0 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
-              <button
-                type="submit"
-                disabled={!quickCreateTitle.trim() || createTask.isPending}
-                className="px-4 py-1.5 text-sm font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Add
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition flex items-center"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Detailed
-              </button>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  type="submit"
+                  disabled={!quickCreateTitle.trim() || createTask.isPending}
+                  className="flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition flex items-center justify-center"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Detailed
+                </button>
+              </div>
             </form>
           </div>
 

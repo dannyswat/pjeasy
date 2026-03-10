@@ -32,9 +32,18 @@ const ISSUE_TASK_TEMPLATES = [
   { title: 'Validate fixes', description: 'Test and validate that the issue has been resolved' },
 ]
 
+// Predefined task templates for features
+const FEATURE_TASK_TEMPLATES = [
+  { title: 'Implement feature', description: 'Develop and implement this feature' },
+  { title: 'Write unit tests', description: 'Write unit tests to cover this feature' },
+  { title: 'Code review', description: 'Perform a code review for this feature' },
+  { title: 'Update documentation', description: 'Update documentation to reflect this feature' },
+  { title: 'QA testing', description: 'Perform QA testing and verify acceptance criteria' },
+]
+
 export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, itemTitle, itemPriority, onTaskCreated }: RelatedTasksProps) {
   // Select templates based on item type (no templates for service-tickets)
-  const templates = itemType === 'issues' ? ISSUE_TASK_TEMPLATES : itemType === 'ideas' ? IDEA_TASK_TEMPLATES : []
+  const templates = itemType === 'issues' ? ISSUE_TASK_TEMPLATES : itemType === 'ideas' ? IDEA_TASK_TEMPLATES : itemType === 'features' ? FEATURE_TASK_TEMPLATES : []
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<{ title: string; description: string } | null>(null)
@@ -148,6 +157,17 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
             <div className="absolute right-0 mt-1 w-80 bg-white rounded shadow-lg border border-gray-200 z-20 p-3">
               <h4 className="text-xs font-semibold text-gray-700 mb-2">Create from template:</h4>
               <div className="space-y-1 max-h-64 overflow-y-auto">
+                <button
+                  onClick={() => {
+                    setSelectedTemplate({ title: '', description: '' })
+                    setShowCreateDropdown(false)
+                    setShowCreateModal(true)
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded transition border border-dashed border-gray-300 hover:border-indigo-300"
+                >
+                  <div className="font-medium text-gray-500">Custom (blank)</div>
+                  <div className="text-gray-400 text-[11px] mt-0.5">Start with an empty form</div>
+                </button>
                 {templates.map((template, idx) => (
                   <button
                     key={idx}
@@ -195,9 +215,9 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
               key={task.id}
               className="bg-gray-50 border border-gray-200 rounded p-3 hover:bg-gray-100 transition"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleToggleStatus(task)}
                       disabled={updateTaskStatus.isPending}
@@ -217,11 +237,8 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
                       {task.title}
                     </h4>
                   </div>
-                  {task.description && (
-                    <p className="text-xs text-gray-600 ml-7">{task.description}</p>
-                  )}
                 </div>
-                <div className="flex items-center space-x-2 ml-3">
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                   {task.assigneeId && (
                     <span className="text-xs text-gray-600">
                       👤 <UserLabel userId={task.assigneeId} />
