@@ -9,7 +9,7 @@ import HtmlEditor, { type HtmlEditorRef } from '../components/HtmlEditor'
 
 interface WikiPageChangesProps {
   projectId: number
-  itemType: 'issue' | 'feature'
+  itemType: 'issue' | 'feature' | 'task'
   itemId: number
   itemRefNum: string
 }

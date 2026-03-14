@@ -10,22 +10,28 @@ import (
 	"github.com/dannyswat/pjeasy/internal/service_tickets"
 )
 
+type WikiChangeMerger interface {
+	MergeChangesOnCompletion(itemType string, itemID int, userID int) error
+}
+
 type TaskService struct {
 	taskRepo          *TaskRepository
 	memberRepo        *projects.ProjectMemberRepository
 	projectRepo       *projects.ProjectRepository
 	sequenceRepo      *sequences.SequenceRepository
 	serviceTicketRepo *service_tickets.ServiceTicketRepository
+	wikiChangeMerger  WikiChangeMerger
 	uowFactory        *repositories.UnitOfWorkFactory
 }
 
-func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, serviceTicketRepo *service_tickets.ServiceTicketRepository, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
+func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, serviceTicketRepo *service_tickets.ServiceTicketRepository, wikiChangeMerger WikiChangeMerger, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
 	return &TaskService{
 		taskRepo:          taskRepo,
 		memberRepo:        memberRepo,
 		projectRepo:       projectRepo,
 		sequenceRepo:      sequenceRepo,
 		serviceTicketRepo: serviceTicketRepo,
+		wikiChangeMerger:  wikiChangeMerger,
 		uowFactory:        uowFactory,
 	}
 }
@@ -190,6 +196,12 @@ func (s *TaskService) UpdateTaskStatus(taskID int, status string, updatedBy int)
 
 	if err := s.taskRepo.UpdateStatus(taskID, status); err != nil {
 		return nil, err
+	}
+
+	if status == TaskStatusCompleted && s.wikiChangeMerger != nil {
+		if err := s.wikiChangeMerger.MergeChangesOnCompletion("task", taskID, updatedBy); err != nil {
+			return nil, err
+		}
 	}
 
 	// Reload task to get updated status

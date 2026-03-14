@@ -17,6 +17,7 @@ import { useMeApi } from '../auth/useMeApi'
 import { useGetActiveSprint } from '../sprints/useGetActiveSprint'
 import { useAddTaskToSprint } from '../sprints/useAddTaskToSprint'
 import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
+import WikiPageChanges from '../wiki/WikiPageChanges'
 
 // Default statuses exclude Completed and Closed
 const defaultTaskStatuses = [
@@ -464,6 +465,13 @@ export default function TasksPage() {
                 </div>
               </div>
             </div>
+
+            <WikiPageChanges
+              projectId={projectIdNum}
+              itemType="task"
+              itemId={viewingTask.id}
+              itemRefNum={`Task #${viewingTask.id}`}
+            />
 
             {/* Comments Section */}
             <div className="border-t border-gray-200 pt-4">

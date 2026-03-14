@@ -44,6 +44,8 @@ export default function WikiPageChangesPanel({ pageId, onClose }: WikiPageChange
         return 'Feature'
       case WikiPageItemType.ISSUE:
         return 'Issue'
+      case WikiPageItemType.TASK:
+        return 'Task'
       default:
         return itemType
     }
@@ -226,8 +228,8 @@ export default function WikiPageChangesPanel({ pageId, onClose }: WikiPageChange
         {/* Info */}
         <div className="border-t p-4 bg-gray-50 text-sm text-gray-600">
           <p>
-            <strong>Note:</strong> Changes are created when editing wiki pages through features or issues. 
-            They are automatically merged when the feature/issue is completed.
+            <strong>Note:</strong> Changes are created when editing wiki pages through features, issues, or tasks.
+            They are automatically merged when the related item is completed.
           </p>
         </div>
       </div>

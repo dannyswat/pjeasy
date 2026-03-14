@@ -124,6 +124,7 @@ export const WikiPageChangeStatusDisplay: Record<string, string> = {
 export const WikiPageItemType = {
   FEATURE: 'feature',
   ISSUE: 'issue',
+  TASK: 'task',
 } as const
 
 export type WikiPageStatusType = typeof WikiPageStatus[keyof typeof WikiPageStatus]

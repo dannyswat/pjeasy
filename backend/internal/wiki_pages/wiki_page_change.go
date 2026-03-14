@@ -50,6 +50,7 @@ const (
 const (
 	WikiPageItemTypeFeature = "feature"
 	WikiPageItemTypeIssue   = "issue"
+	WikiPageItemTypeTask    = "task"
 )
 
 // IsValidChangeStatus checks if the provided status is valid
@@ -74,7 +75,7 @@ func IsValidChangeType(changeType string) bool {
 // IsValidItemType checks if the provided item type is valid
 func IsValidItemType(itemType string) bool {
 	switch itemType {
-	case WikiPageItemTypeFeature, WikiPageItemTypeIssue:
+	case WikiPageItemTypeFeature, WikiPageItemTypeIssue, WikiPageItemTypeTask:
 		return true
 	}
 	return false

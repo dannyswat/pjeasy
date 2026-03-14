@@ -187,8 +187,13 @@ func (s *APIServer) SetupAPIServer() error {
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
 	s.commentService = comments.NewCommentService(commentRepo, userRepo)
 
+	// Initialize wiki page service
+	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
+	wikiPageChangeRepo := wiki_pages.NewWikiPageChangeRepository(s.globalUOW)
+	s.wikiPageService = wiki_pages.NewWikiPageService(wikiPageRepo, wikiPageChangeRepo, memberRepo, projectRepo, featureRepo, issueRepo, taskRepo, s.uowFactory)
+
 	// Initialize task service
-	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.uowFactory)
+	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.wikiPageService, s.uowFactory)
 
 	// Initialize sprint service
 	sprintRepo := sprints.NewSprintRepository(s.globalUOW)
@@ -197,11 +202,6 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize review service
 	reviewRepo := reviews.NewReviewRepository(s.globalUOW)
 	s.reviewService = reviews.NewReviewService(reviewRepo, sprintRepo, taskRepo, featureRepo, issueRepo, ideaRepo, memberRepo, projectRepo, s.uowFactory)
-
-	// Initialize wiki page service
-	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
-	wikiPageChangeRepo := wiki_pages.NewWikiPageChangeRepository(s.globalUOW)
-	s.wikiPageService = wiki_pages.NewWikiPageService(wikiPageRepo, wikiPageChangeRepo, memberRepo, projectRepo, featureRepo, issueRepo, s.uowFactory)
 
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)

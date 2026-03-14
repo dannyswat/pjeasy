@@ -14,6 +14,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/tasks"
 	"github.com/dannyswat/vchtml"
 )
 
@@ -24,6 +25,7 @@ type WikiPageService struct {
 	projectRepo *projects.ProjectRepository
 	featureRepo *features.FeatureRepository
 	issueRepo   *issues.IssueRepository
+	taskRepo    *tasks.TaskRepository
 	uowFactory  *repositories.UnitOfWorkFactory
 }
 
@@ -34,6 +36,7 @@ func NewWikiPageService(
 	projectRepo *projects.ProjectRepository,
 	featureRepo *features.FeatureRepository,
 	issueRepo *issues.IssueRepository,
+	taskRepo *tasks.TaskRepository,
 	uowFactory *repositories.UnitOfWorkFactory,
 ) *WikiPageService {
 	return &WikiPageService{
@@ -43,6 +46,7 @@ func NewWikiPageService(
 		projectRepo: projectRepo,
 		featureRepo: featureRepo,
 		issueRepo:   issueRepo,
+		taskRepo:    taskRepo,
 		uowFactory:  uowFactory,
 	}
 }
@@ -373,7 +377,7 @@ func (s *WikiPageService) GetWikiPageTree(projectID int, userID int) ([]WikiPage
 	return s.pageRepo.GetAllByProjectID(projectID)
 }
 
-// CreateWikiPageChange creates a change for a wiki page linked to a feature/issue
+// CreateWikiPageChange creates a change for a wiki page linked to a feature, issue, or task.
 func (s *WikiPageService) CreateWikiPageChange(wikiPageID int, itemType string, itemID int, newContent string, createdBy int) (*WikiPageChange, error) {
 	// Validate item type
 	if !IsValidItemType(itemType) {
@@ -398,7 +402,7 @@ func (s *WikiPageService) CreateWikiPageChange(wikiPageID int, itemType string, 
 		return nil, errors.New("user is not a member of this project")
 	}
 
-	// Validate the feature/issue exists and belongs to the project
+	// Validate the related item exists and belongs to the project.
 	if itemType == WikiPageItemTypeFeature {
 		feature, err := s.featureRepo.GetByID(itemID)
 		if err != nil {
@@ -420,6 +424,17 @@ func (s *WikiPageService) CreateWikiPageChange(wikiPageID int, itemType string, 
 		}
 		if issue.ProjectID != page.ProjectID {
 			return nil, errors.New("issue belongs to a different project")
+		}
+	} else if itemType == WikiPageItemTypeTask {
+		task, err := s.taskRepo.GetByID(itemID)
+		if err != nil {
+			return nil, err
+		}
+		if task == nil {
+			return nil, errors.New("task not found")
+		}
+		if task.ProjectID != page.ProjectID {
+			return nil, errors.New("task belongs to a different project")
 		}
 	}
 
@@ -570,7 +585,7 @@ func (s *WikiPageService) ListWikiPageChanges(wikiPageID int, page, pageSize int
 	return s.changeRepo.GetByWikiPageID(wikiPageID, offset, pageSize)
 }
 
-// GetChangesByItem returns changes for a specific feature/issue
+// GetChangesByItem returns changes for a specific feature, issue, or task.
 func (s *WikiPageService) GetChangesByItem(itemType string, itemID int, userID int) ([]WikiPageChange, error) {
 	if !IsValidItemType(itemType) {
 		return nil, errors.New("invalid item type")
@@ -597,7 +612,7 @@ func (s *WikiPageService) GetChangesByItem(itemType string, itemID int, userID i
 	return changes, nil
 }
 
-// MergeChangesOnCompletion merges all pending changes when a feature/issue is completed
+// MergeChangesOnCompletion merges all pending changes when a related item is completed.
 func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, userID int) error {
 	if !IsValidItemType(itemType) {
 		return errors.New("invalid item type")

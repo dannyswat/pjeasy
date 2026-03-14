@@ -5,7 +5,7 @@ import { buildWikiPageTree, type WikiPageResponse, type WikiPageTreeNode } from 
 
 interface WikiPageEditorProps {
   projectId: number
-  itemType: 'feature' | 'issue'
+  itemType: 'feature' | 'issue' | 'task'
   itemId: number
   onClose: () => void
   onSuccess: () => void
