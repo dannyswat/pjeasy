@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
+import DatePicker from '../components/DatePicker'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import { FeaturePriority, type FeatureResponse } from './featureTypes'
 
@@ -129,10 +130,10 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
               Deadline <span className="text-gray-400 font-normal">(optional)</span>
             </label>
             <div className="flex gap-2">
-              <input
-                type="date"
+              <DatePicker
                 value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                onChange={setDeadline}
+                placeholder="Select a deadline"
                 className="flex-1 h-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
               {deadline && (

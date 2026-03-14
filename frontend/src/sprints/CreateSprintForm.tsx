@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import DatePicker from '../components/DatePicker'
 
 interface CreateSprintFormProps {
   onSubmit: (data: {
@@ -63,11 +64,11 @@ export default function CreateSprintForm({ onSubmit, onCancel, isSubmitting }: C
           <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
             Start Date
           </label>
-          <input
-            type="date"
+          <DatePicker
             id="startDate"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={setStartDate}
+            placeholder="Select a start date"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>
@@ -75,11 +76,11 @@ export default function CreateSprintForm({ onSubmit, onCancel, isSubmitting }: C
           <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
             End Date
           </label>
-          <input
-            type="date"
+          <DatePicker
             id="endDate"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
+            placeholder="Select an end date"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
         </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import DatePicker from '../components/DatePicker'
 import type { SprintResponse } from '../sprints/sprintTypes'
 import { ReviewType } from './reviewTypes'
 
@@ -123,21 +124,21 @@ export default function CreateReviewForm({ sprints, onSubmit, onCancel, isSubmit
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input
+            <DatePicker
               id="startDate"
-              type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={setStartDate}
+              placeholder="Select a start date"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
           <div>
             <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input
+            <DatePicker
               id="endDate"
-              type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={setEndDate}
+              placeholder="Select an end date"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import DatePicker from '../components/DatePicker'
 import type { SprintResponse } from './sprintTypes'
 
 interface CloseSprintModalProps {
@@ -108,11 +109,11 @@ export default function CloseSprintModal({ sprint, onSubmit, onCancel, isSubmitt
                 <label htmlFor="newSprintEndDate" className="block text-sm font-medium text-gray-700 mb-1">
                   New Sprint End Date
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   id="newSprintEndDate"
                   value={newSprintEndDate}
-                  onChange={(e) => setNewSprintEndDate(e.target.value)}
+                  onChange={setNewSprintEndDate}
+                  placeholder="Select an end date"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
