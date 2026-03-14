@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getSecureApi } from '../apis/fetch'
 import type { StatusChangeResponse } from './statusChangeTypes'
 
-export function useStatusChanges(projectId: number, itemType: string, itemId: number) {
+export function useStatusChanges(projectId: number, itemType: string, itemId: number, enabled = true) {
   const query = useQuery({
     queryKey: ['statusChanges', projectId, itemType, itemId],
     queryFn: async () => {
@@ -14,7 +14,7 @@ export function useStatusChanges(projectId: number, itemType: string, itemId: nu
 
       return getSecureApi<StatusChangeResponse[]>(`/api/status-changes?${params.toString()}`)
     },
-    enabled: projectId > 0 && itemId > 0 && itemType.length > 0,
+    enabled: enabled && projectId > 0 && itemId > 0 && itemType.length > 0,
   })
 
   return {

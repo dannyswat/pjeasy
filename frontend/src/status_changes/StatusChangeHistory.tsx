@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { UserLabel } from '../components/UserLabel'
 import { useStatusChanges } from './useStatusChanges'
 
@@ -18,24 +19,31 @@ export default function StatusChangeHistory({
   itemId,
   title = 'Status History',
 }: StatusChangeHistoryProps) {
-  const { changes, isLoading } = useStatusChanges(projectId, itemType, itemId)
+  const [isOpen, setIsOpen] = useState(false)
+  const { changes, isLoading } = useStatusChanges(projectId, itemType, itemId, isOpen)
 
   return (
     <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className={isOpen ? 'mb-3 flex items-center justify-between' : 'flex items-center justify-between'}>
         <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-        <span className="text-xs text-gray-500">{changes.length} change{changes.length === 1 ? '' : 's'}</span>
+        <button
+          type="button"
+          onClick={() => setIsOpen((current) => !current)}
+          className="text-xs font-medium text-gray-500 transition hover:text-gray-700"
+        >
+          {isOpen ? 'hide status change history' : 'show status change history'}
+        </button>
       </div>
 
-      {isLoading ? (
+      {isOpen && isLoading ? (
         <div className="flex items-center justify-center py-6">
           <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-indigo-600"></div>
         </div>
-      ) : changes.length === 0 ? (
+      ) : isOpen && changes.length === 0 ? (
         <div className="rounded border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-500">
           No status changes recorded yet.
         </div>
-      ) : (
+      ) : isOpen ? (
         <div className="space-y-3">
           {changes.map((change) => (
             <div key={change.id} className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
@@ -60,7 +68,7 @@ export default function StatusChangeHistory({
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
