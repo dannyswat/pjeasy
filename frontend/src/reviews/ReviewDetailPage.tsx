@@ -11,10 +11,12 @@ import {
   ReviewItemTypeDisplay,
 } from './reviewTypes'
 import type { ReviewItemResponse } from './reviewTypes'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function ReviewDetailPage() {
   const { projectId, reviewId } = useParams<{ projectId: string; reviewId: string }>()
   const navigate = useNavigate()
+  const projectIdNum = projectId ? parseInt(projectId) : 0
   const reviewIdNum = reviewId ? parseInt(reviewId) : 0
   const { review, items, isLoading, refetch } = useGetReviewDetail(reviewIdNum)
   const publishReview = usePublishReview()
@@ -262,6 +264,12 @@ export default function ReviewDetailPage() {
           <p className="text-gray-700 whitespace-pre-wrap">{review.summary}</p>
         </div>
       )}
+
+      <StatusChangeHistory
+        projectId={projectIdNum}
+        itemType="review"
+        itemId={review.id}
+      />
 
       {/* Item Sections */}
       {renderItemSection(

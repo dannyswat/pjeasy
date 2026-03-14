@@ -24,6 +24,7 @@ export function useUpdateServiceTicketStatus() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['serviceTickets', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['serviceTicket', variables.ticketId] })
+      queryClient.invalidateQueries({ queryKey: ['statusChanges', variables.projectId, 'service-ticket', variables.ticketId] })
     },
   })
 }

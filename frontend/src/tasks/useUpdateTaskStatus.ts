@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '../apis/fetch'
 import type { UpdateTaskStatusRequest, TaskResponse } from './taskTypes'
 
@@ -8,6 +8,8 @@ interface UpdateTaskStatusParams extends UpdateTaskStatusRequest {
 }
 
 export function useUpdateTaskStatus() {
+  const queryClient = useQueryClient()
+
   return useMutation({
     mutationFn: async ({ taskId, status }: UpdateTaskStatusParams) => {
       return fetchApi<TaskResponse>(`/api/tasks/${taskId}/status`, {
@@ -17,6 +19,11 @@ export function useUpdateTaskStatus() {
         },
         body: JSON.stringify({ status }),
       }, true)
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', variables.projectId] })
+      queryClient.invalidateQueries({ queryKey: ['task', variables.taskId] })
+      queryClient.invalidateQueries({ queryKey: ['statusChanges', variables.projectId, 'task', variables.taskId] })
     },
   })
 }

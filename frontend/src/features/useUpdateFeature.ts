@@ -17,6 +17,7 @@ export function useUpdateFeature() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['features', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['feature', variables.featureId] })
+      queryClient.invalidateQueries({ queryKey: ['statusChanges', variables.projectId, 'feature', variables.featureId] })
     },
   })
 }

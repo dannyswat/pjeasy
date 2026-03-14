@@ -11,6 +11,7 @@ import { UserLabel } from '../components/UserLabel'
 import { useUpdateFeature } from './useUpdateFeature'
 import ItemLink from '../components/ItemLink'
 import WikiPageChanges from '../wiki/WikiPageChanges'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function FeatureDetailPage() {
   const { projectId, featureId } = useParams<{ projectId: string; featureId: string }>()
@@ -349,6 +350,12 @@ export default function FeatureDetailPage() {
                 </div>
               </div>
             </div>
+
+            <StatusChangeHistory
+              projectId={projectIdNum}
+              itemType="feature"
+              itemId={feature.id}
+            />
 
             {/* Related Tasks Section */}
             <RelatedTasks 

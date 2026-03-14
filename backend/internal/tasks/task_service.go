@@ -8,6 +8,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/dannyswat/pjeasy/internal/service_tickets"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
 
 type WikiChangeMerger interface {
@@ -21,10 +22,11 @@ type TaskService struct {
 	sequenceRepo      *sequences.SequenceRepository
 	serviceTicketRepo *service_tickets.ServiceTicketRepository
 	wikiChangeMerger  WikiChangeMerger
+	statusRepo        *status_changes.StatusChangeService
 	uowFactory        *repositories.UnitOfWorkFactory
 }
 
-func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, serviceTicketRepo *service_tickets.ServiceTicketRepository, wikiChangeMerger WikiChangeMerger, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
+func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, serviceTicketRepo *service_tickets.ServiceTicketRepository, wikiChangeMerger WikiChangeMerger, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
 	return &TaskService{
 		taskRepo:          taskRepo,
 		memberRepo:        memberRepo,
@@ -32,6 +34,7 @@ func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMember
 		sequenceRepo:      sequenceRepo,
 		serviceTicketRepo: serviceTicketRepo,
 		wikiChangeMerger:  wikiChangeMerger,
+		statusRepo:        statusRepo,
 		uowFactory:        uowFactory,
 	}
 }
@@ -194,6 +197,8 @@ func (s *TaskService) UpdateTaskStatus(taskID int, status string, updatedBy int)
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := task.Status
+
 	if err := s.taskRepo.UpdateStatus(taskID, status); err != nil {
 		return nil, err
 	}
@@ -202,6 +207,10 @@ func (s *TaskService) UpdateTaskStatus(taskID int, status string, updatedBy int)
 		if err := s.wikiChangeMerger.MergeChangesOnCompletion("task", taskID, updatedBy); err != nil {
 			return nil, err
 		}
+	}
+
+	if err := s.statusRepo.LogChange(task.ProjectID, status_changes.ItemTypeTask, task.ID, oldStatus, status, &updatedBy); err != nil {
+		return nil, err
 	}
 
 	// Reload task to get updated status

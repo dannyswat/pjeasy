@@ -18,6 +18,7 @@ import { useGetActiveSprint } from '../sprints/useGetActiveSprint'
 import { useAddTaskToSprint } from '../sprints/useAddTaskToSprint'
 import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
 import WikiPageChanges from '../wiki/WikiPageChanges'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 // Default statuses exclude Completed and Closed
 const defaultTaskStatuses = [
@@ -465,6 +466,12 @@ export default function TasksPage() {
                 </div>
               </div>
             </div>
+
+            <StatusChangeHistory
+              projectId={projectIdNum}
+              itemType="task"
+              itemId={viewingTask.id}
+            />
 
             <WikiPageChanges
               projectId={projectIdNum}

@@ -23,6 +23,7 @@ export function useUpdateIssueStatus() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['issues', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['issue', variables.issueId] })
+      queryClient.invalidateQueries({ queryKey: ['statusChanges', variables.projectId, 'issue', variables.issueId] })
     },
   })
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
 
 type FeatureService struct {
@@ -14,15 +15,17 @@ type FeatureService struct {
 	memberRepo   *projects.ProjectMemberRepository
 	projectRepo  *projects.ProjectRepository
 	sequenceRepo *sequences.SequenceRepository
+	statusRepo   *status_changes.StatusChangeService
 	uowFactory   *repositories.UnitOfWorkFactory
 }
 
-func NewFeatureService(featureRepo *FeatureRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *FeatureService {
+func NewFeatureService(featureRepo *FeatureRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *FeatureService {
 	return &FeatureService{
 		featureRepo:  featureRepo,
 		memberRepo:   memberRepo,
 		projectRepo:  projectRepo,
 		sequenceRepo: sequenceRepo,
+		statusRepo:   statusRepo,
 		uowFactory:   uowFactory,
 	}
 }
@@ -138,6 +141,8 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := feature.Status
+
 	// Validate priority
 	if priority != "" && !IsValidPriority(priority) {
 		return nil, errors.New("invalid priority")
@@ -175,6 +180,10 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 		return nil, err
 	}
 
+	if err := s.statusRepo.LogChange(feature.ProjectID, status_changes.ItemTypeFeature, feature.ID, oldStatus, feature.Status, &updatedBy); err != nil {
+		return nil, err
+	}
+
 	return feature, nil
 }
 
@@ -201,7 +210,13 @@ func (s *FeatureService) UpdateFeatureStatus(featureID int, status string, updat
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := feature.Status
+
 	if err := s.featureRepo.UpdateStatus(featureID, status); err != nil {
+		return nil, err
+	}
+
+	if err := s.statusRepo.LogChange(feature.ProjectID, status_changes.ItemTypeFeature, feature.ID, oldStatus, status, &updatedBy); err != nil {
 		return nil, err
 	}
 
@@ -228,6 +243,8 @@ func (s *FeatureService) UpdateFeatureAssignee(featureID int, assignedTo int, up
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := feature.Status
+
 	// Validate assignee is a member if provided
 	if assignedTo > 0 {
 		isAssigneeMember, err := s.memberRepo.IsUserMember(feature.ProjectID, assignedTo)
@@ -251,6 +268,17 @@ func (s *FeatureService) UpdateFeatureAssignee(featureID int, assignedTo int, up
 	}
 
 	if err := s.featureRepo.UpdateAssignee(featureID, assignedTo); err != nil {
+		return nil, err
+	}
+
+	newStatus := oldStatus
+	if assignedTo > 0 && feature.AssignedTo == 0 && oldStatus == FeatureStatusOpen {
+		newStatus = FeatureStatusAssigned
+	} else if assignedTo == 0 && feature.AssignedTo > 0 && oldStatus == FeatureStatusAssigned {
+		newStatus = FeatureStatusOpen
+	}
+
+	if err := s.statusRepo.LogChange(feature.ProjectID, status_changes.ItemTypeFeature, feature.ID, oldStatus, newStatus, &updatedBy); err != nil {
 		return nil, err
 	}
 

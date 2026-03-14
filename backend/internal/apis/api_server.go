@@ -18,6 +18,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/dannyswat/pjeasy/internal/service_tickets"
 	"github.com/dannyswat/pjeasy/internal/sprints"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 	"github.com/dannyswat/pjeasy/internal/tasks"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
@@ -50,6 +51,7 @@ type APIServer struct {
 	sprintService        *sprints.SprintService
 	reviewService        *reviews.ReviewService
 	wikiPageService      *wiki_pages.WikiPageService
+	statusChangeService  *status_changes.StatusChangeService
 	tokenService         *user_sessions.TokenService
 	userHandler          *UserHandler
 	sessionHandler       *SessionHandler
@@ -65,6 +67,7 @@ type APIServer struct {
 	sprintHandler        *SprintHandler
 	reviewHandler        *ReviewHandler
 	wikiPageHandler      *WikiPageHandler
+	statusChangeHandler  *StatusChangeHandler
 	dashboardHandler     *DashboardHandler
 	authMiddleware       *AuthMiddleware
 	projectMiddleware    *ProjectMiddleware
@@ -124,6 +127,7 @@ func (s *APIServer) AutoMigrate() error {
 		&reviews.ReviewItem{},
 		&wiki_pages.WikiPage{},
 		&wiki_pages.WikiPageChange{},
+		&status_changes.StatusChange{},
 	)
 }
 
@@ -154,22 +158,24 @@ func (s *APIServer) SetupAPIServer() error {
 	memberRepo := projects.NewProjectMemberRepository(s.globalUOW)
 	memberCache := projects.NewProjectMemberCache(memberRepo, 1*time.Hour)
 	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo, sequenceRepo, memberCache)
+	statusChangeRepo := status_changes.NewStatusChangeRepository(s.globalUOW)
+	s.statusChangeService = status_changes.NewStatusChangeService(statusChangeRepo, memberRepo)
 
 	// Initialize idea service
 	ideaRepo := ideas.NewIdeaRepository(s.globalUOW)
-	s.ideaService = ideas.NewIdeaService(ideaRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+	s.ideaService = ideas.NewIdeaService(ideaRepo, memberRepo, projectRepo, sequenceRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize issue service
 	issueRepo := issues.NewIssueRepository(s.globalUOW)
-	s.issueService = issues.NewIssueService(issueRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+	s.issueService = issues.NewIssueService(issueRepo, memberRepo, projectRepo, sequenceRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize feature service
 	featureRepo := features.NewFeatureRepository(s.globalUOW)
-	s.featureService = features.NewFeatureService(featureRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+	s.featureService = features.NewFeatureService(featureRepo, memberRepo, projectRepo, sequenceRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize service ticket service
 	serviceTicketRepo := service_tickets.NewServiceTicketRepository(s.globalUOW)
-	s.serviceTicketService = service_tickets.NewServiceTicketService(serviceTicketRepo, memberRepo, projectRepo, sequenceRepo, s.uowFactory)
+	s.serviceTicketService = service_tickets.NewServiceTicketService(serviceTicketRepo, memberRepo, projectRepo, sequenceRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize task repository (needed for workflow engine)
 	taskRepo := tasks.NewTaskRepository(s.globalUOW)
@@ -190,18 +196,18 @@ func (s *APIServer) SetupAPIServer() error {
 
 	// Initialize wiki page service
 	wikiPageChangeRepo := wiki_pages.NewWikiPageChangeRepository(s.globalUOW)
-	s.wikiPageService = wiki_pages.NewWikiPageService(wikiPageRepo, wikiPageChangeRepo, memberRepo, projectRepo, featureRepo, issueRepo, taskRepo, s.uowFactory)
+	s.wikiPageService = wiki_pages.NewWikiPageService(wikiPageRepo, wikiPageChangeRepo, memberRepo, projectRepo, featureRepo, issueRepo, taskRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize task service
-	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.wikiPageService, s.uowFactory)
+	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.wikiPageService, s.statusChangeService, s.uowFactory)
 
 	// Initialize sprint service
 	sprintRepo := sprints.NewSprintRepository(s.globalUOW)
-	s.sprintService = sprints.NewSprintService(sprintRepo, taskRepo, memberRepo, projectRepo, s.uowFactory)
+	s.sprintService = sprints.NewSprintService(sprintRepo, taskRepo, memberRepo, projectRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize review service
 	reviewRepo := reviews.NewReviewRepository(s.globalUOW)
-	s.reviewService = reviews.NewReviewService(reviewRepo, sprintRepo, taskRepo, featureRepo, issueRepo, ideaRepo, memberRepo, projectRepo, s.uowFactory)
+	s.reviewService = reviews.NewReviewService(reviewRepo, sprintRepo, taskRepo, featureRepo, issueRepo, ideaRepo, memberRepo, projectRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
@@ -218,6 +224,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.sprintHandler = NewSprintHandler(s.sprintService)
 	s.reviewHandler = NewReviewHandler(s.reviewService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
+	s.statusChangeHandler = NewStatusChangeHandler(s.statusChangeService)
 	s.dashboardHandler = NewDashboardHandler(s.projectService, s.taskService, s.issueService, s.featureService, s.serviceTicketService, s.sprintService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 	s.projectMiddleware = NewProjectMiddleware(memberCache)
@@ -237,6 +244,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.sprintHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.reviewHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.statusChangeHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	// Register upload routes

@@ -10,6 +10,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sprints"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 	"github.com/dannyswat/pjeasy/internal/tasks"
 )
 
@@ -22,6 +23,7 @@ type ReviewService struct {
 	ideaRepo    *ideas.IdeaRepository
 	memberRepo  *projects.ProjectMemberRepository
 	projectRepo *projects.ProjectRepository
+	statusRepo  *status_changes.StatusChangeService
 	uowFactory  *repositories.UnitOfWorkFactory
 }
 
@@ -34,6 +36,7 @@ func NewReviewService(
 	ideaRepo *ideas.IdeaRepository,
 	memberRepo *projects.ProjectMemberRepository,
 	projectRepo *projects.ProjectRepository,
+	statusRepo *status_changes.StatusChangeService,
 	uowFactory *repositories.UnitOfWorkFactory,
 ) *ReviewService {
 	return &ReviewService{
@@ -45,6 +48,7 @@ func NewReviewService(
 		ideaRepo:    ideaRepo,
 		memberRepo:  memberRepo,
 		projectRepo: projectRepo,
+		statusRepo:  statusRepo,
 		uowFactory:  uowFactory,
 	}
 }
@@ -281,6 +285,10 @@ func (s *ReviewService) PublishReview(reviewID int, userID int) (*Review, error)
 	review.UpdatedAt = time.Now()
 
 	if err := s.reviewRepo.Update(review); err != nil {
+		return nil, err
+	}
+
+	if err := s.statusRepo.LogChange(review.ProjectID, status_changes.ItemTypeReview, review.ID, ReviewStatusDraft, review.Status, &userID); err != nil {
 		return nil, err
 	}
 

@@ -24,6 +24,7 @@ export function useUpdateIdeaStatus() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ideas', variables.projectId] })
       queryClient.invalidateQueries({ queryKey: ['idea', variables.ideaId] })
+      queryClient.invalidateQueries({ queryKey: ['statusChanges', variables.projectId, 'idea', variables.ideaId] })
     },
   })
 }

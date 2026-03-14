@@ -10,6 +10,7 @@ import RelatedTasks from '../tasks/RelatedTasks'
 import RelatedFeatures from '../features/RelatedFeatures'
 import { useUpdateIdea } from './useUpdateIdea'
 import ItemLink from '../components/ItemLink'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function IdeaDetailPage() {
   const { projectId, ideaId } = useParams<{ projectId: string; ideaId: string }>()
@@ -254,6 +255,12 @@ export default function IdeaDetailPage() {
                 </div>
               </div>
             </div>
+
+            <StatusChangeHistory
+              projectId={projectIdNum}
+              itemType="idea"
+              itemId={idea.id}
+            />
 
             {/* Related Tasks Section */}
             <RelatedTasks 

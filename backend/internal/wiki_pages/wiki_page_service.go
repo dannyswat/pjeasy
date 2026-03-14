@@ -14,6 +14,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 	"github.com/dannyswat/pjeasy/internal/tasks"
 	"github.com/dannyswat/vchtml"
 )
@@ -26,6 +27,7 @@ type WikiPageService struct {
 	featureRepo *features.FeatureRepository
 	issueRepo   *issues.IssueRepository
 	taskRepo    *tasks.TaskRepository
+	statusRepo  *status_changes.StatusChangeService
 	uowFactory  *repositories.UnitOfWorkFactory
 }
 
@@ -37,6 +39,7 @@ func NewWikiPageService(
 	featureRepo *features.FeatureRepository,
 	issueRepo *issues.IssueRepository,
 	taskRepo *tasks.TaskRepository,
+	statusRepo *status_changes.StatusChangeService,
 	uowFactory *repositories.UnitOfWorkFactory,
 ) *WikiPageService {
 	return &WikiPageService{
@@ -47,6 +50,7 @@ func NewWikiPageService(
 		featureRepo: featureRepo,
 		issueRepo:   issueRepo,
 		taskRepo:    taskRepo,
+		statusRepo:  statusRepo,
 		uowFactory:  uowFactory,
 	}
 }
@@ -266,11 +270,17 @@ func (s *WikiPageService) UpdateWikiPageStatus(pageID int, status string, update
 		return nil, errors.New("invalid status")
 	}
 
+	oldStatus := page.Status
+
 	page.Status = status
 	page.UpdatedBy = updatedBy
 	page.UpdatedAt = time.Now()
 
 	if err := s.pageRepo.Update(page); err != nil {
+		return nil, err
+	}
+
+	if err := s.statusRepo.LogChange(page.ProjectID, status_changes.ItemTypeWikiPage, page.ID, oldStatus, page.Status, &updatedBy); err != nil {
 		return nil, err
 	}
 

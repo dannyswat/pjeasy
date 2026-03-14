@@ -8,6 +8,7 @@ import { WikiPageStatus, WikiPageStatusDisplay } from './wikiTypes'
 import { UserLabel } from '../components/UserLabel'
 import EditWikiPageForm from './EditWikiPageForm'
 import WikiPageChangesPanel from './WikiPageChangesPanel'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function WikiPageDetailPage() {
   const { projectId, pageId } = useParams<{ projectId: string; pageId: string }>()
@@ -196,6 +197,12 @@ export default function WikiPageDetailPage() {
           </div>
         </div>
       </div>
+
+      <StatusChangeHistory
+        projectId={projectIdNum}
+        itemType="wiki-page"
+        itemId={pageIdNum}
+      />
 
       {/* Content */}
       <div className="bg-white rounded-lg shadow-sm border">

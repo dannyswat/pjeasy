@@ -7,6 +7,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
 
 type IdeaService struct {
@@ -14,15 +15,17 @@ type IdeaService struct {
 	memberRepo   *projects.ProjectMemberRepository
 	projectRepo  *projects.ProjectRepository
 	sequenceRepo *sequences.SequenceRepository
+	statusRepo   *status_changes.StatusChangeService
 	uowFactory   *repositories.UnitOfWorkFactory
 }
 
-func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *IdeaService {
+func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *IdeaService {
 	return &IdeaService{
 		ideaRepo:     ideaRepo,
 		memberRepo:   memberRepo,
 		projectRepo:  projectRepo,
 		sequenceRepo: sequenceRepo,
+		statusRepo:   statusRepo,
 		uowFactory:   uowFactory,
 	}
 }
@@ -144,7 +147,13 @@ func (s *IdeaService) UpdateIdeaStatus(ideaID int, status string, updatedBy int)
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := idea.Status
+
 	if err := s.ideaRepo.UpdateStatus(ideaID, status); err != nil {
+		return nil, err
+	}
+
+	if err := s.statusRepo.LogChange(idea.ProjectID, status_changes.ItemTypeIdea, idea.ID, oldStatus, status, &updatedBy); err != nil {
 		return nil, err
 	}
 

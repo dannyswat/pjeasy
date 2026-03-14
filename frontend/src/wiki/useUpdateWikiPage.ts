@@ -45,6 +45,7 @@ export function useUpdateWikiPageContent() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['wikiPage', variables.pageId] })
       queryClient.invalidateQueries({ queryKey: ['wikiPages', variables.projectId] })
+      queryClient.invalidateQueries({ queryKey: ['statusChanges', variables.projectId, 'wiki-page', variables.pageId] })
     },
   })
 }

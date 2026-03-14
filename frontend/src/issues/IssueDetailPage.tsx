@@ -11,6 +11,7 @@ import { UserLabel } from '../components/UserLabel'
 import { useUpdateIssue } from './useUpdateIssue'
 import ItemLink from '../components/ItemLink'
 import WikiPageChanges from '../wiki/WikiPageChanges'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function IssueDetailPage() {
   const { projectId, issueId } = useParams<{ projectId: string; issueId: string }>()
@@ -323,6 +324,12 @@ export default function IssueDetailPage() {
                 </div>
               </div>
             </div>
+
+            <StatusChangeHistory
+              projectId={projectIdNum}
+              itemType="issue"
+              itemId={issue.id}
+            />
 
             {/* Related Tasks Section */}
             <RelatedTasks 

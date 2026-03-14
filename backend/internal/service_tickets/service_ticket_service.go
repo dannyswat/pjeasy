@@ -7,6 +7,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
 
 type ServiceTicketService struct {
@@ -14,15 +15,17 @@ type ServiceTicketService struct {
 	memberRepo   *projects.ProjectMemberRepository
 	projectRepo  *projects.ProjectRepository
 	sequenceRepo *sequences.SequenceRepository
+	statusRepo   *status_changes.StatusChangeService
 	uowFactory   *repositories.UnitOfWorkFactory
 }
 
-func NewServiceTicketService(ticketRepo *ServiceTicketRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *ServiceTicketService {
+func NewServiceTicketService(ticketRepo *ServiceTicketRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *ServiceTicketService {
 	return &ServiceTicketService{
 		ticketRepo:   ticketRepo,
 		memberRepo:   memberRepo,
 		projectRepo:  projectRepo,
 		sequenceRepo: sequenceRepo,
+		statusRepo:   statusRepo,
 		uowFactory:   uowFactory,
 	}
 }
@@ -175,10 +178,16 @@ func (s *ServiceTicketService) UpdateServiceTicketStatus(ticketID int, status st
 		return nil, errors.New("invalid status")
 	}
 
+	oldStatus := ticket.Status
+
 	ticket.Status = status
 	ticket.UpdatedAt = time.Now()
 
 	if err := s.ticketRepo.Update(ticket); err != nil {
+		return nil, err
+	}
+
+	if err := s.statusRepo.LogChange(ticket.ProjectID, status_changes.ItemTypeServiceTicket, ticket.ID, oldStatus, ticket.Status, &updatedBy); err != nil {
 		return nil, err
 	}
 
@@ -301,8 +310,14 @@ func (s *ServiceTicketService) UpdateServiceTicketStatusByWorkflow(ticketID int,
 		return nil // Already at target status, no-op
 	}
 
+	oldStatus := ticket.Status
+
 	ticket.Status = status
 	ticket.UpdatedAt = time.Now()
 
-	return s.ticketRepo.Update(ticket)
+	if err := s.ticketRepo.Update(ticket); err != nil {
+		return err
+	}
+
+	return s.statusRepo.LogChange(ticket.ProjectID, status_changes.ItemTypeServiceTicket, ticket.ID, oldStatus, ticket.Status, nil)
 }

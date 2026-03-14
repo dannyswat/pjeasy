@@ -6,6 +6,7 @@ import (
 
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 	"github.com/dannyswat/pjeasy/internal/tasks"
 )
 
@@ -14,6 +15,7 @@ type SprintService struct {
 	taskRepo    *tasks.TaskRepository
 	memberRepo  *projects.ProjectMemberRepository
 	projectRepo *projects.ProjectRepository
+	statusRepo  *status_changes.StatusChangeService
 	uowFactory  *repositories.UnitOfWorkFactory
 }
 
@@ -22,6 +24,7 @@ func NewSprintService(
 	taskRepo *tasks.TaskRepository,
 	memberRepo *projects.ProjectMemberRepository,
 	projectRepo *projects.ProjectRepository,
+	statusRepo *status_changes.StatusChangeService,
 	uowFactory *repositories.UnitOfWorkFactory,
 ) *SprintService {
 	return &SprintService{
@@ -29,6 +32,7 @@ func NewSprintService(
 		taskRepo:    taskRepo,
 		memberRepo:  memberRepo,
 		projectRepo: projectRepo,
+		statusRepo:  statusRepo,
 		uowFactory:  uowFactory,
 	}
 }
@@ -156,6 +160,10 @@ func (s *SprintService) StartSprint(sprintID int, userID int) (*Sprint, error) {
 		return nil, err
 	}
 
+	if err := s.statusRepo.LogChange(sprint.ProjectID, status_changes.ItemTypeSprint, sprint.ID, SprintStatusPlanning, sprint.Status, &userID); err != nil {
+		return nil, err
+	}
+
 	return sprint, nil
 }
 
@@ -192,6 +200,10 @@ func (s *SprintService) CloseSprint(sprintID int, createNewSprint bool, newSprin
 	sprint.UpdatedAt = now
 
 	if err := s.sprintRepo.Update(sprint); err != nil {
+		return nil, nil, err
+	}
+
+	if err := s.statusRepo.LogChange(sprint.ProjectID, status_changes.ItemTypeSprint, sprint.ID, SprintStatusActive, sprint.Status, &userID); err != nil {
 		return nil, nil, err
 	}
 

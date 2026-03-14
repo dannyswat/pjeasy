@@ -8,6 +8,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
+	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
 
 // StatusChangeHandler defines the interface for handling status change events
@@ -20,16 +21,18 @@ type IssueService struct {
 	memberRepo          *projects.ProjectMemberRepository
 	projectRepo         *projects.ProjectRepository
 	sequenceRepo        *sequences.SequenceRepository
+	statusRepo          *status_changes.StatusChangeService
 	uowFactory          *repositories.UnitOfWorkFactory
 	statusChangeHandler StatusChangeHandler
 }
 
-func NewIssueService(issueRepo *IssueRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, uowFactory *repositories.UnitOfWorkFactory) *IssueService {
+func NewIssueService(issueRepo *IssueRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *IssueService {
 	return &IssueService{
 		issueRepo:    issueRepo,
 		memberRepo:   memberRepo,
 		projectRepo:  projectRepo,
 		sequenceRepo: sequenceRepo,
+		statusRepo:   statusRepo,
 		uowFactory:   uowFactory,
 	}
 }
@@ -149,6 +152,8 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := issue.Status
+
 	// Validate priority
 	if priority != "" && !IsValidPriority(priority) {
 		return nil, errors.New("invalid priority")
@@ -182,6 +187,10 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 	issue.AssignedTo = assignedTo
 
 	if err := s.issueRepo.Update(issue); err != nil {
+		return nil, err
+	}
+
+	if err := s.statusRepo.LogChange(issue.ProjectID, status_changes.ItemTypeIssue, issue.ID, oldStatus, issue.Status, &updatedBy); err != nil {
 		return nil, err
 	}
 
@@ -224,6 +233,10 @@ func (s *IssueService) UpdateIssueStatus(issueID int, status string, updatedBy i
 		return nil, err
 	}
 
+	if err := s.statusRepo.LogChange(issue.ProjectID, status_changes.ItemTypeIssue, issue.ID, oldStatus, status, &updatedBy); err != nil {
+		return nil, err
+	}
+
 	// Trigger workflow event if status actually changed and handler is set
 	if oldStatus != status && s.statusChangeHandler != nil {
 		ctx := context.Background()
@@ -255,6 +268,8 @@ func (s *IssueService) UpdateIssueAssignee(issueID int, assignedTo int, updatedB
 		return nil, errors.New("project users can only read project items")
 	}
 
+	oldStatus := issue.Status
+
 	// Validate assignee is a member if provided
 	if assignedTo > 0 {
 		isAssigneeMember, err := s.memberRepo.IsUserMember(issue.ProjectID, assignedTo)
@@ -278,6 +293,17 @@ func (s *IssueService) UpdateIssueAssignee(issueID int, assignedTo int, updatedB
 	}
 
 	if err := s.issueRepo.UpdateAssignee(issueID, assignedTo); err != nil {
+		return nil, err
+	}
+
+	newStatus := oldStatus
+	if assignedTo > 0 && issue.AssignedTo == 0 && oldStatus == IssueStatusOpen {
+		newStatus = IssueStatusAssigned
+	} else if assignedTo == 0 && issue.AssignedTo > 0 && oldStatus == IssueStatusAssigned {
+		newStatus = IssueStatusOpen
+	}
+
+	if err := s.statusRepo.LogChange(issue.ProjectID, status_changes.ItemTypeIssue, issue.ID, oldStatus, newStatus, &updatedBy); err != nil {
 		return nil, err
 	}
 

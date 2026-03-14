@@ -19,6 +19,7 @@ import RelatedIssues from '../issues/RelatedIssues'
 import RelatedIdeas from '../ideas/RelatedIdeas'
 import RelatedFeatures from '../features/RelatedFeatures'
 import { UserLabel } from '../components/UserLabel'
+import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function ServiceTicketDetailPage() {
   const { projectId, ticketId } = useParams<{ projectId: string; ticketId: string }>()
@@ -342,6 +343,14 @@ export default function ServiceTicketDetailPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="mt-4 border-t pt-4">
+              <StatusChangeHistory
+                projectId={projectIdNum}
+                itemType="service-ticket"
+                itemId={ticket.id}
+              />
             </div>
           </div>
 
