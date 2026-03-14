@@ -50,7 +50,7 @@ export default function ProjectMemberSelect({
         {members.map((member) => (
           <option key={member.userId} value={member.userId}>
             {member.user.name} ({member.user.loginId})
-            {member.isAdmin && ' - Admin'}
+            {member.isAdmin ? ' - Admin' : member.isUser ? ' - Project User' : ''}
           </option>
         ))}
       </select>

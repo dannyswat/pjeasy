@@ -38,13 +38,13 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, itemType str
 		return nil, errors.New("project not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, createdBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(projectID, createdBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	uow := s.uowFactory.NewUnitOfWork()
@@ -100,13 +100,13 @@ func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, up
 		return nil, errors.New("idea not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(idea.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(idea.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	idea.Title = title
@@ -135,13 +135,13 @@ func (s *IdeaService) UpdateIdeaStatus(ideaID int, status string, updatedBy int)
 		return nil, errors.New("idea not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(idea.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(idea.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	if err := s.ideaRepo.UpdateStatus(ideaID, status); err != nil {
@@ -162,13 +162,13 @@ func (s *IdeaService) DeleteIdea(ideaID int, deletedBy int) error {
 		return errors.New("idea not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(idea.ProjectID, deletedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(idea.ProjectID, deletedBy)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project items")
 	}
 
 	return s.ideaRepo.Delete(ideaID)

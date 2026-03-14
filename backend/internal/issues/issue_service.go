@@ -50,13 +50,13 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 		return nil, errors.New("project not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, createdBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(projectID, createdBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate priority
@@ -140,13 +140,13 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 		return nil, errors.New("issue not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(issue.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(issue.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate priority
@@ -202,13 +202,13 @@ func (s *IssueService) UpdateIssueStatus(issueID int, status string, updatedBy i
 		return nil, errors.New("issue not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(issue.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(issue.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Capture old status before update
@@ -246,13 +246,13 @@ func (s *IssueService) UpdateIssueAssignee(issueID int, assignedTo int, updatedB
 		return nil, errors.New("issue not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(issue.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(issue.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate assignee is a member if provided
@@ -295,13 +295,13 @@ func (s *IssueService) DeleteIssue(issueID int, deletedBy int) error {
 		return errors.New("issue not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(issue.ProjectID, deletedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(issue.ProjectID, deletedBy)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project items")
 	}
 
 	return s.issueRepo.Delete(issueID)

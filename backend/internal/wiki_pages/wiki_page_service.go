@@ -85,13 +85,13 @@ func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, p
 		return nil, errors.New("project not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, createdBy)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(projectID, createdBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	// Generate slug from title
@@ -157,13 +157,13 @@ func (s *WikiPageService) UpdateWikiPage(pageID int, title string, parentID *int
 		return nil, errors.New("wiki page not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(page.ProjectID, updatedBy)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(page.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	// Validate parent if provided
@@ -219,13 +219,13 @@ func (s *WikiPageService) UpdateWikiPageContent(pageID int, content string, upda
 		return nil, errors.New("wiki page not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(page.ProjectID, updatedBy)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(page.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	contentHash := computeHash(content)
@@ -252,13 +252,13 @@ func (s *WikiPageService) UpdateWikiPageStatus(pageID int, status string, update
 		return nil, errors.New("wiki page not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(page.ProjectID, updatedBy)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(page.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	// Validate status
@@ -287,13 +287,13 @@ func (s *WikiPageService) DeleteWikiPage(pageID int, userID int) error {
 		return errors.New("wiki page not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(page.ProjectID, userID)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(page.ProjectID, userID)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project wiki")
 	}
 
 	// Check if page has children
@@ -393,13 +393,13 @@ func (s *WikiPageService) CreateWikiPageChange(wikiPageID int, itemType string, 
 		return nil, errors.New("wiki page not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(page.ProjectID, createdBy)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(page.ProjectID, createdBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	// Validate the related item exists and belongs to the project.
@@ -486,13 +486,13 @@ func (s *WikiPageService) GetWikiPageChange(changeID int, userID int) (*WikiPage
 		return nil, nil
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(change.ProjectID, userID)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(change.ProjectID, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	return change, nil
@@ -628,13 +628,13 @@ func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, 
 		return nil // No changes to merge
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(pendingChanges[0].ProjectID, userID)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(pendingChanges[0].ProjectID, userID)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project wiki")
 	}
 
 	uow := s.uowFactory.NewUnitOfWork()
@@ -843,13 +843,13 @@ func (s *WikiPageService) ResolveConflict(changeID int, resolvedContent string, 
 		return nil, errors.New("change not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(change.ProjectID, userID)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(change.ProjectID, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	if change.Status != WikiPageChangeStatusConflict {
@@ -902,13 +902,13 @@ func (s *WikiPageService) RejectChange(changeID int, userID int) (*WikiPageChang
 		return nil, errors.New("change not found")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(change.ProjectID, userID)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(change.ProjectID, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project wiki")
 	}
 
 	change.Status = WikiPageChangeStatusRejected
@@ -936,13 +936,13 @@ func (s *WikiPageService) DeleteWikiPageChange(changeID int, userID int) error {
 		return errors.New("only pending changes can be deleted")
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(change.ProjectID, userID)
+	// Check if user can modify wiki content.
+	canWrite, err := s.memberRepo.CanUserWriteProject(change.ProjectID, userID)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project wiki")
 	}
 
 	return s.changeRepo.Delete(changeID)

@@ -38,13 +38,13 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 		return nil, errors.New("project not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, createdBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(projectID, createdBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate priority
@@ -129,13 +129,13 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 		return nil, errors.New("feature not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(feature.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(feature.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate priority
@@ -192,13 +192,13 @@ func (s *FeatureService) UpdateFeatureStatus(featureID int, status string, updat
 		return nil, errors.New("feature not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(feature.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(feature.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	if err := s.featureRepo.UpdateStatus(featureID, status); err != nil {
@@ -219,13 +219,13 @@ func (s *FeatureService) UpdateFeatureAssignee(featureID int, assignedTo int, up
 		return nil, errors.New("feature not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(feature.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(feature.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate assignee is a member if provided
@@ -268,13 +268,13 @@ func (s *FeatureService) DeleteFeature(featureID int, deletedBy int) error {
 		return errors.New("feature not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(feature.ProjectID, deletedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(feature.ProjectID, deletedBy)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project items")
 	}
 
 	return s.featureRepo.Delete(featureID)

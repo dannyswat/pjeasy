@@ -92,6 +92,38 @@ func (c *ProjectMemberCache) IsUserAdmin(projectID, userID int) (bool, error) {
 	return false, nil
 }
 
+// IsUserProjectUser checks if a user has ProjectUser limited access using cache.
+func (c *ProjectMemberCache) IsUserProjectUser(projectID, userID int) (bool, error) {
+	members, err := c.GetProjectMembers(projectID)
+	if err != nil {
+		return false, err
+	}
+
+	for _, member := range members {
+		if member.UserID == userID && member.IsUser && !member.IsAdmin {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// CanUserWriteProject checks if a user can modify project items using cache.
+func (c *ProjectMemberCache) CanUserWriteProject(projectID, userID int) (bool, error) {
+	members, err := c.GetProjectMembers(projectID)
+	if err != nil {
+		return false, err
+	}
+
+	for _, member := range members {
+		if member.UserID == userID {
+			return member.CanWriteProject(), nil
+		}
+	}
+
+	return false, nil
+}
+
 // InvalidateProject clears the cache for a specific project
 func (c *ProjectMemberCache) InvalidateProject(projectID int) {
 	c.mu.Lock()

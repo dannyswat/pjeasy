@@ -166,7 +166,7 @@ func (s *ProjectService) GetUserProjects(userID int, includeArchived bool, page,
 
 // AddMember adds a user to a project
 // AddMemberByLoginID adds a member to a project using their login ID
-func (s *ProjectService) AddMemberByLoginID(projectID int, loginID string, isAdmin bool, addedBy int) error {
+func (s *ProjectService) AddMemberByLoginID(projectID int, loginID string, isAdmin bool, isUser bool, addedBy int) error {
 	// Look up user by login ID
 	user, err := s.userRepo.GetByLoginID(loginID)
 	if err != nil {
@@ -176,10 +176,14 @@ func (s *ProjectService) AddMemberByLoginID(projectID int, loginID string, isAdm
 		return errors.New("user not found")
 	}
 
-	return s.AddMember(projectID, user.ID, isAdmin, addedBy)
+	return s.AddMember(projectID, user.ID, isAdmin, isUser, addedBy)
 }
 
-func (s *ProjectService) AddMember(projectID, userID int, isAdmin bool, addedBy int) error {
+func (s *ProjectService) AddMember(projectID, userID int, isAdmin bool, isUser bool, addedBy int) error {
+	if isAdmin && isUser {
+		return errors.New("member cannot be both project admin and project user")
+	}
+
 	// Check if project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -220,6 +224,7 @@ func (s *ProjectService) AddMember(projectID, userID int, isAdmin bool, addedBy 
 		ProjectID: projectID,
 		UserID:    userID,
 		IsAdmin:   isAdmin,
+		IsUser:    isUser,
 		AddedAt:   time.Now(),
 		AddedBy:   addedBy,
 	}
@@ -280,7 +285,11 @@ func (s *ProjectService) RemoveMember(projectID, userID int, removedBy int) erro
 }
 
 // UpdateMemberRole updates a member's admin status
-func (s *ProjectService) UpdateMemberRole(projectID, userID int, isAdmin bool, updatedBy int) error {
+func (s *ProjectService) UpdateMemberRole(projectID, userID int, isAdmin bool, isUser bool, updatedBy int) error {
+	if isAdmin && isUser {
+		return errors.New("member cannot be both project admin and project user")
+	}
+
 	// Check if updating user is project admin
 	isUpdaterAdmin, err := s.memberRepo.IsUserAdmin(projectID, updatedBy)
 	if err != nil {
@@ -318,6 +327,7 @@ func (s *ProjectService) UpdateMemberRole(projectID, userID int, isAdmin bool, u
 	}
 
 	member.IsAdmin = isAdmin
+	member.IsUser = isUser
 	if err := s.memberRepo.Update(member); err != nil {
 		return err
 	}

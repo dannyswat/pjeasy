@@ -106,13 +106,21 @@ func (s *ServiceTicketService) UpdateServiceTicket(ticketID int, title, descript
 		return nil, errors.New("service ticket not found")
 	}
 
-	// Check if user is a member of the project
+	// Check if user is a member of the project.
 	isMember, err := s.memberRepo.IsUserMember(ticket.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
 	if !isMember {
 		return nil, errors.New("user is not a member of this project")
+	}
+
+	isProjectUser, err := s.memberRepo.IsUserProjectUser(ticket.ProjectID, updatedBy)
+	if err != nil {
+		return nil, err
+	}
+	if isProjectUser && ticket.CreatedBy != updatedBy {
+		return nil, errors.New("project users can only update their own service tickets")
 	}
 
 	// Validate priority if provided
@@ -145,13 +153,21 @@ func (s *ServiceTicketService) UpdateServiceTicketStatus(ticketID int, status st
 		return nil, errors.New("service ticket not found")
 	}
 
-	// Check if user is a member of the project
+	// Check if user is a member of the project.
 	isMember, err := s.memberRepo.IsUserMember(ticket.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
 	if !isMember {
 		return nil, errors.New("user is not a member of this project")
+	}
+
+	isProjectUser, err := s.memberRepo.IsUserProjectUser(ticket.ProjectID, updatedBy)
+	if err != nil {
+		return nil, err
+	}
+	if isProjectUser && ticket.CreatedBy != updatedBy {
+		return nil, errors.New("project users can only update their own service tickets")
 	}
 
 	// Validate status
@@ -179,13 +195,21 @@ func (s *ServiceTicketService) DeleteServiceTicket(ticketID int, deletedBy int) 
 		return errors.New("service ticket not found")
 	}
 
-	// Check if user is a member of the project
+	// Check if user is a member of the project.
 	isMember, err := s.memberRepo.IsUserMember(ticket.ProjectID, deletedBy)
 	if err != nil {
 		return err
 	}
 	if !isMember {
 		return errors.New("user is not a member of this project")
+	}
+
+	isProjectUser, err := s.memberRepo.IsUserProjectUser(ticket.ProjectID, deletedBy)
+	if err != nil {
+		return err
+	}
+	if isProjectUser {
+		return errors.New("project users cannot delete service tickets")
 	}
 
 	return s.ticketRepo.Delete(ticketID)

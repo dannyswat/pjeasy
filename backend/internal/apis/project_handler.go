@@ -34,10 +34,12 @@ type UpdateProjectRequest struct {
 type AddMemberRequest struct {
 	LoginID string `json:"loginId" validate:"required"`
 	IsAdmin bool   `json:"isAdmin"`
+	IsUser  bool   `json:"isUser"`
 }
 
 type UpdateMemberRoleRequest struct {
 	IsAdmin bool `json:"isAdmin"`
+	IsUser  bool `json:"isUser"`
 }
 
 type ProjectResponse struct {
@@ -57,6 +59,7 @@ type MemberResponse struct {
 	UserID    int          `json:"userId"`
 	User      UserResponse `json:"user"`
 	IsAdmin   bool         `json:"isAdmin"`
+	IsUser    bool         `json:"isUser"`
 	AddedAt   string       `json:"addedAt"`
 }
 
@@ -170,6 +173,7 @@ func (h *ProjectHandler) GetProject(c echo.Context) error {
 				ProfileImageURL: m.User.ProfileImageURL,
 			},
 			IsAdmin: m.Member.IsAdmin,
+			IsUser:  m.Member.IsUser,
 			AddedAt: m.Member.AddedAt.Format("2006-01-02T15:04:05Z07:00"),
 		})
 	}
@@ -268,7 +272,7 @@ func (h *ProjectHandler) AddMember(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := h.projectService.AddMemberByLoginID(projectID, req.LoginID, req.IsAdmin, userID); err != nil {
+	if err := h.projectService.AddMemberByLoginID(projectID, req.LoginID, req.IsAdmin, req.IsUser, userID); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -329,7 +333,7 @@ func (h *ProjectHandler) UpdateMemberRole(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
-	if err := h.projectService.UpdateMemberRole(projectID, memberID, req.IsAdmin, userID); err != nil {
+	if err := h.projectService.UpdateMemberRole(projectID, memberID, req.IsAdmin, req.IsUser, userID); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

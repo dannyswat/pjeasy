@@ -73,6 +73,30 @@ func (r *ProjectMemberRepository) IsUserAdmin(projectID, userID int) (bool, erro
 	return count > 0, err
 }
 
+// IsUserProjectUser checks if a user has ProjectUser limited access in a project.
+func (r *ProjectMemberRepository) IsUserProjectUser(projectID, userID int) (bool, error) {
+	member, err := r.GetByProjectAndUser(projectID, userID)
+	if err != nil {
+		return false, err
+	}
+	if member == nil {
+		return false, nil
+	}
+	return member.IsUser && !member.IsAdmin, nil
+}
+
+// CanUserWriteProject checks if a user can modify project items.
+func (r *ProjectMemberRepository) CanUserWriteProject(projectID, userID int) (bool, error) {
+	member, err := r.GetByProjectAndUser(projectID, userID)
+	if err != nil {
+		return false, err
+	}
+	if member == nil {
+		return false, nil
+	}
+	return member.CanWriteProject(), nil
+}
+
 // GetUserIDsByProject returns all user IDs in a project
 func (r *ProjectMemberRepository) GetUserIDsByProject(projectID int) ([]int, error) {
 	var userIDs []int

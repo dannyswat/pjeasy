@@ -47,13 +47,13 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 		return nil, errors.New("project not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, createdBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(projectID, createdBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate status
@@ -127,13 +127,13 @@ func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags 
 		return nil, errors.New("task not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(task.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(task.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate priority if provided
@@ -185,13 +185,13 @@ func (s *TaskService) UpdateTaskStatus(taskID int, status string, updatedBy int)
 		return nil, errors.New("task not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(task.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(task.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	if err := s.taskRepo.UpdateStatus(taskID, status); err != nil {
@@ -218,13 +218,13 @@ func (s *TaskService) UpdateTaskAssignee(taskID int, assigneeID *int, updatedBy 
 		return nil, errors.New("task not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(task.ProjectID, updatedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(task.ProjectID, updatedBy)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
 	}
 
 	// Validate assignee if provided
@@ -256,13 +256,13 @@ func (s *TaskService) DeleteTask(taskID int, deletedBy int) error {
 		return errors.New("task not found")
 	}
 
-	// Check if user is a member or admin of the project
-	isMember, err := s.memberRepo.IsUserMember(task.ProjectID, deletedBy)
+	// Check if user can modify project items.
+	canWrite, err := s.memberRepo.CanUserWriteProject(task.ProjectID, deletedBy)
 	if err != nil {
 		return err
 	}
-	if !isMember {
-		return errors.New("user is not a member of this project")
+	if !canWrite {
+		return errors.New("project users can only read project items")
 	}
 
 	return s.taskRepo.Delete(taskID)

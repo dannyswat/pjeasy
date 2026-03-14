@@ -185,10 +185,10 @@ func (s *APIServer) SetupAPIServer() error {
 
 	// Initialize comment service
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
-	s.commentService = comments.NewCommentService(commentRepo, userRepo)
+	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
+	s.commentService = comments.NewCommentService(commentRepo, userRepo, memberRepo, ideaRepo, issueRepo, featureRepo, taskRepo, serviceTicketRepo, wikiPageRepo)
 
 	// Initialize wiki page service
-	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
 	wikiPageChangeRepo := wiki_pages.NewWikiPageChangeRepository(s.globalUOW)
 	s.wikiPageService = wiki_pages.NewWikiPageService(wikiPageRepo, wikiPageChangeRepo, memberRepo, projectRepo, featureRepo, issueRepo, taskRepo, s.uowFactory)
 

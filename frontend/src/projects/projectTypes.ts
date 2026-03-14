@@ -17,6 +17,7 @@ export interface MemberResponse {
   userId: number
   user: UserResponse
   isAdmin: boolean
+  isUser: boolean
   addedAt: string
 }
 
@@ -38,6 +39,7 @@ export interface UpdateProjectRequest {
 export interface AddMemberRequest {
   loginId: string
   isAdmin: boolean
+  isUser: boolean
 }
 
 export interface ProjectsListResponse {

@@ -29,7 +29,7 @@ export default function ProjectFormPage() {
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
   const [newMemberUserId, setNewMemberUserId] = useState('')
-  const [newMemberIsAdmin, setNewMemberIsAdmin] = useState(false)
+  const [newMemberRole, setNewMemberRole] = useState<'member' | 'admin' | 'user'>('member')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
@@ -74,10 +74,17 @@ export default function ProjectFormPage() {
     }
 
     try {
-      await addMember({ projectId, data: { loginId: newMemberUserId, isAdmin: newMemberIsAdmin } })
+      await addMember({
+        projectId,
+        data: {
+          loginId: newMemberUserId,
+          isAdmin: newMemberRole === 'admin',
+          isUser: newMemberRole === 'user',
+        },
+      })
       setSuccessMessage('Member added successfully')
       setNewMemberUserId('')
-      setNewMemberIsAdmin(false)
+      setNewMemberRole('member')
       refetch()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to add member')
@@ -315,16 +322,16 @@ export default function ProjectFormPage() {
                 placeholder="Login ID"
                 disabled={isPending}
               />
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={newMemberIsAdmin}
-                  onChange={(e) => setNewMemberIsAdmin(e.target.checked)}
-                  className="mr-1.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isPending}
-                />
-                <span className="text-xs text-gray-700">Manager</span>
-              </label>
+              <select
+                value={newMemberRole}
+                onChange={(e) => setNewMemberRole(e.target.value as 'member' | 'admin' | 'user')}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                disabled={isPending}
+              >
+                <option value="member">Member</option>
+                <option value="admin">Manager</option>
+                <option value="user">Project User</option>
+              </select>
               <button
                 type="submit"
                 disabled={isPending}
@@ -356,6 +363,11 @@ export default function ProjectFormPage() {
                     {member.isAdmin && (
                       <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
                         Manager
+                      </span>
+                    )}
+                    {member.isUser && (
+                      <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-amber-50 text-amber-700 border border-amber-200">
+                        Project User
                       </span>
                     )}
                   </div>

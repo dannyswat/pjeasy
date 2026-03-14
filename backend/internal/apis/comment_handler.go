@@ -106,6 +106,11 @@ func (h *CommentHandler) CreateComment(c echo.Context) error {
 
 // GetCommentsByItem retrieves all comments for an item
 func (h *CommentHandler) GetCommentsByItem(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
 	itemID, err := strconv.Atoi(c.Param("itemId"))
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid item ID")
@@ -116,7 +121,7 @@ func (h *CommentHandler) GetCommentsByItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Item type is required")
 	}
 
-	commentsWithUser, err := h.commentService.GetCommentsByItem(itemID, itemType)
+	commentsWithUser, err := h.commentService.GetCommentsByItem(itemID, itemType, userID)
 	if err != nil {
 		// Log the actual error for debugging
 		c.Logger().Errorf("Error fetching comments for %s/%d: %v", itemType, itemID, err)
@@ -145,7 +150,12 @@ func (h *CommentHandler) GetComment(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid comment ID")
 	}
 
-	comment, err := h.commentService.GetComment(commentID)
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	comment, err := h.commentService.GetComment(commentID, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, err.Error())
 	}
