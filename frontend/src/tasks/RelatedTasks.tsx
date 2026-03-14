@@ -132,6 +132,10 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
         return 'bg-blue-50 text-blue-700 border-blue-200'
       case 'Blocked':
         return 'bg-red-50 text-red-700 border-red-200'
+      case 'Rejected':
+        return 'bg-rose-50 text-rose-700 border-rose-200'
+      case 'Reopened':
+        return 'bg-amber-50 text-amber-700 border-amber-200'
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200'
     }

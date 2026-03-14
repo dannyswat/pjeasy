@@ -15,6 +15,8 @@ const defaultStatuses = [
   IssueStatus.ASSIGNED,
   IssueStatus.IN_PROGRESS,
   IssueStatus.IN_REVIEW,
+  IssueStatus.REJECTED,
+  IssueStatus.REOPENED,
 ]
 
 export default function IssuesPage() {
@@ -114,6 +116,10 @@ export default function IssuesPage() {
         return 'bg-orange-50 text-orange-700 border-orange-200'
       case IssueStatus.COMPLETED:
         return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      case IssueStatus.REJECTED:
+        return 'bg-red-50 text-red-700 border-red-200'
+      case IssueStatus.REOPENED:
+        return 'bg-amber-50 text-amber-700 border-amber-200'
       case IssueStatus.CLOSED:
         return 'bg-gray-50 text-gray-600 border-gray-200'
       default:

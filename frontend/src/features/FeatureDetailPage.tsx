@@ -74,6 +74,10 @@ export default function FeatureDetailPage() {
         return 'bg-purple-50 text-purple-700 border-purple-200'
       case 'Completed':
         return 'bg-green-50 text-green-700 border-green-200'
+      case 'Rejected':
+        return 'bg-red-50 text-red-700 border-red-200'
+      case 'Reopened':
+        return 'bg-amber-50 text-amber-700 border-amber-200'
       case 'Closed':
         return 'bg-gray-50 text-gray-700 border-gray-200'
       default:
@@ -226,6 +230,8 @@ export default function FeatureDetailPage() {
                   <option value={FeatureStatus.IN_PROGRESS}>In Progress</option>
                   <option value={FeatureStatus.IN_REVIEW}>In Review</option>
                   <option value={FeatureStatus.COMPLETED}>Completed</option>
+                  <option value={FeatureStatus.REJECTED}>Rejected</option>
+                  <option value={FeatureStatus.REOPENED}>Reopened</option>
                   <option value={FeatureStatus.CLOSED}>Closed</option>
                 </select>
                 <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

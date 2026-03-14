@@ -11,7 +11,7 @@ type Feature struct {
 	ProjectID   int        `gorm:"not null;index;uniqueIndex:idx_project_feature_refnum,composite:refNum" json:"projectId"`
 	Title       string     `gorm:"not null;size:255" json:"title"`
 	Description string     `gorm:"type:text" json:"description"`
-	Status      string     `gorm:"not null;size:50;default:'Open'" json:"status"`     // Open, Assigned, InProgress, InReview, Completed, Closed
+	Status      string     `gorm:"not null;size:50;default:'Open'" json:"status"`     // Open, Assigned, InProgress, InReview, Completed, Rejected, Reopened, Closed
 	Priority    string     `gorm:"not null;size:50;default:'Normal'" json:"priority"` // Immediate, Urgent, High, Normal, Low
 	AssignedTo  int        `gorm:"index" json:"assignedTo,omitempty"`
 	SprintID    int        `gorm:"index" json:"sprintId,omitempty"`
@@ -37,6 +37,8 @@ const (
 	FeatureStatusInProgress = "InProgress"
 	FeatureStatusInReview   = "InReview"
 	FeatureStatusCompleted  = "Completed"
+	FeatureStatusRejected   = "Rejected"
+	FeatureStatusReopened   = "Reopened"
 	FeatureStatusClosed     = "Closed"
 )
 
@@ -53,7 +55,8 @@ const (
 func IsValidStatus(status string) bool {
 	switch status {
 	case FeatureStatusOpen, FeatureStatusAssigned, FeatureStatusInProgress,
-		FeatureStatusInReview, FeatureStatusCompleted, FeatureStatusClosed:
+		FeatureStatusInReview, FeatureStatusCompleted, FeatureStatusRejected,
+		FeatureStatusReopened, FeatureStatusClosed:
 		return true
 	}
 	return false

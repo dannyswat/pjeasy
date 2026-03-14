@@ -64,6 +64,8 @@ export const TaskStatus = {
   ON_HOLD: 'On Hold',
   BLOCKED: 'Blocked',
   COMPLETED: 'Completed',
+  REJECTED: 'Rejected',
+  REOPENED: 'Reopened',
   CLOSED: 'Closed',
 } as const
 
@@ -73,6 +75,8 @@ export const TaskStatusDisplay = {
   [TaskStatus.ON_HOLD]: 'On Hold',
   [TaskStatus.BLOCKED]: 'Blocked',
   [TaskStatus.COMPLETED]: 'Completed',
+  [TaskStatus.REJECTED]: 'Rejected',
+  [TaskStatus.REOPENED]: 'Reopened',
   [TaskStatus.CLOSED]: 'Closed',
 }
 

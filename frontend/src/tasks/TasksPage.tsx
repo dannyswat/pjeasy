@@ -26,6 +26,8 @@ const defaultTaskStatuses = [
   TaskStatus.IN_PROGRESS,
   TaskStatus.ON_HOLD,
   TaskStatus.BLOCKED,
+  TaskStatus.REJECTED,
+  TaskStatus.REOPENED,
 ]
 
 export default function TasksPage() {
@@ -244,6 +246,10 @@ export default function TasksPage() {
         return 'bg-red-50 text-red-700 border-red-200'
       case TaskStatus.COMPLETED:
         return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      case TaskStatus.REJECTED:
+        return 'bg-rose-50 text-rose-700 border-rose-200'
+      case TaskStatus.REOPENED:
+        return 'bg-amber-50 text-amber-700 border-amber-200'
       case TaskStatus.CLOSED:
         return 'bg-gray-50 text-gray-600 border-gray-200'
       default:
@@ -314,6 +320,8 @@ export default function TasksPage() {
                   <option value={TaskStatus.ON_HOLD}>On Hold</option>
                   <option value={TaskStatus.BLOCKED}>Blocked</option>
                   <option value={TaskStatus.COMPLETED}>Completed</option>
+                  <option value={TaskStatus.REJECTED}>Rejected</option>
+                  <option value={TaskStatus.REOPENED}>Reopened</option>
                   <option value={TaskStatus.CLOSED}>Closed</option>
                 </select>
                 <svg className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

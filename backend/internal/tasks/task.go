@@ -10,7 +10,7 @@ type Task struct {
 	ProjectID      int        `gorm:"not null;index" json:"projectId"`
 	Title          string     `gorm:"not null;size:255" json:"title"`
 	Description    string     `gorm:"type:text" json:"description"`
-	Status         string     `gorm:"not null;size:50;default:'Open'" json:"status"`      // Open, In Progress, On Hold, Blocked, Completed, Closed
+	Status         string     `gorm:"not null;size:50;default:'Open'" json:"status"`      // Open, In Progress, On Hold, Blocked, Completed, Rejected, Reopened, Closed
 	Priority       string     `gorm:"not null;size:50;default:'Normal'" json:"priority"`  // Immediate, Urgent, High, Normal, Low
 	EstimatedHours float64    `gorm:"type:decimal(10,2)" json:"estimatedHours,omitempty"` // Estimated time in hours
 	AssigneeID     *int       `gorm:"index" json:"assigneeId,omitempty"`                  // Assigned user ID (nullable)
@@ -36,6 +36,8 @@ const (
 	TaskStatusOnHold     = "On Hold"
 	TaskStatusBlocked    = "Blocked"
 	TaskStatusCompleted  = "Completed"
+	TaskStatusRejected   = "Rejected"
+	TaskStatusReopened   = "Reopened"
 	TaskStatusClosed     = "Closed"
 )
 
@@ -55,6 +57,8 @@ func IsValidStatus(status string) bool {
 		status == TaskStatusOnHold ||
 		status == TaskStatusBlocked ||
 		status == TaskStatusCompleted ||
+		status == TaskStatusRejected ||
+		status == TaskStatusReopened ||
 		status == TaskStatusClosed
 }
 

@@ -60,6 +60,8 @@ export const IssueStatus = {
   IN_PROGRESS: 'InProgress',
   IN_REVIEW: 'InReview',
   COMPLETED: 'Completed',
+  REJECTED: 'Rejected',
+  REOPENED: 'Reopened',
   CLOSED: 'Closed',
 } as const
 
@@ -69,6 +71,8 @@ export const IssueStatusDisplay: Record<string, string> = {
   InProgress: 'In Progress',
   InReview: 'In Review',
   Completed: 'Completed',
+  Rejected: 'Rejected',
+  Reopened: 'Reopened',
   Closed: 'Closed',
 }
 

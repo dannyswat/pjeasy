@@ -24,7 +24,7 @@ type CreateTaskRequest struct {
 	ProjectID      int     `json:"projectId" validate:"required"`
 	Title          string  `json:"title" validate:"required,min=1,max=200"`
 	Description    string  `json:"description"`
-	Status         string  `json:"status" validate:"omitempty,oneof='Open' 'In Progress' 'On Hold' 'Blocked' 'Completed' 'Closed'"`
+	Status         string  `json:"status" validate:"omitempty,oneof='Open' 'In Progress' 'On Hold' 'Blocked' 'Completed' 'Rejected' 'Reopened' 'Closed'"`
 	Priority       string  `json:"priority" validate:"omitempty,oneof=Immediate Urgent High Normal Low"`
 	EstimatedHours float64 `json:"estimatedHours" validate:"gte=0"`
 	AssigneeID     *int    `json:"assigneeId"`
@@ -47,7 +47,7 @@ type UpdateTaskRequest struct {
 }
 
 type UpdateTaskStatusRequest struct {
-	Status string `json:"status" validate:"required,oneof='Open' 'In Progress' 'On Hold' 'Blocked' 'Completed' 'Closed'"`
+	Status string `json:"status" validate:"required,oneof='Open' 'In Progress' 'On Hold' 'Blocked' 'Completed' 'Rejected' 'Reopened' 'Closed'"`
 }
 
 type UpdateTaskAssigneeRequest struct {
