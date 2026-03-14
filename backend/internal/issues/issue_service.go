@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
@@ -61,6 +62,8 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 	if !canWrite {
 		return nil, errors.New("project users can only read project items")
 	}
+
+	description = htmlsanitizer.Sanitize(description)
 
 	// Validate priority
 	if priority != "" && !IsValidPriority(priority) {
@@ -153,6 +156,7 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 	}
 
 	oldStatus := issue.Status
+	description = htmlsanitizer.Sanitize(description)
 
 	// Validate priority
 	if priority != "" && !IsValidPriority(priority) {

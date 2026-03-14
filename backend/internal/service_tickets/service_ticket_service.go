@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
@@ -49,6 +50,8 @@ func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, descrip
 	if !isMember {
 		return nil, errors.New("user does not have access to this project")
 	}
+
+	description = htmlsanitizer.Sanitize(description)
 
 	// Validate priority
 	if priority == "" {
@@ -125,6 +128,8 @@ func (s *ServiceTicketService) UpdateServiceTicket(ticketID int, title, descript
 	if isProjectUser && ticket.CreatedBy != updatedBy {
 		return nil, errors.New("project users can only update their own service tickets")
 	}
+
+	description = htmlsanitizer.Sanitize(description)
 
 	// Validate priority if provided
 	if priority != "" && !IsValidPriority(priority) {

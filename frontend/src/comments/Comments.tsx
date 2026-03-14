@@ -4,10 +4,23 @@ import { useCreateComment } from './useCreateComment'
 import { useUpdateComment } from './useUpdateComment'
 import { useDeleteComment } from './useDeleteComment'
 import type { CommentResponse } from './commentTypes'
+import HtmlEditor from '../components/HtmlEditor'
 
 interface CommentsProps {
   itemId: number
   itemType: string
+}
+
+function isHtmlContentEmpty(content: string) {
+  if (!content.trim()) {
+    return true
+  }
+
+  const doc = new DOMParser().parseFromString(content, 'text/html')
+  const text = doc.body.textContent?.replace(/\u00a0/g, ' ').trim() ?? ''
+  const hasMedia = !!doc.body.querySelector('img, video, audio, iframe, table, pre, code, blockquote, ul, ol')
+
+  return text.length === 0 && !hasMedia
 }
 
 export default function Comments({ itemId, itemType }: CommentsProps) {
@@ -22,7 +35,7 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
 
   const handleSubmitNew = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newComment.trim()) return
+    if (isHtmlContentEmpty(newComment)) return
 
     try {
       await createComment.mutateAsync({
@@ -48,7 +61,7 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
   }
 
   const handleSaveEdit = async (commentId: number) => {
-    if (!editingContent.trim()) return
+    if (isHtmlContentEmpty(editingContent)) return
 
     try {
       await updateComment.mutateAsync({
@@ -88,16 +101,15 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
       <div className="space-y-4" >
         <h4 className="text-md font-semibold text-gray-900 mb-3">Add a comment</h4>
         <form onSubmit={handleSubmitNew} className="space-y-3">
-          <textarea
+          <HtmlEditor
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            rows={4}
+            onChange={setNewComment}
             placeholder="Write your comment here..."
+            minHeight="160px"
           />
           <button
             type="submit"
-            disabled={!newComment.trim() || createComment.isPending}
+            disabled={isHtmlContentEmpty(newComment) || createComment.isPending}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {createComment.isPending ? 'Posting...' : 'Post Comment'}
@@ -117,29 +129,30 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
         ) : (
           
           <div className="space-y-4">
-            {comments.reverse().map((comment) => (
+            {[...comments].reverse().map((comment) => (
               <div
                 key={comment.id}
                 className="bg-gray-50 rounded-lg p-4 border border-gray-200"
               >
                 {editingCommentId === comment.id ? (
                   <div className="space-y-3">
-                    <textarea
+                    <HtmlEditor
                       value={editingContent}
-                      onChange={(e) => setEditingContent(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                      rows={3}
+                      onChange={setEditingContent}
                       placeholder="Edit your comment..."
+                      minHeight="140px"
                     />
                     <div className="flex space-x-2">
                       <button
+                        type="button"
                         onClick={() => handleSaveEdit(comment.id)}
-                        disabled={!editingContent.trim() || updateComment.isPending}
+                        disabled={isHtmlContentEmpty(editingContent) || updateComment.isPending}
                         className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {updateComment.isPending ? 'Saving...' : 'Save'}
                       </button>
                       <button
+                        type="button"
                         onClick={handleCancelEdit}
                         className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition"
                       >
@@ -176,7 +189,10 @@ export default function Comments({ itemId, itemType }: CommentsProps) {
                         </button>
                       </div>
                     </div>
-                    <p className="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+                    <div
+                      className="prose prose-sm max-w-none text-gray-700"
+                      dangerouslySetInnerHTML={{ __html: comment.content || '<p class="text-gray-500 italic">No content</p>' }}
+                    />
                   </>
                 )}
               </div>

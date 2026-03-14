@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/features"
+	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
@@ -96,6 +97,11 @@ func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, p
 	}
 	if !canWrite {
 		return nil, errors.New("project users can only read project wiki")
+	}
+
+	content = htmlsanitizer.Sanitize(content)
+	if !htmlsanitizer.HasMeaningfulContent(content) {
+		return nil, errors.New("content is required")
 	}
 
 	// Generate slug from title
@@ -230,6 +236,11 @@ func (s *WikiPageService) UpdateWikiPageContent(pageID int, content string, upda
 	}
 	if !canWrite {
 		return nil, errors.New("project users can only read project wiki")
+	}
+
+	content = htmlsanitizer.Sanitize(content)
+	if !htmlsanitizer.HasMeaningfulContent(content) {
+		return nil, errors.New("content is required")
 	}
 
 	contentHash := computeHash(content)
@@ -412,6 +423,11 @@ func (s *WikiPageService) CreateWikiPageChange(wikiPageID int, itemType string, 
 		return nil, errors.New("project users can only read project wiki")
 	}
 
+	newContent = htmlsanitizer.Sanitize(newContent)
+	if !htmlsanitizer.HasMeaningfulContent(newContent) {
+		return nil, errors.New("content is required")
+	}
+
 	// Validate the related item exists and belongs to the project.
 	if itemType == WikiPageItemTypeFeature {
 		feature, err := s.featureRepo.GetByID(itemID)
@@ -535,6 +551,11 @@ func (s *WikiPageService) UpdateWikiPageChange(changeID int, newContent string, 
 	}
 	if !isMember {
 		return nil, errors.New("user is not a member of this project")
+	}
+
+	newContent = htmlsanitizer.Sanitize(newContent)
+	if !htmlsanitizer.HasMeaningfulContent(newContent) {
+		return nil, errors.New("content is required")
 	}
 
 	// Get the wiki page for base content
@@ -761,6 +782,8 @@ func (s *WikiPageService) MergeChangesOnCompletion(itemType string, itemID int, 
 		}
 
 		// Update wiki page with merged content
+		currentContent = htmlsanitizer.Sanitize(currentContent)
+		currentHash = computeHash(currentContent)
 		page.Content = currentContent
 		page.ContentHash = currentHash
 		page.Version = page.Version + 1
@@ -864,6 +887,11 @@ func (s *WikiPageService) ResolveConflict(changeID int, resolvedContent string, 
 
 	if change.Status != WikiPageChangeStatusConflict {
 		return nil, errors.New("change is not in conflict status")
+	}
+
+	resolvedContent = htmlsanitizer.Sanitize(resolvedContent)
+	if !htmlsanitizer.HasMeaningfulContent(resolvedContent) {
+		return nil, errors.New("content is required")
 	}
 
 	// Update the snapshot with resolved content

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/features"
+	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
@@ -54,6 +55,11 @@ func (s *CommentService) CreateComment(itemID int, itemType string, content stri
 	}
 	if itemType == "" {
 		return nil, errors.New("item type is required")
+	}
+
+	content = htmlsanitizer.Sanitize(content)
+	if !htmlsanitizer.HasMeaningfulContent(content) {
+		return nil, errors.New("content is required")
 	}
 
 	projectID, err := s.resolveProjectID(itemID, itemType)
@@ -115,6 +121,11 @@ func (s *CommentService) GetComment(commentID int, userID int) (*Comment, error)
 // UpdateComment updates an existing comment
 func (s *CommentService) UpdateComment(commentID int, content string, userID int) (*Comment, error) {
 	if content == "" {
+		return nil, errors.New("content is required")
+	}
+
+	content = htmlsanitizer.Sanitize(content)
+	if !htmlsanitizer.HasMeaningfulContent(content) {
 		return nil, errors.New("content is required")
 	}
 

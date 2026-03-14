@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/sequences"
@@ -49,6 +50,8 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, itemType str
 	if !canWrite {
 		return nil, errors.New("project users can only read project items")
 	}
+
+	description = htmlsanitizer.Sanitize(description)
 
 	uow := s.uowFactory.NewUnitOfWork()
 	// Begin transaction to generate RefNum and create idea
@@ -111,6 +114,8 @@ func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, up
 	if !canWrite {
 		return nil, errors.New("project users can only read project items")
 	}
+
+	description = htmlsanitizer.Sanitize(description)
 
 	idea.Title = title
 	idea.Description = description
