@@ -12,6 +12,7 @@ import { useUpdateFeature } from './useUpdateFeature'
 import ItemLink from '../components/ItemLink'
 import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function FeatureDetailPage() {
   const { projectId, featureId } = useParams<{ projectId: string; featureId: string }>()
@@ -26,6 +27,7 @@ export default function FeatureDetailPage() {
   const updateFeatureStatus = useUpdateFeatureStatus()
   const deleteFeature = useDeleteFeature()
   const updateFeature = useUpdateFeature()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const fetchFeature = async () => {
     try {
@@ -239,6 +241,8 @@ export default function FeatureDetailPage() {
                 </svg>
               </div>
               
+              {canWrite && (
+              <>
               <button
                 onClick={() => setEditingFeature(feature)}
                 className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 transition"
@@ -272,6 +276,8 @@ export default function FeatureDetailPage() {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
 
             {/* Description */}

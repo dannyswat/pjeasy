@@ -12,6 +12,7 @@ import { useUpdateIssue } from './useUpdateIssue'
 import ItemLink from '../components/ItemLink'
 import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function IssueDetailPage() {
   const { projectId, issueId } = useParams<{ projectId: string; issueId: string }>()
@@ -26,6 +27,7 @@ export default function IssueDetailPage() {
   const updateIssueStatus = useUpdateIssueStatus()
   const deleteIssue = useDeleteIssue()
   const updateIssue = useUpdateIssue()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const fetchIssue = async () => {
     try {
@@ -222,6 +224,8 @@ export default function IssueDetailPage() {
                 </svg>
               </div>
               
+              {canWrite && (
+              <>
               <button
                 onClick={() => setEditingIssue(issue)}
                 className="px-3 py-1.5 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition"
@@ -255,6 +259,8 @@ export default function IssueDetailPage() {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
 
             {/* Description */}

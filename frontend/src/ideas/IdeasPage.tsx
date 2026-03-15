@@ -6,6 +6,7 @@ import { useUpdateIdea } from './useUpdateIdea'
 import { useDeleteIdea } from './useDeleteIdea'
 import { IdeaStatus, type IdeaResponse } from './ideaTypes'
 import EditIdeaForm from './EditIdeaForm'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function IdeasPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -21,6 +22,7 @@ export default function IdeasPage() {
   const createIdea = useCreateIdea()
   const updateIdea = useUpdateIdea()
   const deleteIdea = useDeleteIdea()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -82,6 +84,7 @@ export default function IdeasPage() {
       </div>
 
       {/* Quick Create */}
+      {canWrite && (
       <div className="mb-4">
         <form onSubmit={handleQuickCreate} className="flex gap-2">
           <input
@@ -100,6 +103,7 @@ export default function IdeasPage() {
           </button>
         </form>
       </div>
+      )}
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -161,6 +165,8 @@ export default function IdeasPage() {
                     </div>
                     
                     <div className="flex items-center space-x-1 ml-3">
+                      {canWrite && (
+                      <>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -186,6 +192,8 @@ export default function IdeasPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                      </>
+                      )}
                     </div>
                   </div>
                 ))}

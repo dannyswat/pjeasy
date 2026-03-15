@@ -6,6 +6,7 @@ import { useCreateWikiPage } from './useCreateWikiPage'
 import { WikiPageStatus, WikiPageStatusDisplay, type WikiPageResponse } from './wikiTypes'
 import CreateWikiPageForm from './CreateWikiPageForm'
 import { UserLabel } from '../components/UserLabel'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function WikiPagesPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -24,6 +25,7 @@ export default function WikiPagesPage() {
   })
   const deleteWikiPage = useDeleteWikiPage()
   const createWikiPage = useCreateWikiPage()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -79,6 +81,7 @@ export default function WikiPagesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Wiki Pages</h1>
           <p className="text-gray-600 mt-1">Project design and documentation</p>
         </div>
+        {canWrite && (
         <button
           onClick={() => setShowCreateModal(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
@@ -88,6 +91,7 @@ export default function WikiPagesPage() {
           </svg>
           New Wiki Page
         </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -128,12 +132,14 @@ export default function WikiPagesPage() {
           </svg>
           <h3 className="mt-4 text-lg font-medium text-gray-900">No wiki pages yet</h3>
           <p className="mt-2 text-gray-600">Create your first wiki page to start documenting your project.</p>
+          {canWrite && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             Create Wiki Page
           </button>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border overflow-x-auto">
@@ -202,6 +208,7 @@ export default function WikiPagesPage() {
                     >
                       View
                     </button>
+                    {canWrite && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
@@ -211,6 +218,7 @@ export default function WikiPagesPage() {
                     >
                       Delete
                     </button>
+                    )}
                   </td>
                 </tr>
               ))}

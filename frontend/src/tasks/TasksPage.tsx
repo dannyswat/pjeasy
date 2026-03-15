@@ -14,6 +14,7 @@ import ItemLink from '../components/ItemLink'
 import { UserLabel } from '../components/UserLabel'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import { useMeApi } from '../auth/useMeApi'
+import { useProjectRole } from '../projects/useProjectRole'
 import { useGetActiveSprint } from '../sprints/useGetActiveSprint'
 import { useAddTaskToSprint } from '../sprints/useAddTaskToSprint'
 import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
@@ -60,6 +61,7 @@ export default function TasksPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
   const { user } = useMeApi()
+  const { canWrite } = useProjectRole(projectIdNum)
   const { sprint: activeSprint, refetch: refetchSprint } = useGetActiveSprint({ projectId: projectIdNum })
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
@@ -329,6 +331,8 @@ export default function TasksPage() {
                 </svg>
               </div>
               
+              {canWrite && (
+              <>
               <button
                 onClick={() => {
                   setEditingTask(viewingTask)
@@ -365,6 +369,8 @@ export default function TasksPage() {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
 
             {/* Description */}
@@ -527,6 +533,7 @@ export default function TasksPage() {
           )}
 
           {/* Quick Create */}
+          {canWrite && (
           <div className="mb-4">
             <form onSubmit={handleQuickCreate} className="flex flex-col sm:flex-row gap-2">
               <input
@@ -557,6 +564,7 @@ export default function TasksPage() {
               </div>
             </form>
           </div>
+          )}
 
           {/* Filters */}
           <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -740,6 +748,7 @@ export default function TasksPage() {
                           👤 Unassigned
                         </button>
                       )}
+                      {canWrite && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -752,6 +761,7 @@ export default function TasksPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
+                      )}
                       
                       {/* Sprint Actions */}
                       {task.sprintId ? (

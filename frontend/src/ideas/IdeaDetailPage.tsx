@@ -11,6 +11,7 @@ import RelatedFeatures from '../features/RelatedFeatures'
 import { useUpdateIdea } from './useUpdateIdea'
 import ItemLink from '../components/ItemLink'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function IdeaDetailPage() {
   const { projectId, ideaId } = useParams<{ projectId: string; ideaId: string }>()
@@ -25,6 +26,7 @@ export default function IdeaDetailPage() {
   const updateIdeaStatus = useUpdateIdeaStatus()
   const deleteIdea = useDeleteIdea()
   const updateIdea = useUpdateIdea()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const fetchIdea = async () => {
     try {
@@ -159,6 +161,8 @@ export default function IdeaDetailPage() {
 
             {/* Actions */}
             <div className="flex items-center justify-end space-x-2 pb-3 border-b border-gray-200 mb-5">
+              {canWrite && (
+              <>
               <button
                 onClick={() => handleStatusChange(idea.status === 'Open' ? 'Closed' : 'Open')}
                 className={`px-3 py-1.5 text-xs font-medium rounded transition ${
@@ -203,6 +207,8 @@ export default function IdeaDetailPage() {
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
 
             {/* Description */}

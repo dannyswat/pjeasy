@@ -8,6 +8,7 @@ import { useDeleteSprint } from './useDeleteSprint'
 import { SprintStatus, SprintStatusDisplay, type SprintResponse } from './sprintTypes'
 import CreateSprintForm from './CreateSprintForm'
 import CloseSprintModal from './CloseSprintModal'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function SprintsPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -23,6 +24,7 @@ export default function SprintsPage() {
   const startSprint = useStartSprint()
   const closeSprint = useCloseSprint()
   const deleteSprint = useDeleteSprint()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const totalPages = Math.ceil(total / pageSize)
   const activeSprint = sprints.find(s => s.status === SprintStatus.ACTIVE)
@@ -128,6 +130,7 @@ export default function SprintsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Sprints</h1>
           <p className="text-gray-600 mt-1">Manage your project sprints and track progress</p>
         </div>
+        {canWrite && (
         <button
           onClick={() => setShowCreateModal(true)}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center"
@@ -137,6 +140,7 @@ export default function SprintsPage() {
           </svg>
           New Sprint
         </button>
+        )}
       </div>
 
       {/* Active Sprint Banner */}
@@ -160,12 +164,14 @@ export default function SprintsPage() {
               >
                 View Board
               </button>
+              {canWrite && (
               <button
                 onClick={() => setClosingSprint(activeSprint)}
                 className="bg-white text-green-700 border border-green-300 px-4 py-2 rounded-lg hover:bg-green-50 transition text-sm"
               >
                 Close Sprint
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -183,12 +189,14 @@ export default function SprintsPage() {
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Sprints Yet</h3>
           <p className="text-gray-600 mb-4">Create your first sprint to start organizing your tasks.</p>
+          {canWrite && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
           >
             Create Sprint
           </button>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
@@ -231,7 +239,7 @@ export default function SprintsPage() {
                     {sprint.goal || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    {sprint.status === SprintStatus.PLANNING && (
+                    {sprint.status === SprintStatus.PLANNING && canWrite && (
                       <>
                         <button
                           onClick={() => handleStartSprint(sprint.id)}
@@ -255,12 +263,14 @@ export default function SprintsPage() {
                         >
                           Board
                         </button>
+                        {canWrite && (
                         <button
                           onClick={() => setClosingSprint(sprint)}
                           className="text-orange-600 hover:text-orange-900"
                         >
                           Close
                         </button>
+                        )}
                       </>
                     )}
                     {sprint.status === SprintStatus.CLOSED && (

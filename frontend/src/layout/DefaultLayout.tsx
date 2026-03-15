@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 
 import { useCountNewServiceTickets } from '../service_tickets/useCountNewServiceTickets'
 import { useProjectContext } from '../projects/ProjectContext'
+import { useProjectRole } from '../projects/useProjectRole'
 import ProjectSelector from './ProjectSelector'
 import { useCheckAdmin } from '../admins/useCheckAdmin'
 import { useRevokeSession } from '../auth/useRevokeSession'
@@ -66,6 +67,9 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
 
   // Check if the current user is a system admin
   const { isAdmin } = useCheckAdmin()
+
+  // Check the current user's project role
+  const { canWrite } = useProjectRole(isInProject ? projectIdNum : null)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -175,6 +179,8 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   </svg>
                   <span>Dashboard</span>
                 </Link>
+                {canWrite && (
+                <>
                 <Link
                   to={`/projects/${projectId}/ideas`}
                   className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
@@ -253,6 +259,8 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   </svg>
                   <span>Reviews</span>
                 </Link>
+                </>
+                )}
                 <Link
                   to={`/projects/${projectId}/service-tickets`}
                   className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
@@ -271,6 +279,8 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                     </span>
                   )}
                 </Link>
+                {canWrite && (
+                <>
                 <Link
                   to={`/projects/${projectId}/wiki`}
                   className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
@@ -298,6 +308,8 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   </svg>
                   <span>Settings</span>
                 </Link>
+                </>
+                )}
                 <div className="my-2 border-t border-gray-200"></div>
               </>
             )}

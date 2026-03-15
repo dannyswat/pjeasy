@@ -8,6 +8,7 @@ import { IssueStatus, IssuePriority, IssueStatusDisplay, type IssueResponse } fr
 import EditIssueForm from './EditIssueForm'
 import CreateIssueForm from './CreateIssueForm'
 import { UserLabel } from '../components/UserLabel'
+import { useProjectRole } from '../projects/useProjectRole'
 
 // Default statuses exclude Completed and Closed
 const defaultStatuses = [
@@ -42,6 +43,7 @@ export default function IssuesPage() {
   const updateIssue = useUpdateIssue()
   const deleteIssue = useDeleteIssue()
   const createIssue = useCreateIssue()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -153,6 +155,7 @@ export default function IssuesPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Issues</h1>
           <p className="text-sm text-gray-600 mt-1">Track and resolve project issues</p>
         </div>
+        {canWrite && (
         <button
           onClick={() => setShowCreateModal(true)}
           className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition flex items-center"
@@ -162,6 +165,7 @@ export default function IssuesPage() {
           </svg>
           New Issue
         </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -293,6 +297,8 @@ export default function IssuesPage() {
                           👤 <UserLabel userId={issue.assignedTo} />
                         </span>
                       )}
+                      {canWrite && (
+                      <>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -318,6 +324,8 @@ export default function IssuesPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                      </>
+                      )}
                     </div>
                   </div>
                 ))}

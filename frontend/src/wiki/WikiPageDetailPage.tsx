@@ -9,6 +9,7 @@ import { UserLabel } from '../components/UserLabel'
 import EditWikiPageForm from './EditWikiPageForm'
 import WikiPageChangesPanel from './WikiPageChangesPanel'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function WikiPageDetailPage() {
   const { projectId, pageId } = useParams<{ projectId: string; pageId: string }>()
@@ -27,6 +28,7 @@ export default function WikiPageDetailPage() {
   const updateWikiPageContent = useUpdateWikiPageContent()
   const updateWikiPageStatus = useUpdateWikiPageStatus()
   const deleteWikiPage = useDeleteWikiPage()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   if (isLoading) {
     return (
@@ -173,6 +175,8 @@ export default function WikiPageDetailPage() {
             >
               History
             </button>
+            {canWrite && (
+            <>
             <button
               onClick={() => setIsEditing(true)}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
@@ -194,6 +198,8 @@ export default function WikiPageDetailPage() {
             >
               Delete
             </button>
+            </>
+            )}
           </div>
         </div>
       </div>
@@ -208,7 +214,7 @@ export default function WikiPageDetailPage() {
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="border-b p-4 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Content</h2>
-          {!isEditingContent && (
+          {!isEditingContent && canWrite && (
             <button
               onClick={handleStartEditContent}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"

@@ -8,6 +8,7 @@ import { usePublishReview } from './usePublishReview'
 import { ReviewStatus, ReviewStatusDisplay, ReviewType } from './reviewTypes'
 import { useListSprints } from '../sprints/useListSprints'
 import CreateReviewForm from './CreateReviewForm'
+import { useProjectRole } from '../projects/useProjectRole'
 
 export default function ReviewsPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -23,6 +24,7 @@ export default function ReviewsPage() {
   const createCustomReview = useCreateCustomReview()
   const deleteReview = useDeleteReview()
   const publishReview = usePublishReview()
+  const { canWrite } = useProjectRole(projectIdNum)
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -127,6 +129,7 @@ export default function ReviewsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Project Reviews</h1>
           <p className="text-gray-600 mt-1">Create and manage project reviews for stakeholder presentations</p>
         </div>
+        {canWrite && (
         <button
           onClick={() => setShowCreateModal(true)}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition flex items-center"
@@ -136,6 +139,7 @@ export default function ReviewsPage() {
           </svg>
           New Review
         </button>
+        )}
       </div>
 
       {/* Review List */}
@@ -150,12 +154,14 @@ export default function ReviewsPage() {
           </svg>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Reviews Yet</h3>
           <p className="text-gray-600 mb-4">Create your first review to summarize project progress.</p>
+          {canWrite && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
           >
             Create Review
           </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -203,7 +209,7 @@ export default function ReviewsPage() {
 
                   {/* Actions */}
                   <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                    {review.status === ReviewStatus.DRAFT && (
+                    {review.status === ReviewStatus.DRAFT && canWrite && (
                       <>
                         <button
                           onClick={() => handlePublish(review.id)}

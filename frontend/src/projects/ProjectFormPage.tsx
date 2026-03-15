@@ -7,6 +7,7 @@ import { useArchiveProject, useUnarchiveProject } from './useArchiveProject'
 import { useAddMember, useRemoveMember } from './useProjectMembers'
 import { useGenerateSequences } from './useGenerateSequences'
 import { useProjectContext } from './ProjectContext'
+import { useProjectRole } from './useProjectRole'
 
 export default function ProjectFormPage() {
   const navigate = useNavigate()
@@ -25,6 +26,7 @@ export default function ProjectFormPage() {
   const { addMember, isPending: isAddingMember } = useAddMember()
   const { removeMember, isPending: isRemovingMember } = useRemoveMember()
   const generateSequences = useGenerateSequences()
+  const { canWrite } = useProjectRole(projectId)
 
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
@@ -220,7 +222,7 @@ export default function ProjectFormPage() {
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               placeholder="Enter project name"
               required
-              disabled={isPending}
+              disabled={isPending || !canWrite}
             />
           </div>
 
@@ -235,11 +237,12 @@ export default function ProjectFormPage() {
               rows={3}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               placeholder="Enter project description"
-              disabled={isPending}
+              disabled={isPending || !canWrite}
             />
           </div>
 
           <div className="flex gap-2">
+            {canWrite && (
             <button
               type="submit"
               disabled={isPending}
@@ -247,6 +250,7 @@ export default function ProjectFormPage() {
             >
               {isEditMode ? 'Update Project' : 'Create Project'}
             </button>
+            )}
             <button
               type="button"
               onClick={() => navigate('/projects')}
@@ -255,7 +259,7 @@ export default function ProjectFormPage() {
             >
               Cancel
             </button>
-            {isEditMode && project && (
+            {isEditMode && project && canWrite && (
               <>
                 {project.isArchived ? (
                   <button
@@ -311,6 +315,7 @@ export default function ProjectFormPage() {
           <h2 className="text-base font-semibold mb-3">Project Members</h2>
 
           {/* Add Member Form */}
+          {canWrite && (
           <form onSubmit={handleAddMember} className="mb-4 p-3 bg-gray-50 rounded">
             <h3 className="text-xs font-medium text-gray-700 mb-2">Add New Member</h3>
             <div className="flex gap-2">
@@ -341,6 +346,7 @@ export default function ProjectFormPage() {
               </button>
             </div>
           </form>
+          )}
 
           {/* Members List */}
           <div className="space-y-1.5">
@@ -371,6 +377,7 @@ export default function ProjectFormPage() {
                       </span>
                     )}
                   </div>
+                  {canWrite && (
                   <button
                     onClick={() => handleRemoveMember(member.userId, member.user.name)}
                     disabled={isPending}
@@ -378,6 +385,7 @@ export default function ProjectFormPage() {
                   >
                     Remove
                   </button>
+                  )}
                 </div>
               ))
             )}
