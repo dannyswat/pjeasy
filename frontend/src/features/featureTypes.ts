@@ -13,6 +13,7 @@ export interface FeatureResponse {
   itemType?: string
   itemId?: number
   tags?: string
+  cascadeCompletion: boolean
   createdBy: number
   createdAt: string
   updatedAt: string
@@ -29,6 +30,7 @@ export interface CreateFeatureRequest {
   itemType?: string
   itemId?: number
   tags?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateFeatureRequest {
@@ -40,6 +42,7 @@ export interface UpdateFeatureRequest {
   points?: number
   deadline?: string
   tags?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateFeatureStatusRequest {

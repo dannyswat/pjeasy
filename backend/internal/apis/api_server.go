@@ -183,11 +183,16 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize workflow engine and register default rules
 	s.workflowEngine = workflow.NewWorkflowEngine()
 	relatedItemsChecker := workflow.NewRelatedItemsChecker(issueRepo, featureRepo, taskRepo)
-	workflow.RegisterDefaultRules(s.workflowEngine, s.serviceTicketService, relatedItemsChecker)
+	cascadeChecker := workflow.NewCascadeCompletionChecker(issueRepo, featureRepo, ideaRepo, featureRepo, taskRepo)
+	cascadeTicketChecker := workflow.NewCascadeServiceTicketChecker(serviceTicketRepo, relatedItemsChecker)
+	workflow.RegisterDefaultRules(s.workflowEngine, s.serviceTicketService, s.issueService, s.featureService, s.ideaService, relatedItemsChecker, cascadeChecker, cascadeTicketChecker)
 
-	// Connect workflow engine to issue service
+	// Connect workflow engine to issue, feature, and task services
 	issueWorkflowAdapter := workflow.NewIssueWorkflowAdapter(s.workflowEngine)
 	s.issueService.SetStatusChangeHandler(issueWorkflowAdapter)
+
+	featureWorkflowAdapter := workflow.NewFeatureWorkflowAdapter(s.workflowEngine)
+	s.featureService.SetStatusChangeHandler(featureWorkflowAdapter)
 
 	// Initialize comment service
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
@@ -200,6 +205,10 @@ func (s *APIServer) SetupAPIServer() error {
 
 	// Initialize task service
 	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.wikiPageService, s.statusChangeService, s.uowFactory)
+
+	// Connect workflow engine to task service
+	taskWorkflowAdapter := workflow.NewTaskWorkflowAdapter(s.workflowEngine)
+	s.taskService.SetStatusChangeHandler(taskWorkflowAdapter)
 
 	// Initialize sprint service
 	sprintRepo := sprints.NewSprintRepository(s.globalUOW)

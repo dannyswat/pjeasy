@@ -383,6 +383,7 @@ export default function FeaturesPage() {
             points: number
             deadline?: string
             tags: string
+            cascadeCompletion: boolean
           }) => {
             try {
               await createFeature.mutateAsync({
@@ -414,6 +415,7 @@ export default function FeaturesPage() {
             points: number
             deadline?: string
             tags: string
+            cascadeCompletion: boolean
           }) => {
             try {
               await updateFeature.mutateAsync({

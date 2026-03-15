@@ -32,7 +32,7 @@ func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMember
 }
 
 // CreateIdea creates a new idea
-func (s *IdeaService) CreateIdea(projectID int, title, description, itemType string, itemID *int, tags string, createdBy int) (*Idea, error) {
+func (s *IdeaService) CreateIdea(projectID int, title, description, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Idea, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -69,17 +69,18 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, itemType str
 
 	now := time.Now()
 	idea := &Idea{
-		RefNum:      refNum,
-		ProjectID:   projectID,
-		Title:       title,
-		Description: description,
-		Status:      IdeaStatusOpen,
-		ItemType:    itemType,
-		ItemID:      itemID,
-		Tags:        tags,
-		CreatedBy:   createdBy,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		RefNum:            refNum,
+		ProjectID:         projectID,
+		Title:             title,
+		Description:       description,
+		Status:            IdeaStatusOpen,
+		ItemType:          itemType,
+		ItemID:            itemID,
+		Tags:              tags,
+		CascadeCompletion: cascadeCompletion,
+		CreatedBy:         createdBy,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	// Create a new repository instance with the transaction UOW
@@ -97,7 +98,7 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, itemType str
 }
 
 // UpdateIdea updates an idea's details
-func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, updatedBy int) (*Idea, error) {
+func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, cascadeCompletion bool, updatedBy int) (*Idea, error) {
 	idea, err := s.ideaRepo.GetByID(ideaID)
 	if err != nil {
 		return nil, err
@@ -120,6 +121,7 @@ func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, up
 	idea.Title = title
 	idea.Description = description
 	idea.Tags = tags
+	idea.CascadeCompletion = cascadeCompletion
 	idea.UpdatedAt = time.Now()
 
 	if err := s.ideaRepo.Update(idea); err != nil {
@@ -164,6 +166,34 @@ func (s *IdeaService) UpdateIdeaStatus(ideaID int, status string, updatedBy int)
 
 	// Reload idea to get updated status
 	return s.ideaRepo.GetByID(ideaID)
+}
+
+// UpdateIdeaStatusByWorkflow updates an idea status without user permission checks.
+// This is used by the workflow engine for automated cascade closure.
+func (s *IdeaService) UpdateIdeaStatusByWorkflow(ideaID int, status string) error {
+	if !IsValidStatus(status) {
+		return errors.New("invalid status")
+	}
+
+	idea, err := s.ideaRepo.GetByID(ideaID)
+	if err != nil {
+		return err
+	}
+	if idea == nil {
+		return errors.New("idea not found")
+	}
+
+	if idea.Status == status {
+		return nil
+	}
+
+	oldStatus := idea.Status
+
+	if err := s.ideaRepo.UpdateStatus(ideaID, status); err != nil {
+		return err
+	}
+
+	return s.statusRepo.LogChange(idea.ProjectID, status_changes.ItemTypeIdea, idea.ID, oldStatus, status, nil)
 }
 
 // DeleteIdea deletes an idea

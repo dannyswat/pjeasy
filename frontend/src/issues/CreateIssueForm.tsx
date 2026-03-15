@@ -14,6 +14,7 @@ interface CreateIssueFormProps {
     assignedTo?: number
     points: number
     tags: string
+    cascadeCompletion: boolean
   }) => Promise<void>
   onCancel: () => void
   isPending: boolean
@@ -26,6 +27,7 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
   const [assignedTo, setAssignedTo] = useState<number | undefined>(undefined)
   const [points, setPoints] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
+  const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -36,6 +38,7 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
       assignedTo,
       points: points ?? 0,
       tags: tags.join(','),
+      cascadeCompletion,
     })
   }
 
@@ -125,6 +128,20 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
               onChange={setTags}
               placeholder="Type a tag and press Enter"
             />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="cascadeCompletion"
+              checked={cascadeCompletion}
+              onChange={(e) => setCascadeCompletion(e.target.checked)}
+              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+            />
+            <label htmlFor="cascadeCompletion" className="ml-2 block text-sm text-gray-700">
+              Cascade Completion
+            </label>
+            <p className="ml-2 text-xs text-gray-500">Auto-complete when all tasks are done</p>
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

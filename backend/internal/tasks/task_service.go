@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -16,15 +17,21 @@ type WikiChangeMerger interface {
 	MergeChangesOnCompletion(itemType string, itemID int, userID int) error
 }
 
+// StatusChangeHandler defines the interface for handling task status change events
+type StatusChangeHandler interface {
+	OnTaskStatusChanged(ctx context.Context, task *Task, oldStatus, newStatus string, userID int) error
+}
+
 type TaskService struct {
-	taskRepo          *TaskRepository
-	memberRepo        *projects.ProjectMemberRepository
-	projectRepo       *projects.ProjectRepository
-	sequenceRepo      *sequences.SequenceRepository
-	serviceTicketRepo *service_tickets.ServiceTicketRepository
-	wikiChangeMerger  WikiChangeMerger
-	statusRepo        *status_changes.StatusChangeService
-	uowFactory        *repositories.UnitOfWorkFactory
+	taskRepo            *TaskRepository
+	memberRepo          *projects.ProjectMemberRepository
+	projectRepo         *projects.ProjectRepository
+	sequenceRepo        *sequences.SequenceRepository
+	serviceTicketRepo   *service_tickets.ServiceTicketRepository
+	wikiChangeMerger    WikiChangeMerger
+	statusRepo          *status_changes.StatusChangeService
+	uowFactory          *repositories.UnitOfWorkFactory
+	statusChangeHandler StatusChangeHandler
 }
 
 func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, serviceTicketRepo *service_tickets.ServiceTicketRepository, wikiChangeMerger WikiChangeMerger, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *TaskService {
@@ -38,6 +45,11 @@ func NewTaskService(taskRepo *TaskRepository, memberRepo *projects.ProjectMember
 		statusRepo:        statusRepo,
 		uowFactory:        uowFactory,
 	}
+}
+
+// SetStatusChangeHandler sets the handler for status change events
+func (s *TaskService) SetStatusChangeHandler(handler StatusChangeHandler) {
+	s.statusChangeHandler = handler
 }
 
 // CreateTask creates a new task
@@ -219,7 +231,20 @@ func (s *TaskService) UpdateTaskStatus(taskID int, status string, updatedBy int)
 	}
 
 	// Reload task to get updated status
-	return s.taskRepo.GetByID(taskID)
+	updatedTask, err := s.taskRepo.GetByID(taskID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Trigger workflow event if status actually changed and handler is set
+	if oldStatus != status && s.statusChangeHandler != nil {
+		ctx := context.Background()
+		go func() {
+			_ = s.statusChangeHandler.OnTaskStatusChanged(ctx, updatedTask, oldStatus, status, updatedBy)
+		}()
+	}
+
+	return updatedTask, nil
 }
 
 // UpdateTaskAssignee updates a task's assignee

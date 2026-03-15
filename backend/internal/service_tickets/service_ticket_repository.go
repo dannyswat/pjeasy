@@ -115,3 +115,13 @@ func (r *ServiceTicketRepository) CountByStatus(projectID int, status string) (i
 		Count(&count).Error
 	return count, err
 }
+
+// GetCascadeCompletion returns whether a service ticket has cascade completion enabled
+func (r *ServiceTicketRepository) GetCascadeCompletion(ticketID int) (bool, error) {
+	var ticket ServiceTicket
+	err := r.uow.GetDB().Select("cascade_completion").First(&ticket, ticketID).Error
+	if err != nil {
+		return false, err
+	}
+	return ticket.CascadeCompletion, nil
+}

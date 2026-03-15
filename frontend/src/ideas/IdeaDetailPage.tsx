@@ -79,6 +79,7 @@ export default function IdeaDetailPage() {
     title: string
     description: string
     tags: string
+    cascadeCompletion: boolean
   }) => {
     if (!editingIdea) return
 
@@ -155,6 +156,14 @@ export default function IdeaDetailPage() {
                   }`}>
                     {idea.status}
                   </span>
+                  {idea.cascadeCompletion && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border bg-blue-50 text-blue-700 border-blue-200" title="Cascade Completion enabled">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Cascade
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -194,7 +203,28 @@ export default function IdeaDetailPage() {
                 </button>
                 
                 {showDeleteMenu && (
-                  <div className="absolute right-0 mt-1 w-40 bg-white rounded shadow-lg border border-gray-200 z-10">
+                  <div className="absolute right-0 mt-1 w-56 bg-white rounded shadow-lg border border-gray-200 z-10">
+                    <button
+                      onClick={async () => {
+                        setShowDeleteMenu(false)
+                        try {
+                          await updateIdea.mutateAsync({
+                            ideaId: idea.id,
+                            projectId: projectIdNum,
+                            title: idea.title,
+                            description: idea.description,
+                            tags: idea.tags || '',
+                            cascadeCompletion: !idea.cascadeCompletion,
+                          })
+                          fetchIdea()
+                        } catch (error) {
+                          console.error('Failed to toggle cascade completion:', error)
+                        }
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 rounded transition"
+                    >
+                      {idea.cascadeCompletion ? 'Disable' : 'Enable'} Cascade Completion
+                    </button>
                     <button
                       onClick={() => {
                         setShowDeleteMenu(false)

@@ -32,7 +32,7 @@ func NewServiceTicketService(ticketRepo *ServiceTicketRepository, memberRepo *pr
 }
 
 // CreateServiceTicket creates a new service ticket
-func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, description, priority string, createdBy int) (*ServiceTicket, error) {
+func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, description, priority string, cascadeCompletion bool, createdBy int) (*ServiceTicket, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -77,15 +77,16 @@ func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, descrip
 
 	now := time.Now()
 	ticket := &ServiceTicket{
-		RefNum:      refNum,
-		ProjectID:   projectID,
-		Title:       title,
-		Description: description,
-		Status:      ServiceTicketStatusNew,
-		Priority:    priority,
-		CreatedBy:   createdBy,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		RefNum:            refNum,
+		ProjectID:         projectID,
+		Title:             title,
+		Description:       description,
+		Status:            ServiceTicketStatusNew,
+		Priority:          priority,
+		CascadeCompletion: cascadeCompletion,
+		CreatedBy:         createdBy,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	// Create a new repository instance with the transaction UOW
@@ -103,7 +104,7 @@ func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, descrip
 }
 
 // UpdateServiceTicket updates an existing service ticket
-func (s *ServiceTicketService) UpdateServiceTicket(ticketID int, title, description, priority string, updatedBy int) (*ServiceTicket, error) {
+func (s *ServiceTicketService) UpdateServiceTicket(ticketID int, title, description, priority string, cascadeCompletion bool, updatedBy int) (*ServiceTicket, error) {
 	ticket, err := s.ticketRepo.GetByID(ticketID)
 	if err != nil {
 		return nil, err
@@ -142,6 +143,7 @@ func (s *ServiceTicketService) UpdateServiceTicket(ticketID int, title, descript
 	if priority != "" {
 		ticket.Priority = priority
 	}
+	ticket.CascadeCompletion = cascadeCompletion
 	ticket.UpdatedAt = time.Now()
 
 	if err := s.ticketRepo.Update(ticket); err != nil {

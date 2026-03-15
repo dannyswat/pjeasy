@@ -206,6 +206,14 @@ export default function ServiceTicketDetailPage() {
                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getPriorityColor(ticket.priority)}`}>
                     {ServiceTicketPriorityDisplay[ticket.priority]}
                   </span>
+                  {ticket.cascadeCompletion && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border bg-blue-50 text-blue-700 border-blue-200" title="Cascade Completion enabled">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Cascade
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2 relative">
                   <button
@@ -275,6 +283,30 @@ export default function ServiceTicketDetailPage() {
                     )}
                   </div>
                   
+                  <button
+                    onClick={async () => {
+                      try {
+                        await updateTicket.mutateAsync({
+                          ticketId: ticket.id,
+                          projectId: projectIdNum,
+                          title: ticket.title,
+                          description: ticket.description,
+                          priority: ticket.priority,
+                          cascadeCompletion: !ticket.cascadeCompletion,
+                        })
+                        fetchTicket()
+                      } catch (error) {
+                        console.error('Failed to toggle cascade completion:', error)
+                      }
+                    }}
+                    className={`p-2 rounded transition ${ticket.cascadeCompletion ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}
+                    title={ticket.cascadeCompletion ? 'Cascade Completion enabled - click to disable' : 'Enable Cascade Completion'}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </button>
+
                   <button
                     onClick={() => setShowDeleteMenu(!showDeleteMenu)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded transition relative"
@@ -441,6 +473,7 @@ export default function ServiceTicketDetailPage() {
                 itemType: 'service-tickets',
                 itemId: ticket.id,
                 tags: data.tags,
+                cascadeCompletion: data.cascadeCompletion,
               })
               setShowCreateIssueForm(false)
               fetchTicket() // Refresh the page to show the new related issue
@@ -465,6 +498,7 @@ export default function ServiceTicketDetailPage() {
                 itemType: 'service-tickets',
                 itemId: ticket.id,
                 tags: data.tags,
+                cascadeCompletion: data.cascadeCompletion,
               })
               setShowCreateIdeaForm(false)
             } catch (error) {

@@ -20,15 +20,17 @@ func NewServiceTicketHandler(ticketService *service_tickets.ServiceTicketService
 }
 
 type CreateServiceTicketRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"`
+	Title             string `json:"title" validate:"required"`
+	Description       string `json:"description"`
+	Priority          string `json:"priority"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
 
 type UpdateServiceTicketRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"`
+	Title             string `json:"title" validate:"required"`
+	Description       string `json:"description"`
+	Priority          string `json:"priority"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
 
 type UpdateServiceTicketStatusRequest struct {
@@ -36,16 +38,17 @@ type UpdateServiceTicketStatusRequest struct {
 }
 
 type ServiceTicketResponse struct {
-	ID          int    `json:"id"`
-	RefNum      string `json:"refNum"`
-	ProjectID   int    `json:"projectId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	Priority    string `json:"priority"`
-	CreatedBy   int    `json:"createdBy"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID                int    `json:"id"`
+	RefNum            string `json:"refNum"`
+	ProjectID         int    `json:"projectId"`
+	Title             string `json:"title"`
+	Description       string `json:"description"`
+	Status            string `json:"status"`
+	Priority          string `json:"priority"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
+	CreatedBy         int    `json:"createdBy"`
+	CreatedAt         string `json:"createdAt"`
+	UpdatedAt         string `json:"updatedAt"`
 }
 
 type ServiceTicketsListResponse struct {
@@ -58,16 +61,17 @@ type ServiceTicketsListResponse struct {
 // toServiceTicketResponse converts a service ticket model to response
 func toServiceTicketResponse(ticket *service_tickets.ServiceTicket) ServiceTicketResponse {
 	return ServiceTicketResponse{
-		ID:          ticket.ID,
-		RefNum:      ticket.RefNum,
-		ProjectID:   ticket.ProjectID,
-		Title:       ticket.Title,
-		Description: ticket.Description,
-		Status:      ticket.Status,
-		Priority:    ticket.Priority,
-		CreatedBy:   ticket.CreatedBy,
-		CreatedAt:   ticket.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   ticket.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:                ticket.ID,
+		RefNum:            ticket.RefNum,
+		ProjectID:         ticket.ProjectID,
+		Title:             ticket.Title,
+		Description:       ticket.Description,
+		Status:            ticket.Status,
+		Priority:          ticket.Priority,
+		CascadeCompletion: ticket.CascadeCompletion,
+		CreatedBy:         ticket.CreatedBy,
+		CreatedAt:         ticket.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:         ticket.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 
@@ -92,7 +96,7 @@ func (h *ServiceTicketHandler) CreateServiceTicket(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	ticket, err := h.ticketService.CreateServiceTicket(projectID, req.Title, req.Description, req.Priority, userID)
+	ticket, err := h.ticketService.CreateServiceTicket(projectID, req.Title, req.Description, req.Priority, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -143,7 +147,7 @@ func (h *ServiceTicketHandler) UpdateServiceTicket(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	ticket, err := h.ticketService.UpdateServiceTicket(ticketID, req.Title, req.Description, req.Priority, userID)
+	ticket, err := h.ticketService.UpdateServiceTicket(ticketID, req.Title, req.Description, req.Priority, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

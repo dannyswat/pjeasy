@@ -44,7 +44,7 @@ func (s *IssueService) SetStatusChangeHandler(handler StatusChangeHandler) {
 }
 
 // CreateIssue creates a new issue
-func (s *IssueService) CreateIssue(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, itemType string, itemID *int, tags string, createdBy int) (*Issue, error) {
+func (s *IssueService) CreateIssue(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Issue, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -105,21 +105,22 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 
 	now := time.Now()
 	issue := &Issue{
-		RefNum:      refNum,
-		ProjectID:   projectID,
-		Title:       title,
-		Description: description,
-		Status:      initialStatus,
-		Priority:    priority,
-		AssignedTo:  assignedTo,
-		SprintID:    sprintID,
-		Points:      points,
-		ItemType:    itemType,
-		ItemID:      itemID,
-		Tags:        tags,
-		CreatedBy:   createdBy,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		RefNum:            refNum,
+		ProjectID:         projectID,
+		Title:             title,
+		Description:       description,
+		Status:            initialStatus,
+		Priority:          priority,
+		AssignedTo:        assignedTo,
+		SprintID:          sprintID,
+		Points:            points,
+		ItemType:          itemType,
+		ItemID:            itemID,
+		Tags:              tags,
+		CascadeCompletion: cascadeCompletion,
+		CreatedBy:         createdBy,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	// Create a new repository instance with the transaction UOW
@@ -137,7 +138,7 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 }
 
 // UpdateIssue updates an issue's details
-func (s *IssueService) UpdateIssue(issueID int, title, description string, priority string, assignedTo int, sprintID int, points int, tags string, updatedBy int) (*Issue, error) {
+func (s *IssueService) UpdateIssue(issueID int, title, description string, priority string, assignedTo int, sprintID int, points int, tags string, cascadeCompletion bool, updatedBy int) (*Issue, error) {
 	issue, err := s.issueRepo.GetByID(issueID)
 	if err != nil {
 		return nil, err
@@ -180,6 +181,7 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 	issue.SprintID = sprintID
 	issue.Points = points
 	issue.Tags = tags
+	issue.CascadeCompletion = cascadeCompletion
 	issue.UpdatedAt = time.Now()
 
 	// Auto-transition status based on assignment change
@@ -471,4 +473,47 @@ func (s *IssueService) GetIssuesByItemReference(projectID int, itemType string, 
 	}
 
 	return issues, total, nil
+}
+
+// UpdateIssueStatusByWorkflow updates an issue status without user permission checks.
+// This is used by the workflow engine for automated status transitions (cascade completion).
+func (s *IssueService) UpdateIssueStatusByWorkflow(issueID int, status string) error {
+	if !IsValidStatus(status) {
+		return errors.New("invalid status")
+	}
+
+	issue, err := s.issueRepo.GetByID(issueID)
+	if err != nil {
+		return err
+	}
+	if issue == nil {
+		return errors.New("issue not found")
+	}
+
+	if issue.Status == status {
+		return nil
+	}
+
+	oldStatus := issue.Status
+
+	if err := s.issueRepo.UpdateStatus(issueID, status); err != nil {
+		return err
+	}
+
+	if err := s.statusRepo.LogChange(issue.ProjectID, status_changes.ItemTypeIssue, issue.ID, oldStatus, status, nil); err != nil {
+		return err
+	}
+
+	// Trigger workflow event for further cascading (e.g., issue → service ticket)
+	if s.statusChangeHandler != nil {
+		updatedIssue, err := s.issueRepo.GetByID(issueID)
+		if err == nil && updatedIssue != nil {
+			ctx := context.Background()
+			go func() {
+				_ = s.statusChangeHandler.OnIssueStatusChanged(ctx, updatedIssue, oldStatus, status, 0)
+			}()
+		}
+	}
+
+	return nil
 }

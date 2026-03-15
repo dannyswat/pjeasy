@@ -4,7 +4,7 @@ import HtmlEditor from '../components/HtmlEditor'
 import { ServiceTicketPriority } from './serviceTicketTypes'
 
 interface CreateServiceTicketFormProps {
-  onSubmit: (data: { title: string; description: string; priority: string }) => Promise<void>
+  onSubmit: (data: { title: string; description: string; priority: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
@@ -13,6 +13,7 @@ export default function CreateServiceTicketForm({ onSubmit, onCancel, isPending 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<string>(ServiceTicketPriority.NORMAL)
+  const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -20,6 +21,7 @@ export default function CreateServiceTicketForm({ onSubmit, onCancel, isPending 
       title,
       description,
       priority,
+      cascadeCompletion,
     })
   }
 
@@ -72,6 +74,20 @@ export default function CreateServiceTicketForm({ onSubmit, onCancel, isPending 
               <option value={ServiceTicketPriority.NORMAL}>Normal</option>
               <option value={ServiceTicketPriority.LOW}>Low</option>
             </select>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="cascadeCompletion"
+              checked={cascadeCompletion}
+              onChange={(e) => setCascadeCompletion(e.target.checked)}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <label htmlFor="cascadeCompletion" className="ml-2 block text-sm text-gray-700">
+              Cascade Completion
+            </label>
+            <p className="ml-2 text-xs text-gray-500">Auto-fulfill when all related items are done</p>
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

@@ -4,7 +4,7 @@ import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 
 interface CreateIdeaFormProps {
-  onSubmit: (data: { title: string; description: string; tags: string }) => Promise<void>
+  onSubmit: (data: { title: string; description: string; tags: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
@@ -13,6 +13,7 @@ export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: Create
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState<string[]>([])
+  const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -20,6 +21,7 @@ export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: Create
       title,
       description,
       tags: tags.join(','),
+      cascadeCompletion,
     })
   }
 
@@ -64,6 +66,20 @@ export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: Create
               onChange={setTags}
               placeholder="Type a tag and press Enter"
             />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="cascadeCompletion"
+              checked={cascadeCompletion}
+              onChange={(e) => setCascadeCompletion(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label htmlFor="cascadeCompletion" className="ml-2 block text-sm text-gray-700">
+              Cascade Completion
+            </label>
+            <p className="ml-2 text-xs text-gray-500">Auto-complete when all tasks are done</p>
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

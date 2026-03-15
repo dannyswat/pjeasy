@@ -6,7 +6,7 @@ import { ServiceTicketPriority } from './serviceTicketTypes'
 
 interface EditServiceTicketFormProps {
   serviceTicket: ServiceTicketResponse
-  onSubmit: (data: { title: string; description: string; priority: string }) => Promise<void>
+  onSubmit: (data: { title: string; description: string; priority: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
@@ -15,6 +15,7 @@ export default function EditServiceTicketForm({ serviceTicket, onSubmit, onCance
   const [title, setTitle] = useState(serviceTicket.title)
   const [description, setDescription] = useState(serviceTicket.description)
   const [priority, setPriority] = useState(serviceTicket.priority)
+  const [cascadeCompletion, setCascadeCompletion] = useState(serviceTicket.cascadeCompletion)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -22,6 +23,7 @@ export default function EditServiceTicketForm({ serviceTicket, onSubmit, onCance
       title,
       description,
       priority,
+      cascadeCompletion,
     })
   }
 
@@ -76,6 +78,20 @@ export default function EditServiceTicketForm({ serviceTicket, onSubmit, onCance
               <option value={ServiceTicketPriority.NORMAL}>Normal</option>
               <option value={ServiceTicketPriority.LOW}>Low</option>
             </select>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="editCascadeCompletion"
+              checked={cascadeCompletion}
+              onChange={(e) => setCascadeCompletion(e.target.checked)}
+              className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <label htmlFor="editCascadeCompletion" className="ml-2 block text-sm text-gray-700">
+              Cascade Completion
+            </label>
+            <p className="ml-2 text-xs text-gray-500">Auto-fulfill when all related items are done</p>
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

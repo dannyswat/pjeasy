@@ -6,6 +6,7 @@ export interface ServiceTicketResponse {
   description: string
   status: string // 'New' | 'Open' | 'Fulfilled' | 'Closed'
   priority: string // 'Immediate' | 'Urgent' | 'High' | 'Normal' | 'Low'
+  cascadeCompletion: boolean
   createdBy: number
   createdAt: string
   updatedAt: string
@@ -15,12 +16,14 @@ export interface CreateServiceTicketRequest {
   title: string
   description: string
   priority?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateServiceTicketRequest {
   title: string
   description: string
   priority?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateServiceTicketStatusRequest {

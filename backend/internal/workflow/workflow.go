@@ -20,6 +20,7 @@ type Event struct {
 const (
 	EventIssueStatusChanged         = "issue.status.changed"
 	EventIssueCreated               = "issue.created"
+	EventFeatureStatusChanged       = "feature.status.changed"
 	EventServiceTicketStatusChanged = "service_ticket.status.changed"
 	EventTaskStatusChanged          = "task.status.changed"
 )

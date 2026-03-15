@@ -12,6 +12,7 @@ export interface IssueResponse {
   itemType?: string
   itemId?: number
   tags?: string
+  cascadeCompletion: boolean
   createdBy: number
   createdAt: string
   updatedAt: string
@@ -27,6 +28,7 @@ export interface CreateIssueRequest {
   itemType?: string
   itemId?: number
   tags?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateIssueRequest {
@@ -37,6 +39,7 @@ export interface UpdateIssueRequest {
   sprintId?: number
   points?: number
   tags?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateIssueStatusRequest {

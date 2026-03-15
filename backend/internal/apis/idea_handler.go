@@ -20,17 +20,19 @@ func NewIdeaHandler(ideaService *ideas.IdeaService) *IdeaHandler {
 }
 
 type CreateIdeaRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	ItemType    string `json:"itemType"`
-	ItemID      *int   `json:"itemId"`
-	Tags        string `json:"tags"`
+	Title             string `json:"title" validate:"required"`
+	Description       string `json:"description"`
+	ItemType          string `json:"itemType"`
+	ItemID            *int   `json:"itemId"`
+	Tags              string `json:"tags"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
 
 type UpdateIdeaRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	Tags        string `json:"tags"`
+	Title             string `json:"title" validate:"required"`
+	Description       string `json:"description"`
+	Tags              string `json:"tags"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
 
 type UpdateIdeaStatusRequest struct {
@@ -38,18 +40,19 @@ type UpdateIdeaStatusRequest struct {
 }
 
 type IdeaResponse struct {
-	ID          int    `json:"id"`
-	RefNum      string `json:"refNum"`
-	ProjectID   int    `json:"projectId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	ItemType    string `json:"itemType,omitempty"`
-	ItemID      *int   `json:"itemId,omitempty"`
-	Tags        string `json:"tags,omitempty"`
-	CreatedBy   int    `json:"createdBy"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID                int    `json:"id"`
+	RefNum            string `json:"refNum"`
+	ProjectID         int    `json:"projectId"`
+	Title             string `json:"title"`
+	Description       string `json:"description"`
+	Status            string `json:"status"`
+	ItemType          string `json:"itemType,omitempty"`
+	ItemID            *int   `json:"itemId,omitempty"`
+	Tags              string `json:"tags,omitempty"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
+	CreatedBy         int    `json:"createdBy"`
+	CreatedAt         string `json:"createdAt"`
+	UpdatedAt         string `json:"updatedAt"`
 }
 
 type IdeasListResponse struct {
@@ -62,18 +65,19 @@ type IdeasListResponse struct {
 // toIdeaResponse converts an idea model to response
 func toIdeaResponse(idea *ideas.Idea) IdeaResponse {
 	return IdeaResponse{
-		ID:          idea.ID,
-		RefNum:      idea.RefNum,
-		ProjectID:   idea.ProjectID,
-		Title:       idea.Title,
-		Description: idea.Description,
-		Status:      idea.Status,
-		ItemType:    idea.ItemType,
-		ItemID:      idea.ItemID,
-		Tags:        idea.Tags,
-		CreatedBy:   idea.CreatedBy,
-		CreatedAt:   idea.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   idea.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:                idea.ID,
+		RefNum:            idea.RefNum,
+		ProjectID:         idea.ProjectID,
+		Title:             idea.Title,
+		Description:       idea.Description,
+		Status:            idea.Status,
+		ItemType:          idea.ItemType,
+		ItemID:            idea.ItemID,
+		Tags:              idea.Tags,
+		CascadeCompletion: idea.CascadeCompletion,
+		CreatedBy:         idea.CreatedBy,
+		CreatedAt:         idea.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:         idea.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 
@@ -98,7 +102,7 @@ func (h *IdeaHandler) CreateIdea(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	idea, err := h.ideaService.CreateIdea(projectID, req.Title, req.Description, req.ItemType, req.ItemID, req.Tags, userID)
+	idea, err := h.ideaService.CreateIdea(projectID, req.Title, req.Description, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -128,7 +132,7 @@ func (h *IdeaHandler) UpdateIdea(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	idea, err := h.ideaService.UpdateIdea(ideaID, req.Title, req.Description, req.Tags, userID)
+	idea, err := h.ideaService.UpdateIdea(ideaID, req.Title, req.Description, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

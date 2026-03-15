@@ -8,6 +8,7 @@ export interface IdeaResponse {
   itemType?: string
   itemId?: number
   tags?: string
+  cascadeCompletion: boolean
   createdBy: number
   createdAt: string
   updatedAt: string
@@ -19,12 +20,14 @@ export interface CreateIdeaRequest {
   itemType?: string
   itemId?: number
   tags?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateIdeaRequest {
   title: string
   description: string
   tags?: string
+  cascadeCompletion?: boolean
 }
 
 export interface UpdateIdeaStatusRequest {

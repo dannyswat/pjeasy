@@ -17,6 +17,7 @@ interface EditFeatureFormProps {
     points: number
     deadline?: string
     tags: string
+    cascadeCompletion: boolean
   }) => Promise<void>
   onCancel: () => void
   onClose?: () => void
@@ -38,6 +39,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
   const [points, setPoints] = useState<number | undefined>(feature.points)
   const [deadline, setDeadline] = useState<string>(formatDateForInput(feature.deadline))
   const [tags, setTags] = useState<string[]>(feature.tags ? feature.tags.split(',').map(t => t.trim()) : [])
+  const [cascadeCompletion, setCascadeCompletion] = useState(feature.cascadeCompletion)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -49,6 +51,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
       points: points ?? 0,
       deadline: deadline || undefined,
       tags: tags.join(','),
+      cascadeCompletion,
     })
   }
 
@@ -169,6 +172,20 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
               onChange={setTags}
               placeholder="Type a tag and press Enter"
             />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="editCascadeCompletion"
+              checked={cascadeCompletion}
+              onChange={(e) => setCascadeCompletion(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label htmlFor="editCascadeCompletion" className="ml-2 block text-sm text-gray-700">
+              Cascade Completion
+            </label>
+            <p className="ml-2 text-xs text-gray-500">Auto-complete when all tasks are done</p>
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

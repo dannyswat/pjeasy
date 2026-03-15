@@ -16,6 +16,7 @@ interface CreateFeatureFormProps {
     points: number
     deadline?: string
     tags: string
+    cascadeCompletion: boolean
   }) => Promise<void>
   onCancel: () => void
   isPending: boolean
@@ -29,6 +30,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
   const [points, setPoints] = useState<number | undefined>(undefined)
   const [deadline, setDeadline] = useState<string>('')
   const [tags, setTags] = useState<string[]>([])
+  const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -40,6 +42,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
       points: points ?? 0,
       deadline: deadline || undefined,
       tags: tags.join(','),
+      cascadeCompletion,
     })
   }
 
@@ -152,6 +155,20 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
               onChange={setTags}
               placeholder="Type a tag and press Enter"
             />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="cascadeCompletion"
+              checked={cascadeCompletion}
+              onChange={(e) => setCascadeCompletion(e.target.checked)}
+              className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+            />
+            <label htmlFor="cascadeCompletion" className="ml-2 block text-sm text-gray-700">
+              Cascade Completion
+            </label>
+            <p className="ml-2 text-xs text-gray-500">Auto-complete when all tasks are done</p>
           </div>
           
           <div className="flex justify-end space-x-3 pt-4">

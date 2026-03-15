@@ -1,6 +1,7 @@
 package features
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -11,13 +12,19 @@ import (
 	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
 
+// StatusChangeHandler defines the interface for handling feature status change events
+type StatusChangeHandler interface {
+	OnFeatureStatusChanged(ctx context.Context, feature *Feature, oldStatus, newStatus string, userID int) error
+}
+
 type FeatureService struct {
-	featureRepo  *FeatureRepository
-	memberRepo   *projects.ProjectMemberRepository
-	projectRepo  *projects.ProjectRepository
-	sequenceRepo *sequences.SequenceRepository
-	statusRepo   *status_changes.StatusChangeService
-	uowFactory   *repositories.UnitOfWorkFactory
+	featureRepo         *FeatureRepository
+	memberRepo          *projects.ProjectMemberRepository
+	projectRepo         *projects.ProjectRepository
+	sequenceRepo        *sequences.SequenceRepository
+	statusRepo          *status_changes.StatusChangeService
+	uowFactory          *repositories.UnitOfWorkFactory
+	statusChangeHandler StatusChangeHandler
 }
 
 func NewFeatureService(featureRepo *FeatureRepository, memberRepo *projects.ProjectMemberRepository, projectRepo *projects.ProjectRepository, sequenceRepo *sequences.SequenceRepository, statusRepo *status_changes.StatusChangeService, uowFactory *repositories.UnitOfWorkFactory) *FeatureService {
@@ -31,8 +38,13 @@ func NewFeatureService(featureRepo *FeatureRepository, memberRepo *projects.Proj
 	}
 }
 
+// SetStatusChangeHandler sets the handler for status change events
+func (s *FeatureService) SetStatusChangeHandler(handler StatusChangeHandler) {
+	s.statusChangeHandler = handler
+}
+
 // CreateFeature creates a new feature
-func (s *FeatureService) CreateFeature(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, itemType string, itemID *int, tags string, createdBy int) (*Feature, error) {
+func (s *FeatureService) CreateFeature(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Feature, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -93,22 +105,23 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 
 	now := time.Now()
 	feature := &Feature{
-		RefNum:      refNum,
-		ProjectID:   projectID,
-		Title:       title,
-		Description: description,
-		Status:      initialStatus,
-		Priority:    priority,
-		AssignedTo:  assignedTo,
-		SprintID:    sprintID,
-		Points:      points,
-		Deadline:    deadline,
-		ItemType:    itemType,
-		ItemID:      itemID,
-		Tags:        tags,
-		CreatedBy:   createdBy,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		RefNum:            refNum,
+		ProjectID:         projectID,
+		Title:             title,
+		Description:       description,
+		Status:            initialStatus,
+		Priority:          priority,
+		AssignedTo:        assignedTo,
+		SprintID:          sprintID,
+		Points:            points,
+		Deadline:          deadline,
+		ItemType:          itemType,
+		ItemID:            itemID,
+		Tags:              tags,
+		CascadeCompletion: cascadeCompletion,
+		CreatedBy:         createdBy,
+		CreatedAt:         now,
+		UpdatedAt:         now,
 	}
 
 	// Create a new repository instance with the transaction UOW
@@ -126,7 +139,7 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 }
 
 // UpdateFeature updates a feature's details
-func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, tags string, updatedBy int) (*Feature, error) {
+func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
 	feature, err := s.featureRepo.GetByID(featureID)
 	if err != nil {
 		return nil, err
@@ -170,6 +183,7 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 	feature.Points = points
 	feature.Deadline = deadline
 	feature.Tags = tags
+	feature.CascadeCompletion = cascadeCompletion
 	feature.UpdatedAt = time.Now()
 
 	// Auto-transition status based on assignment change
@@ -225,7 +239,20 @@ func (s *FeatureService) UpdateFeatureStatus(featureID int, status string, updat
 	}
 
 	// Reload feature to get updated status
-	return s.featureRepo.GetByID(featureID)
+	updatedFeature, err := s.featureRepo.GetByID(featureID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Trigger workflow event if status actually changed and handler is set
+	if oldStatus != status && s.statusChangeHandler != nil {
+		ctx := context.Background()
+		go func() {
+			_ = s.statusChangeHandler.OnFeatureStatusChanged(ctx, updatedFeature, oldStatus, status, updatedBy)
+		}()
+	}
+
+	return updatedFeature, nil
 }
 
 // UpdateFeatureAssignee updates a feature's assignee
@@ -425,4 +452,47 @@ func (s *FeatureService) GetFeaturesByItemReference(projectID int, itemType stri
 
 	offset := (page - 1) * pageSize
 	return s.featureRepo.GetByItemReference(projectID, itemType, itemID, offset, pageSize)
+}
+
+// UpdateFeatureStatusByWorkflow updates a feature status without user permission checks.
+// This is used by the workflow engine for automated status transitions (cascade completion).
+func (s *FeatureService) UpdateFeatureStatusByWorkflow(featureID int, status string) error {
+	if !IsValidStatus(status) {
+		return errors.New("invalid status")
+	}
+
+	feature, err := s.featureRepo.GetByID(featureID)
+	if err != nil {
+		return err
+	}
+	if feature == nil {
+		return errors.New("feature not found")
+	}
+
+	if feature.Status == status {
+		return nil
+	}
+
+	oldStatus := feature.Status
+
+	if err := s.featureRepo.UpdateStatus(featureID, status); err != nil {
+		return err
+	}
+
+	if err := s.statusRepo.LogChange(feature.ProjectID, status_changes.ItemTypeFeature, feature.ID, oldStatus, status, nil); err != nil {
+		return err
+	}
+
+	// Trigger workflow event for further cascading (e.g., feature → service ticket)
+	if s.statusChangeHandler != nil {
+		updatedFeature, err := s.featureRepo.GetByID(featureID)
+		if err == nil && updatedFeature != nil {
+			ctx := context.Background()
+			go func() {
+				_ = s.statusChangeHandler.OnFeatureStatusChanged(ctx, updatedFeature, oldStatus, status, 0)
+			}()
+		}
+	}
+
+	return nil
 }

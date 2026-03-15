@@ -20,25 +20,27 @@ func NewIssueHandler(issueService *issues.IssueService) *IssueHandler {
 }
 
 type CreateIssueRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"`
-	AssignedTo  int    `json:"assignedTo"`
-	SprintID    int    `json:"sprintId"`
-	Points      int    `json:"points"`
-	ItemType    string `json:"itemType"`
-	ItemID      *int   `json:"itemId"`
-	Tags        string `json:"tags"`
+	Title             string `json:"title" validate:"required"`
+	Description       string `json:"description"`
+	Priority          string `json:"priority"`
+	AssignedTo        int    `json:"assignedTo"`
+	SprintID          int    `json:"sprintId"`
+	Points            int    `json:"points"`
+	ItemType          string `json:"itemType"`
+	ItemID            *int   `json:"itemId"`
+	Tags              string `json:"tags"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
 
 type UpdateIssueRequest struct {
-	Title       string `json:"title" validate:"required"`
-	Description string `json:"description"`
-	Priority    string `json:"priority"`
-	AssignedTo  int    `json:"assignedTo"`
-	SprintID    int    `json:"sprintId"`
-	Points      int    `json:"points"`
-	Tags        string `json:"tags"`
+	Title             string `json:"title" validate:"required"`
+	Description       string `json:"description"`
+	Priority          string `json:"priority"`
+	AssignedTo        int    `json:"assignedTo"`
+	SprintID          int    `json:"sprintId"`
+	Points            int    `json:"points"`
+	Tags              string `json:"tags"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
 
 type UpdateIssueStatusRequest struct {
@@ -50,22 +52,23 @@ type UpdateIssueAssigneeRequest struct {
 }
 
 type IssueResponse struct {
-	ID          int    `json:"id"`
-	RefNum      string `json:"refNum"`
-	ProjectID   int    `json:"projectId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Status      string `json:"status"`
-	Priority    string `json:"priority"`
-	AssignedTo  int    `json:"assignedTo,omitempty"`
-	SprintID    int    `json:"sprintId,omitempty"`
-	Points      int    `json:"points"`
-	ItemType    string `json:"itemType,omitempty"`
-	ItemID      *int   `json:"itemId,omitempty"`
-	Tags        string `json:"tags,omitempty"`
-	CreatedBy   int    `json:"createdBy"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID                int    `json:"id"`
+	RefNum            string `json:"refNum"`
+	ProjectID         int    `json:"projectId"`
+	Title             string `json:"title"`
+	Description       string `json:"description"`
+	Status            string `json:"status"`
+	Priority          string `json:"priority"`
+	AssignedTo        int    `json:"assignedTo,omitempty"`
+	SprintID          int    `json:"sprintId,omitempty"`
+	Points            int    `json:"points"`
+	ItemType          string `json:"itemType,omitempty"`
+	ItemID            *int   `json:"itemId,omitempty"`
+	Tags              string `json:"tags,omitempty"`
+	CascadeCompletion bool   `json:"cascadeCompletion"`
+	CreatedBy         int    `json:"createdBy"`
+	CreatedAt         string `json:"createdAt"`
+	UpdatedAt         string `json:"updatedAt"`
 }
 
 type IssuesListResponse struct {
@@ -78,22 +81,23 @@ type IssuesListResponse struct {
 // toIssueResponse converts an issue model to response
 func toIssueResponse(issue *issues.Issue) IssueResponse {
 	return IssueResponse{
-		ID:          issue.ID,
-		RefNum:      issue.RefNum,
-		ProjectID:   issue.ProjectID,
-		Title:       issue.Title,
-		Description: issue.Description,
-		Status:      issue.Status,
-		Priority:    issue.Priority,
-		AssignedTo:  issue.AssignedTo,
-		SprintID:    issue.SprintID,
-		Points:      issue.Points,
-		ItemType:    issue.ItemType,
-		ItemID:      issue.ItemID,
-		Tags:        issue.Tags,
-		CreatedBy:   issue.CreatedBy,
-		CreatedAt:   issue.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   issue.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:                issue.ID,
+		RefNum:            issue.RefNum,
+		ProjectID:         issue.ProjectID,
+		Title:             issue.Title,
+		Description:       issue.Description,
+		Status:            issue.Status,
+		Priority:          issue.Priority,
+		AssignedTo:        issue.AssignedTo,
+		SprintID:          issue.SprintID,
+		Points:            issue.Points,
+		ItemType:          issue.ItemType,
+		ItemID:            issue.ItemID,
+		Tags:              issue.Tags,
+		CascadeCompletion: issue.CascadeCompletion,
+		CreatedBy:         issue.CreatedBy,
+		CreatedAt:         issue.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:         issue.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 
@@ -118,7 +122,7 @@ func (h *IssueHandler) CreateIssue(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	issue, err := h.issueService.CreateIssue(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ItemType, req.ItemID, req.Tags, userID)
+	issue, err := h.issueService.CreateIssue(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -148,7 +152,7 @@ func (h *IssueHandler) UpdateIssue(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	issue, err := h.issueService.UpdateIssue(issueID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.Tags, userID)
+	issue, err := h.issueService.UpdateIssue(issueID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

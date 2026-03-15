@@ -362,7 +362,7 @@ export default function ServiceTicketsPage() {
       {editingTicket && (
         <EditServiceTicketForm
           serviceTicket={editingTicket!}
-          onSubmit={async (data: { title: string; description: string; priority: string }) => {
+          onSubmit={async (data: { title: string; description: string; priority: string; cascadeCompletion: boolean }) => {
             if (!editingTicket) return
             try {
               await updateServiceTicket.mutateAsync({
@@ -384,7 +384,7 @@ export default function ServiceTicketsPage() {
       {/* Create Modal */}
       {showCreateForm && (
         <CreateServiceTicketForm
-          onSubmit={async (data: { title: string; description: string; priority: string }) => {
+          onSubmit={async (data: { title: string; description: string; priority: string; cascadeCompletion: boolean }) => {
             try {
               await createServiceTicket.mutateAsync({
                 projectId: projectIdNum,

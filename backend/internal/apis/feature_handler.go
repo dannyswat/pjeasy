@@ -21,27 +21,29 @@ func NewFeatureHandler(featureService *features.FeatureService) *FeatureHandler 
 }
 
 type CreateFeatureRequest struct {
-	Title       string  `json:"title" validate:"required"`
-	Description string  `json:"description"`
-	Priority    string  `json:"priority"`
-	AssignedTo  int     `json:"assignedTo"`
-	SprintID    int     `json:"sprintId"`
-	Points      int     `json:"points"`
-	Deadline    *string `json:"deadline"` // ISO 8601 format
-	ItemType    string  `json:"itemType"`
-	ItemID      *int    `json:"itemId"`
-	Tags        string  `json:"tags"`
+	Title             string  `json:"title" validate:"required"`
+	Description       string  `json:"description"`
+	Priority          string  `json:"priority"`
+	AssignedTo        int     `json:"assignedTo"`
+	SprintID          int     `json:"sprintId"`
+	Points            int     `json:"points"`
+	Deadline          *string `json:"deadline"` // ISO 8601 format
+	ItemType          string  `json:"itemType"`
+	ItemID            *int    `json:"itemId"`
+	Tags              string  `json:"tags"`
+	CascadeCompletion bool    `json:"cascadeCompletion"`
 }
 
 type UpdateFeatureRequest struct {
-	Title       string  `json:"title" validate:"required"`
-	Description string  `json:"description"`
-	Priority    string  `json:"priority"`
-	AssignedTo  int     `json:"assignedTo"`
-	SprintID    int     `json:"sprintId"`
-	Points      int     `json:"points"`
-	Deadline    *string `json:"deadline"` // ISO 8601 format
-	Tags        string  `json:"tags"`
+	Title             string  `json:"title" validate:"required"`
+	Description       string  `json:"description"`
+	Priority          string  `json:"priority"`
+	AssignedTo        int     `json:"assignedTo"`
+	SprintID          int     `json:"sprintId"`
+	Points            int     `json:"points"`
+	Deadline          *string `json:"deadline"` // ISO 8601 format
+	Tags              string  `json:"tags"`
+	CascadeCompletion bool    `json:"cascadeCompletion"`
 }
 
 type UpdateFeatureStatusRequest struct {
@@ -53,23 +55,24 @@ type UpdateFeatureAssigneeRequest struct {
 }
 
 type FeatureResponse struct {
-	ID          int     `json:"id"`
-	RefNum      string  `json:"refNum"`
-	ProjectID   int     `json:"projectId"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Status      string  `json:"status"`
-	Priority    string  `json:"priority"`
-	AssignedTo  int     `json:"assignedTo,omitempty"`
-	SprintID    int     `json:"sprintId,omitempty"`
-	Points      int     `json:"points"`
-	Deadline    *string `json:"deadline,omitempty"`
-	ItemType    string  `json:"itemType,omitempty"`
-	ItemID      *int    `json:"itemId,omitempty"`
-	Tags        string  `json:"tags,omitempty"`
-	CreatedBy   int     `json:"createdBy"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   string  `json:"updatedAt"`
+	ID                int     `json:"id"`
+	RefNum            string  `json:"refNum"`
+	ProjectID         int     `json:"projectId"`
+	Title             string  `json:"title"`
+	Description       string  `json:"description"`
+	Status            string  `json:"status"`
+	Priority          string  `json:"priority"`
+	AssignedTo        int     `json:"assignedTo,omitempty"`
+	SprintID          int     `json:"sprintId,omitempty"`
+	Points            int     `json:"points"`
+	Deadline          *string `json:"deadline,omitempty"`
+	ItemType          string  `json:"itemType,omitempty"`
+	ItemID            *int    `json:"itemId,omitempty"`
+	Tags              string  `json:"tags,omitempty"`
+	CascadeCompletion bool    `json:"cascadeCompletion"`
+	CreatedBy         int     `json:"createdBy"`
+	CreatedAt         string  `json:"createdAt"`
+	UpdatedAt         string  `json:"updatedAt"`
 }
 
 type FeaturesListResponse struct {
@@ -88,23 +91,24 @@ func toFeatureResponse(feature *features.Feature) FeatureResponse {
 	}
 
 	return FeatureResponse{
-		ID:          feature.ID,
-		RefNum:      feature.RefNum,
-		ProjectID:   feature.ProjectID,
-		Title:       feature.Title,
-		Description: feature.Description,
-		Status:      feature.Status,
-		Priority:    feature.Priority,
-		AssignedTo:  feature.AssignedTo,
-		SprintID:    feature.SprintID,
-		Points:      feature.Points,
-		Deadline:    deadline,
-		ItemType:    feature.ItemType,
-		ItemID:      feature.ItemID,
-		Tags:        feature.Tags,
-		CreatedBy:   feature.CreatedBy,
-		CreatedAt:   feature.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   feature.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:                feature.ID,
+		RefNum:            feature.RefNum,
+		ProjectID:         feature.ProjectID,
+		Title:             feature.Title,
+		Description:       feature.Description,
+		Status:            feature.Status,
+		Priority:          feature.Priority,
+		AssignedTo:        feature.AssignedTo,
+		SprintID:          feature.SprintID,
+		Points:            feature.Points,
+		Deadline:          deadline,
+		ItemType:          feature.ItemType,
+		ItemID:            feature.ItemID,
+		Tags:              feature.Tags,
+		CascadeCompletion: feature.CascadeCompletion,
+		CreatedBy:         feature.CreatedBy,
+		CreatedAt:         feature.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:         feature.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 
@@ -156,7 +160,7 @@ func (h *FeatureHandler) CreateFeature(c echo.Context) error {
 		return err
 	}
 
-	feature, err := h.featureService.CreateFeature(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ItemType, req.ItemID, req.Tags, userID)
+	feature, err := h.featureService.CreateFeature(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -191,7 +195,7 @@ func (h *FeatureHandler) UpdateFeature(c echo.Context) error {
 		return err
 	}
 
-	feature, err := h.featureService.UpdateFeature(featureID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.Tags, userID)
+	feature, err := h.featureService.UpdateFeature(featureID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
