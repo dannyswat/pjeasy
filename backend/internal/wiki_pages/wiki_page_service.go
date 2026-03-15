@@ -79,6 +79,38 @@ func computeHash(content string) string {
 	return hex.EncodeToString(hash[:])
 }
 
+func (s *WikiPageService) isLimitedWikiReader(projectID int, userID int) (bool, error) {
+	member, err := s.memberRepo.GetByProjectAndUser(projectID, userID)
+	if err != nil {
+		return false, err
+	}
+	if member == nil {
+		return false, errors.New("user is not a member of this project")
+	}
+
+	return member.IsUser && !member.IsAdmin, nil
+}
+
+func canReadWikiPageStatus(status string, isLimitedReader bool) bool {
+	if !isLimitedReader {
+		return true
+	}
+
+	return status == WikiPageStatusPublished || status == WikiPageStatusArchived
+}
+
+func normalizeWikiListStatus(status string, isLimitedReader bool) (string, bool) {
+	if !isLimitedReader {
+		return status, true
+	}
+
+	if status == "" || status == WikiPageStatusPublished {
+		return WikiPageStatusPublished, true
+	}
+
+	return "", false
+}
+
 // CreateWikiPage creates a new wiki page
 func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, parentID *int, sortOrder int, createdBy int) (*WikiPage, error) {
 	// Validate project exists
@@ -339,13 +371,13 @@ func (s *WikiPageService) GetWikiPage(pageID int, userID int) (*WikiPage, error)
 		return nil, nil
 	}
 
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(page.ProjectID, userID)
+	isLimitedReader, err := s.isLimitedWikiReader(page.ProjectID, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+
+	if !canReadWikiPageStatus(page.Status, isLimitedReader) {
+		return nil, nil
 	}
 
 	return page, nil
@@ -353,46 +385,54 @@ func (s *WikiPageService) GetWikiPage(pageID int, userID int) (*WikiPage, error)
 
 // GetWikiPageBySlug returns a wiki page by project and slug
 func (s *WikiPageService) GetWikiPageBySlug(projectID int, slug string, userID int) (*WikiPage, error) {
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	isLimitedReader, err := s.isLimitedWikiReader(projectID, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+
+	page, err := s.pageRepo.GetBySlug(projectID, slug)
+	if err != nil {
+		return nil, err
+	}
+	if page == nil {
+		return nil, nil
 	}
 
-	return s.pageRepo.GetBySlug(projectID, slug)
+	if !canReadWikiPageStatus(page.Status, isLimitedReader) {
+		return nil, nil
+	}
+
+	return page, nil
 }
 
 // ListWikiPages returns wiki pages for a project with pagination
 func (s *WikiPageService) ListWikiPages(projectID int, page, pageSize int, status string, userID int) ([]WikiPage, int64, error) {
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	isLimitedReader, err := s.isLimitedWikiReader(projectID, userID)
 	if err != nil {
 		return nil, 0, err
 	}
-	if !isMember {
-		return nil, 0, errors.New("user is not a member of this project")
-	}
 
 	offset := (page - 1) * pageSize
+	effectiveStatus, allowed := normalizeWikiListStatus(status, isLimitedReader)
+	if !allowed {
+		return []WikiPage{}, 0, nil
+	}
 
-	if status != "" {
-		return s.pageRepo.GetByProjectIDAndStatus(projectID, status, offset, pageSize)
+	if effectiveStatus != "" {
+		return s.pageRepo.GetByProjectIDAndStatus(projectID, effectiveStatus, offset, pageSize)
 	}
 	return s.pageRepo.GetByProjectID(projectID, offset, pageSize)
 }
 
 // GetWikiPageTree returns the hierarchical tree of wiki pages
 func (s *WikiPageService) GetWikiPageTree(projectID int, userID int) ([]WikiPage, error) {
-	// Check if user is a member of the project
-	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
+	isLimitedReader, err := s.isLimitedWikiReader(projectID, userID)
 	if err != nil {
 		return nil, err
 	}
-	if !isMember {
-		return nil, errors.New("user is not a member of this project")
+
+	if isLimitedReader {
+		return s.pageRepo.GetAllByProjectIDAndStatus(projectID, WikiPageStatusPublished)
 	}
 
 	return s.pageRepo.GetAllByProjectID(projectID)

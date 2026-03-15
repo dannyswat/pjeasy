@@ -84,6 +84,13 @@ When a feature or issue is completed:
 - `PUT /api/wiki/:id/status` - Update wiki page status
 - `DELETE /api/wiki/:id` - Delete wiki page
 
+## Access Rules
+
+- Project writers and admins can read all wiki pages and statuses.
+- Limited project users can list only `Published` wiki pages.
+- Limited project users can read page content only when the page is `Published` or `Archived`.
+- Limited project users cannot read `Draft` wiki page content.
+
 ### Wiki Page Changes
 
 - `POST /api/wiki/:id/changes` - Create change linked to feature/issue

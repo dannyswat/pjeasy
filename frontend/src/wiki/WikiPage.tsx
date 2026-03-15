@@ -10,6 +10,7 @@ import { WikiPageStatus, WikiPageStatusDisplay, type WikiPageResponse } from './
 import { UserLabel } from '../components/UserLabel'
 import HtmlEditor from '../components/HtmlEditor'
 import WikiPageChangesPanel from './WikiPageChangesPanel'
+import { useProjectRole } from '../projects/useProjectRole'
 
 type ViewMode = 'view' | 'create' | 'edit'
 
@@ -49,6 +50,7 @@ export default function WikiPage() {
   // Fetch the current wiki page if we have a pageId
   const { wikiPage, isLoading: isLoadingPage, refetch: refetchPage } = useGetWikiPage(pageIdNum)
   const { changes: pendingChanges } = usePendingChanges(pageIdNum)
+  const { canWrite } = useProjectRole(projectIdNum)
   
   // Mutations
   const createWikiPage = useCreateWikiPage()
@@ -483,7 +485,7 @@ export default function WikiPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                {canWrite && (<div className="flex flex-wrap gap-2">
                   {pendingChanges.length > 0 && (
                     <button
                       onClick={() => setShowChangesPanel(true)}
@@ -522,7 +524,7 @@ export default function WikiPage() {
                   >
                     Delete
                   </button>
-                </div>
+                </div>)}
               </div>
             </div>
             

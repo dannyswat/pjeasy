@@ -91,6 +91,15 @@ func (r *WikiPageRepository) GetByProjectIDAndStatus(projectID int, status strin
 	return pages, total, err
 }
 
+// GetAllByProjectIDAndStatus returns all wiki pages for a project filtered by status.
+func (r *WikiPageRepository) GetAllByProjectIDAndStatus(projectID int, status string) ([]WikiPage, error) {
+	var pages []WikiPage
+	err := r.uow.GetDB().Where("project_id = ? AND status = ?", projectID, status).
+		Order("sort_order ASC, created_at DESC").
+		Find(&pages).Error
+	return pages, err
+}
+
 // GetByParentID returns wiki pages by parent ID (for hierarchical structure)
 func (r *WikiPageRepository) GetByParentID(projectID int, parentID *int) ([]WikiPage, error) {
 	var pages []WikiPage
