@@ -179,8 +179,6 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   </svg>
                   <span>Dashboard</span>
                 </Link>
-                {canWrite && (
-                <>
                 <Link
                   to={`/projects/${projectId}/ideas`}
                   className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
@@ -259,8 +257,6 @@ export default function DefaultLayout({ children }: { children: React.ReactNode 
                   </svg>
                   <span>Reviews</span>
                 </Link>
-                </>
-                )}
                 <Link
                   to={`/projects/${projectId}/service-tickets`}
                   className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
