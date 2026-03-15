@@ -251,7 +251,7 @@ export default function WikiPage() {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-semibold text-gray-900">Wiki</h2>
-            <button
+            {canWrite && <button
               onClick={handleStartCreate}
               className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded transition"
               title="Create new page"
@@ -259,7 +259,7 @@ export default function WikiPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
-            </button>
+            </button>}
           </div>
         </div>
         

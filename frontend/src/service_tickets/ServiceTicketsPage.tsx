@@ -121,37 +121,39 @@ export default function ServiceTicketsPage() {
   return (
     <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold text-gray-900">Service Tickets</h1>
-        <p className="text-sm text-gray-600 mt-1">Manage service requests and support tickets</p>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Service Tickets</h1>
+          <p className="mt-1 text-sm text-gray-600">Manage service requests and support tickets</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCreateForm(true)}
+          className="inline-flex w-full items-center justify-center rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 sm:w-auto sm:self-center"
+        >
+          <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Create Service Ticket
+        </button>
       </div>
 
       {/* Quick Create */}
       <div className="mb-4">
-        <form onSubmit={handleQuickCreate} className="flex gap-2">
+        <form onSubmit={handleQuickCreate} className="flex flex-col gap-2 sm:flex-row">
           <input
             type="text"
             value={quickCreateTitle}
             onChange={(e) => setQuickCreateTitle(e.target.value)}
             placeholder="Type a service ticket and press Enter to add quickly..."
-            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-transparent focus:ring-2 focus:ring-purple-500"
           />
           <button
             type="submit"
             disabled={!quickCreateTitle.trim() || createServiceTicket.isPending}
-            className="px-4 py-1.5 text-sm font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded bg-purple-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
             Add
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCreateForm(true)}
-            className="px-4 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition flex items-center"
-          >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Detailed
           </button>
         </form>
       </div>
