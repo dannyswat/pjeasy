@@ -49,6 +49,11 @@ export interface UpdateFeatureStatusRequest {
   status: string
 }
 
+export interface BatchUpdateFeatureStatusRequest {
+  featureIds: number[]
+  status: string
+}
+
 export interface UpdateFeatureAssigneeRequest {
   assignedTo: number
 }

@@ -46,6 +46,11 @@ export interface UpdateIssueStatusRequest {
   status: string
 }
 
+export interface BatchUpdateIssueStatusRequest {
+  issueIds: number[]
+  status: string
+}
+
 export interface UpdateIssueAssigneeRequest {
   assignedTo: number
 }

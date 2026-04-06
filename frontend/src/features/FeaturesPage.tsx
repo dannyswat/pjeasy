@@ -4,6 +4,7 @@ import { useListFeatures } from './useListFeatures'
 import { useUpdateFeature } from './useUpdateFeature'
 import { useDeleteFeature } from './useDeleteFeature'
 import { useCreateFeature } from './useCreateFeature'
+import { useBatchUpdateFeatureStatus } from './useBatchUpdateFeatureStatus'
 import { FeatureStatus, FeaturePriority, FeatureStatusDisplay, type FeatureResponse } from './featureTypes'
 import EditFeatureForm from './EditFeatureForm'
 import CreateFeatureForm from './CreateFeatureForm'
@@ -29,6 +30,8 @@ export default function FeaturesPage() {
   const [editingFeature, setEditingFeature] = useState<FeatureResponse | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState<number[]>([])
+  const [batchStatus, setBatchStatus] = useState('')
   const statusDropdownRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
@@ -54,7 +57,12 @@ export default function FeaturesPage() {
   const updateFeature = useUpdateFeature()
   const deleteFeature = useDeleteFeature()
   const createFeature = useCreateFeature()
+  const batchUpdateFeatureStatus = useBatchUpdateFeatureStatus()
   const { canWrite } = useProjectRole(projectIdNum)
+
+  useEffect(() => {
+    setSelectedFeatureIds(prev => prev.filter(featureId => features.some(feature => feature.id === featureId)))
+  }, [features])
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -83,9 +91,48 @@ export default function FeaturesPage() {
         featureId,
         projectId: projectIdNum,
       })
+      setSelectedFeatureIds(prev => prev.filter(selectedId => selectedId !== featureId))
       refetch()
     } catch (error) {
       console.error('Failed to delete feature:', error)
+    }
+  }
+
+  const toggleFeatureSelection = (featureId: number) => {
+    setSelectedFeatureIds(prev =>
+      prev.includes(featureId)
+        ? prev.filter(selectedId => selectedId !== featureId)
+        : [...prev, featureId]
+    )
+  }
+
+  const visibleFeatureIds = features.map(feature => feature.id)
+  const allVisibleFeaturesSelected = visibleFeatureIds.length > 0 && visibleFeatureIds.every(featureId => selectedFeatureIds.includes(featureId))
+
+  const handleToggleVisibleFeatures = () => {
+    setSelectedFeatureIds(prev => {
+      if (allVisibleFeaturesSelected) {
+        return prev.filter(featureId => !visibleFeatureIds.includes(featureId))
+      }
+
+      return Array.from(new Set([...prev, ...visibleFeatureIds]))
+    })
+  }
+
+  const handleBatchStatusUpdate = async () => {
+    if (selectedFeatureIds.length === 0 || !batchStatus) return
+
+    try {
+      await batchUpdateFeatureStatus.mutateAsync({
+        projectId: projectIdNum,
+        featureIds: selectedFeatureIds,
+        status: batchStatus,
+      })
+      setSelectedFeatureIds([])
+      setBatchStatus('')
+      refetch()
+    } catch (error) {
+      console.error('Failed to batch update features:', error)
     }
   }
 
@@ -254,6 +301,41 @@ export default function FeaturesPage() {
         </select>
       </div>
 
+      {canWrite && features.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-green-100 bg-green-50 px-3 py-2">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={allVisibleFeaturesSelected}
+              onChange={handleToggleVisibleFeatures}
+              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <span>{selectedFeatureIds.length > 0 ? `${selectedFeatureIds.length} selected` : 'Select all on page'}</span>
+          </label>
+          <select
+            value={batchStatus}
+            onChange={(e) => setBatchStatus(e.target.value)}
+            disabled={selectedFeatureIds.length === 0 || batchUpdateFeatureStatus.isPending}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-60"
+          >
+            <option value="">Batch status</option>
+            {Object.values(FeatureStatus).map((status) => (
+              <option key={status} value={status}>
+                {FeatureStatusDisplay[status] || status}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleBatchStatusUpdate}
+            disabled={selectedFeatureIds.length === 0 || !batchStatus || batchUpdateFeatureStatus.isPending}
+            className="px-3 py-1.5 text-sm font-medium bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {batchUpdateFeatureStatus.isPending ? 'Updating...' : 'Update Status'}
+          </button>
+        </div>
+      )}
+
       {/* Features List */}
       {isLoading ? (
             <div className="flex justify-center items-center py-8">
@@ -278,7 +360,16 @@ export default function FeaturesPage() {
                   className="bg-white border border-gray-200 rounded-lg px-4 py-3 hover:border-gray-300 hover:shadow-sm transition group"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      {canWrite && (
+                        <input
+                          type="checkbox"
+                          checked={selectedFeatureIds.includes(feature.id)}
+                          onChange={() => toggleFeatureSelection(feature.id)}
+                          className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-1 mb-1">
                         <span className="text-xs font-mono text-gray-500">{feature.refNum}</span>
                         <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(feature.status)}`}>
@@ -313,6 +404,7 @@ export default function FeaturesPage() {
                           </span>
                         )}
                       </div>
+                    </div>
                     </div>
                     <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition">
                       {canWrite && (
@@ -382,6 +474,8 @@ export default function FeaturesPage() {
             assignedTo?: number
             points: number
             deadline?: string
+            itemType?: string
+            itemId?: number
             tags: string
             cascadeCompletion: boolean
           }) => {

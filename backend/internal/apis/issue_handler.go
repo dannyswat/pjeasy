@@ -47,6 +47,11 @@ type UpdateIssueStatusRequest struct {
 	Status string `json:"status" validate:"required"`
 }
 
+type BatchUpdateIssueStatusRequest struct {
+	IssueIDs []int  `json:"issueIds" validate:"required,min=1,dive,gt=0"`
+	Status   string `json:"status" validate:"required"`
+}
+
 type UpdateIssueAssigneeRequest struct {
 	AssignedTo int `json:"assignedTo" validate:"required"`
 }
@@ -76,6 +81,10 @@ type IssuesListResponse struct {
 	Total    int64           `json:"total"`
 	Page     int             `json:"page"`
 	PageSize int             `json:"pageSize"`
+}
+
+type BatchUpdateIssueStatusResponse struct {
+	Issues []IssueResponse `json:"issues"`
 }
 
 // toIssueResponse converts an issue model to response
@@ -189,6 +198,48 @@ func (h *IssueHandler) UpdateIssueStatus(c echo.Context) error {
 
 	response := toIssueResponse(issue)
 	return c.JSON(http.StatusOK, response)
+}
+
+// BatchUpdateIssueStatus updates multiple issues to the same status.
+func (h *IssueHandler) BatchUpdateIssueStatus(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	req := new(BatchUpdateIssueStatusRequest)
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
+
+	if err := c.Validate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	updatedIssues := make([]IssueResponse, 0, len(req.IssueIDs))
+	for _, issueID := range req.IssueIDs {
+		issue, err := h.issueService.GetIssue(issueID, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if issue.ProjectID != projectID {
+			return echo.NewHTTPError(http.StatusBadRequest, "issue does not belong to project")
+		}
+
+		updatedIssue, err := h.issueService.UpdateIssueStatus(issueID, req.Status, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		updatedIssues = append(updatedIssues, toIssueResponse(updatedIssue))
+	}
+
+	return c.JSON(http.StatusOK, BatchUpdateIssueStatusResponse{Issues: updatedIssues})
 }
 
 // UpdateIssueAssignee updates an issue's assignee
@@ -427,6 +478,7 @@ func (h *IssueHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddlewa
 	issuesGroup.GET("", h.GetProjectIssues)
 	issuesGroup.GET("/my-issues", h.GetMyIssues)
 	issuesGroup.GET("/by-item", h.GetIssuesByItemReference)
+	issuesGroup.PATCH("/status", h.BatchUpdateIssueStatus)
 
 	issueItem := e.Group("/api/issues/:id", authMiddleware.RequireAuth)
 

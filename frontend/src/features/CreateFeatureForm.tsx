@@ -4,6 +4,7 @@ import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import DatePicker from '../components/DatePicker'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
 import { FeaturePriority } from './featureTypes'
 
 interface CreateFeatureFormProps {
@@ -15,6 +16,8 @@ interface CreateFeatureFormProps {
     assignedTo?: number
     points: number
     deadline?: string
+    itemType?: string
+    itemId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -29,6 +32,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
   const [assignedTo, setAssignedTo] = useState<number | undefined>(undefined)
   const [points, setPoints] = useState<number | undefined>(undefined)
   const [deadline, setDeadline] = useState<string>('')
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
@@ -41,6 +45,8 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
       assignedTo,
       points: points ?? 0,
       deadline: deadline || undefined,
+      itemType: linkedIdeaId ? 'ideas' : undefined,
+      itemId: linkedIdeaId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -145,6 +151,12 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
               placeholder="Select assignee (optional)"
             />
           </div>
+
+          <IdeaReferenceSelect
+            projectId={projectId}
+            value={linkedIdeaId}
+            onChange={setLinkedIdeaId}
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

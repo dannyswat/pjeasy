@@ -4,6 +4,7 @@ import { useListTasks } from './useListTasks'
 import { useCreateTask } from './useCreateTask'
 import { useUpdateTask } from './useUpdateTask'
 import { useUpdateTaskStatus } from './useUpdateTaskStatus'
+import { useBatchUpdateTaskStatus } from './useBatchUpdateTaskStatus'
 import { useUpdateTaskAssignee } from './useUpdateTaskAssignee'
 import { useDeleteTask } from './useDeleteTask'
 import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from './taskTypes'
@@ -44,6 +45,8 @@ export default function TasksPage() {
   const [assigningTaskId, setAssigningTaskId] = useState<number | null>(null)
   const [selectedAssignee, setSelectedAssignee] = useState<number | undefined>(undefined)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [selectedTaskIds, setSelectedTaskIds] = useState<number[]>([])
+  const [batchStatus, setBatchStatus] = useState('')
   const statusDropdownRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
@@ -60,12 +63,16 @@ export default function TasksPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+  useEffect(() => {
+    setSelectedTaskIds(prev => prev.filter(taskId => tasks.some(task => task.id === taskId)))
+  }, [tasks])
   const { user } = useMeApi()
   const { canWrite } = useProjectRole(projectIdNum)
   const { sprint: activeSprint, refetch: refetchSprint } = useGetActiveSprint({ projectId: projectIdNum })
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const updateTaskStatus = useUpdateTaskStatus()
+  const batchUpdateTaskStatus = useBatchUpdateTaskStatus()
   const updateTaskAssignee = useUpdateTaskAssignee()
   const deleteTask = useDeleteTask()
   const addTaskToSprint = useAddTaskToSprint()
@@ -115,6 +122,8 @@ export default function TasksPage() {
     estimatedHours?: number
     assigneeId?: number
     deadline?: string
+    itemType?: string
+    itemId?: number
     tags: string 
   }) => {
     try {
@@ -174,10 +183,49 @@ export default function TasksPage() {
       await deleteTask.mutateAsync({
         taskId,
       })
+      setSelectedTaskIds(prev => prev.filter(selectedId => selectedId !== taskId))
       setViewingTask(null)
       refetch()
     } catch (error) {
       console.error('Failed to delete task:', error)
+    }
+  }
+
+  const toggleTaskSelection = (taskId: number) => {
+    setSelectedTaskIds(prev =>
+      prev.includes(taskId)
+        ? prev.filter(selectedId => selectedId !== taskId)
+        : [...prev, taskId]
+    )
+  }
+
+  const visibleTaskIds = tasks.map(task => task.id)
+  const allVisibleTasksSelected = visibleTaskIds.length > 0 && visibleTaskIds.every(taskId => selectedTaskIds.includes(taskId))
+
+  const handleToggleVisibleTasks = () => {
+    setSelectedTaskIds(prev => {
+      if (allVisibleTasksSelected) {
+        return prev.filter(taskId => !visibleTaskIds.includes(taskId))
+      }
+
+      return Array.from(new Set([...prev, ...visibleTaskIds]))
+    })
+  }
+
+  const handleBatchStatusUpdate = async () => {
+    if (selectedTaskIds.length === 0 || !batchStatus) return
+
+    try {
+      await batchUpdateTaskStatus.mutateAsync({
+        projectId: projectIdNum,
+        taskIds: selectedTaskIds,
+        status: batchStatus,
+      })
+      setSelectedTaskIds([])
+      setBatchStatus('')
+      refetch()
+    } catch (error) {
+      console.error('Failed to batch update tasks:', error)
     }
   }
 
@@ -640,6 +688,41 @@ export default function TasksPage() {
             </div>
           </div>
 
+          {canWrite && tasks.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={allVisibleTasksSelected}
+                  onChange={handleToggleVisibleTasks}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>{selectedTaskIds.length > 0 ? `${selectedTaskIds.length} selected` : 'Select all on page'}</span>
+              </label>
+              <select
+                value={batchStatus}
+                onChange={(e) => setBatchStatus(e.target.value)}
+                disabled={selectedTaskIds.length === 0 || batchUpdateTaskStatus.isPending}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:opacity-60"
+              >
+                <option value="">Batch status</option>
+                {Object.values(TaskStatus).map((status) => (
+                  <option key={status} value={status}>
+                    {TaskStatusDisplay[status as keyof typeof TaskStatusDisplay] || status}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleBatchStatusUpdate}
+                disabled={selectedTaskIds.length === 0 || !batchStatus || batchUpdateTaskStatus.isPending}
+                className="px-3 py-1.5 text-sm font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {batchUpdateTaskStatus.isPending ? 'Updating...' : 'Update Status'}
+              </button>
+            </div>
+          )}
+
           {/* Tasks List */}
           {isLoading ? (
             <div className="flex justify-center items-center py-8">
@@ -664,11 +747,21 @@ export default function TasksPage() {
                     key={task.id} 
                     className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition group"
                   >
-                    <div 
-                      className="flex-1 cursor-pointer" 
-                      onClick={() => setViewingTask(task)}
-                    >
-                      <div className="flex items-center flex-wrap gap-1">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {canWrite && (
+                        <input
+                          type="checkbox"
+                          checked={selectedTaskIds.includes(task.id)}
+                          onChange={() => toggleTaskSelection(task.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      )}
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer" 
+                        onClick={() => setViewingTask(task)}
+                      >
+                        <div className="flex items-center flex-wrap gap-1">
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
                           <span>{task.title}</span>
                         </h3>
@@ -688,6 +781,7 @@ export default function TasksPage() {
                             {task.estimatedHours}h
                           </span>
                         )}
+                        </div>
                       </div>
                     </div>
                     

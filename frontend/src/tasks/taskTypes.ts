@@ -47,6 +47,11 @@ export interface UpdateTaskStatusRequest {
   status: string
 }
 
+export interface BatchUpdateTaskStatusRequest {
+  taskIds: number[]
+  status: string
+}
+
 export interface UpdateTaskAssigneeRequest {
   assigneeId?: number
 }

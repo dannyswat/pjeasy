@@ -4,6 +4,7 @@ import { useListIssues } from './useListIssues'
 import { useUpdateIssue } from './useUpdateIssue'
 import { useDeleteIssue } from './useDeleteIssue'
 import { useCreateIssue } from './useCreateIssue'
+import { useBatchUpdateIssueStatus } from './useBatchUpdateIssueStatus'
 import { IssueStatus, IssuePriority, IssueStatusDisplay, type IssueResponse } from './issueTypes'
 import EditIssueForm from './EditIssueForm'
 import CreateIssueForm from './CreateIssueForm'
@@ -29,6 +30,8 @@ export default function IssuesPage() {
   const [editingIssue, setEditingIssue] = useState<IssueResponse | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [selectedIssueIds, setSelectedIssueIds] = useState<number[]>([])
+  const [batchStatus, setBatchStatus] = useState('')
   const statusDropdownRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
@@ -43,6 +46,7 @@ export default function IssuesPage() {
   const updateIssue = useUpdateIssue()
   const deleteIssue = useDeleteIssue()
   const createIssue = useCreateIssue()
+  const batchUpdateIssueStatus = useBatchUpdateIssueStatus()
   const { canWrite } = useProjectRole(projectIdNum)
 
   // Close dropdown when clicking outside
@@ -55,6 +59,10 @@ export default function IssuesPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    setSelectedIssueIds(prev => prev.filter(issueId => issues.some(issue => issue.id === issueId)))
+  }, [issues])
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -83,9 +91,48 @@ export default function IssuesPage() {
         issueId,
         projectId: projectIdNum,
       })
+      setSelectedIssueIds(prev => prev.filter(selectedId => selectedId !== issueId))
       refetch()
     } catch (error) {
       console.error('Failed to delete issue:', error)
+    }
+  }
+
+  const toggleIssueSelection = (issueId: number) => {
+    setSelectedIssueIds(prev =>
+      prev.includes(issueId)
+        ? prev.filter(selectedId => selectedId !== issueId)
+        : [...prev, issueId]
+    )
+  }
+
+  const visibleIssueIds = issues.map(issue => issue.id)
+  const allVisibleIssuesSelected = visibleIssueIds.length > 0 && visibleIssueIds.every(issueId => selectedIssueIds.includes(issueId))
+
+  const handleToggleVisibleIssues = () => {
+    setSelectedIssueIds(prev => {
+      if (allVisibleIssuesSelected) {
+        return prev.filter(issueId => !visibleIssueIds.includes(issueId))
+      }
+
+      return Array.from(new Set([...prev, ...visibleIssueIds]))
+    })
+  }
+
+  const handleBatchStatusUpdate = async () => {
+    if (selectedIssueIds.length === 0 || !batchStatus) return
+
+    try {
+      await batchUpdateIssueStatus.mutateAsync({
+        projectId: projectIdNum,
+        issueIds: selectedIssueIds,
+        status: batchStatus,
+      })
+      setSelectedIssueIds([])
+      setBatchStatus('')
+      refetch()
+    } catch (error) {
+      console.error('Failed to batch update issues:', error)
     }
   }
 
@@ -246,6 +293,41 @@ export default function IssuesPage() {
         </select>
       </div>
 
+      {canWrite && issues.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-red-100 bg-red-50 px-3 py-2">
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={allVisibleIssuesSelected}
+              onChange={handleToggleVisibleIssues}
+              className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+            />
+            <span>{selectedIssueIds.length > 0 ? `${selectedIssueIds.length} selected` : 'Select all on page'}</span>
+          </label>
+          <select
+            value={batchStatus}
+            onChange={(e) => setBatchStatus(e.target.value)}
+            disabled={selectedIssueIds.length === 0 || batchUpdateIssueStatus.isPending}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:opacity-60"
+          >
+            <option value="">Batch status</option>
+            {Object.values(IssueStatus).map((status) => (
+              <option key={status} value={status}>
+                {IssueStatusDisplay[status] || status}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleBatchStatusUpdate}
+            disabled={selectedIssueIds.length === 0 || !batchStatus || batchUpdateIssueStatus.isPending}
+            className="px-3 py-1.5 text-sm font-medium bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {batchUpdateIssueStatus.isPending ? 'Updating...' : 'Update Status'}
+          </button>
+        </div>
+      )}
+
       {/* Issues List */}
       {isLoading ? (
             <div className="flex justify-center items-center py-8">
@@ -271,7 +353,17 @@ export default function IssuesPage() {
                     className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition group cursor-pointer"
                     onClick={() => navigate(`/projects/${projectId}/issues/${issue.id}`)}
                   >
-                    <div className="flex-1">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {canWrite && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIssueIds.includes(issue.id)}
+                          onChange={() => toggleIssueSelection(issue.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-1">
                         <span className="text-xs text-gray-500">[{issue.refNum}]</span>
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition">
@@ -289,6 +381,7 @@ export default function IssuesPage() {
                           </span>
                         )}
                       </div>
+                    </div>
                     </div>
                     
                     <div className="flex items-center space-x-2 ml-3">

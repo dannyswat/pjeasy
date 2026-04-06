@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
 import { IssuePriority } from './issueTypes'
 
 interface CreateIssueFormProps {
@@ -13,6 +14,8 @@ interface CreateIssueFormProps {
     priority: string
     assignedTo?: number
     points: number
+    itemType?: string
+    itemId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -26,6 +29,7 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
   const [priority, setPriority] = useState<string>(IssuePriority.URGENT)
   const [assignedTo, setAssignedTo] = useState<number | undefined>(undefined)
   const [points, setPoints] = useState<number | undefined>(undefined)
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
@@ -37,6 +41,8 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
       priority,
       assignedTo,
       points: points ?? 0,
+      itemType: linkedIdeaId ? 'ideas' : undefined,
+      itemId: linkedIdeaId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -118,6 +124,12 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
               placeholder="Select assignee (optional)"
             />
           </div>
+
+          <IdeaReferenceSelect
+            projectId={projectId}
+            value={linkedIdeaId}
+            onChange={setLinkedIdeaId}
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

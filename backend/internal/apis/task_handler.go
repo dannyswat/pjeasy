@@ -50,6 +50,11 @@ type UpdateTaskStatusRequest struct {
 	Status string `json:"status" validate:"required,oneof='Open' 'In Progress' 'On Hold' 'Blocked' 'Completed' 'Rejected' 'Reopened' 'Closed'"`
 }
 
+type BatchUpdateTaskStatusRequest struct {
+	TaskIDs []int  `json:"taskIds" validate:"required,min=1,dive,gt=0"`
+	Status  string `json:"status" validate:"required,oneof='Open' 'In Progress' 'On Hold' 'Blocked' 'Completed' 'Rejected' 'Reopened' 'Closed'"`
+}
+
 type UpdateTaskAssigneeRequest struct {
 	AssigneeID *int `json:"assigneeId"`
 }
@@ -79,6 +84,10 @@ type TaskListResponse struct {
 	Total int64          `json:"total"`
 	Page  int            `json:"page"`
 	Size  int            `json:"size"`
+}
+
+type BatchUpdateTaskStatusResponse struct {
+	Tasks []TaskResponse `json:"tasks"`
 }
 
 func toTaskResponse(task *tasks.Task) TaskResponse {
@@ -245,6 +254,48 @@ func (h *TaskHandler) UpdateTaskStatus(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, toTaskResponse(task))
+}
+
+// BatchUpdateTaskStatus updates multiple tasks to the same status.
+func (h *TaskHandler) BatchUpdateTaskStatus(c echo.Context) error {
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	req := new(BatchUpdateTaskStatusRequest)
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+	}
+
+	if err := c.Validate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	updatedTasks := make([]TaskResponse, 0, len(req.TaskIDs))
+	for _, taskID := range req.TaskIDs {
+		task, err := h.taskService.GetTask(taskID, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+		if task.ProjectID != projectID {
+			return echo.NewHTTPError(http.StatusBadRequest, "task does not belong to project")
+		}
+
+		updatedTask, err := h.taskService.UpdateTaskStatus(taskID, req.Status, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		updatedTasks = append(updatedTasks, toTaskResponse(updatedTask))
+	}
+
+	return c.JSON(http.StatusOK, BatchUpdateTaskStatusResponse{Tasks: updatedTasks})
 }
 
 // UpdateTaskAssignee updates a task's assignee
@@ -444,6 +495,7 @@ func (h *TaskHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddlewar
 	tasks.POST("", h.CreateTask)
 	tasks.GET("", h.GetProjectTasks)
 	tasks.GET("/by-item", h.GetTasksByItemReference)
+	tasks.PATCH("/status", h.BatchUpdateTaskStatus)
 
 	taskItem := e.Group("/api/tasks/:id", authMiddleware.RequireAuth)
 

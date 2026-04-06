@@ -50,6 +50,11 @@ type UpdateFeatureStatusRequest struct {
 	Status string `json:"status" validate:"required"`
 }
 
+type BatchUpdateFeatureStatusRequest struct {
+	FeatureIDs []int  `json:"featureIds" validate:"required,min=1,dive,gt=0"`
+	Status     string `json:"status" validate:"required"`
+}
+
 type UpdateFeatureAssigneeRequest struct {
 	AssignedTo int `json:"assignedTo" validate:"required"`
 }
@@ -80,6 +85,10 @@ type FeaturesListResponse struct {
 	Total    int64             `json:"total"`
 	Page     int               `json:"page"`
 	PageSize int               `json:"pageSize"`
+}
+
+type BatchUpdateFeatureStatusResponse struct {
+	Features []FeatureResponse `json:"features"`
 }
 
 // toFeatureResponse converts a feature model to response
@@ -232,6 +241,48 @@ func (h *FeatureHandler) UpdateFeatureStatus(c echo.Context) error {
 
 	response := toFeatureResponse(feature)
 	return c.JSON(http.StatusOK, response)
+}
+
+// BatchUpdateFeatureStatus updates multiple features to the same status.
+func (h *FeatureHandler) BatchUpdateFeatureStatus(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	req := new(BatchUpdateFeatureStatusRequest)
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
+
+	if err := c.Validate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	updatedFeatures := make([]FeatureResponse, 0, len(req.FeatureIDs))
+	for _, featureID := range req.FeatureIDs {
+		feature, err := h.featureService.GetFeature(featureID, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if feature.ProjectID != projectID {
+			return echo.NewHTTPError(http.StatusBadRequest, "feature does not belong to project")
+		}
+
+		updatedFeature, err := h.featureService.UpdateFeatureStatus(featureID, req.Status, userID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		updatedFeatures = append(updatedFeatures, toFeatureResponse(updatedFeature))
+	}
+
+	return c.JSON(http.StatusOK, BatchUpdateFeatureStatusResponse{Features: updatedFeatures})
 }
 
 // UpdateFeatureAssignee updates a feature's assignee
@@ -460,6 +511,7 @@ func (h *FeatureHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddle
 	featuresGroup.GET("", h.GetProjectFeatures)
 	featuresGroup.GET("/my-features", h.GetMyFeatures)
 	featuresGroup.GET("/by-item", h.GetFeaturesByItemReference)
+	featuresGroup.PATCH("/status", h.BatchUpdateFeatureStatus)
 
 	featureItem := e.Group("/api/features/:id", authMiddleware.RequireAuth)
 
