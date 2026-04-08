@@ -22,16 +22,20 @@ export default function RelatedIdeas({ projectId, itemType, itemId }: RelatedIde
   const handleCreateIdea = async (data: {
     title: string
     description: string
+    releaseId?: number
     tags: string
+    cascadeCompletion: boolean
   }) => {
     try {
       await createIdea.mutateAsync({
         projectId,
         title: data.title,
         description: data.description,
+        releaseId: data.releaseId,
         itemType,
         itemId,
         tags: data.tags,
+        cascadeCompletion: data.cascadeCompletion,
       })
       setShowCreateModal(false)
       refetch()
@@ -72,6 +76,7 @@ export default function RelatedIdeas({ projectId, itemType, itemId }: RelatedIde
       {/* Create Idea Modal */}
       {showCreateModal && (
         <CreateIdeaForm
+          projectId={projectId}
           onSubmit={handleCreateIdea}
           onCancel={() => setShowCreateModal(false)}
           isPending={createIdea.isPending}

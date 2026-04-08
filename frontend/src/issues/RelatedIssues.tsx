@@ -25,6 +25,7 @@ export default function RelatedIssues({ projectId, itemType, itemId }: RelatedIs
     priority: string
     assignedTo?: number
     points: number
+    releaseId?: number
     tags: string
   }) => {
     try {
@@ -35,6 +36,7 @@ export default function RelatedIssues({ projectId, itemType, itemId }: RelatedIs
         priority: data.priority,
         assignedTo: data.assignedTo,
         points: data.points,
+        releaseId: data.releaseId,
         itemType,
         itemId,
         tags: data.tags,

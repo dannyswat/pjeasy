@@ -4,6 +4,7 @@ import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { IssuePriority } from './issueTypes'
 
 interface CreateIssueFormProps {
@@ -14,6 +15,7 @@ interface CreateIssueFormProps {
     priority: string
     assignedTo?: number
     points: number
+    releaseId?: number
     itemType?: string
     itemId?: number
     tags: string
@@ -29,6 +31,7 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
   const [priority, setPriority] = useState<string>(IssuePriority.URGENT)
   const [assignedTo, setAssignedTo] = useState<number | undefined>(undefined)
   const [points, setPoints] = useState<number | undefined>(undefined)
+  const [releaseId, setReleaseId] = useState<number | undefined>(undefined)
   const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
@@ -41,6 +44,7 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
       priority,
       assignedTo,
       points: points ?? 0,
+      releaseId,
       itemType: linkedIdeaId ? 'ideas' : undefined,
       itemId: linkedIdeaId,
       tags: tags.join(','),
@@ -124,6 +128,13 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
               placeholder="Select assignee (optional)"
             />
           </div>
+
+          <ReleaseSelect
+            projectId={projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
 
           <IdeaReferenceSelect
             projectId={projectId}

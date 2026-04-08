@@ -10,6 +10,7 @@ import EditFeatureForm from './EditFeatureForm'
 import CreateFeatureForm from './CreateFeatureForm'
 import { UserLabel } from '../components/UserLabel'
 import { useProjectRole } from '../projects/useProjectRole'
+import ReleaseBadge from '../components/ReleaseBadge'
 
 // Default statuses exclude Completed and Closed
 const defaultFeatureStatuses = [
@@ -378,6 +379,7 @@ export default function FeaturesPage() {
                         <span className={`px-2 py-0.5 text-xs rounded-full border ${getPriorityColor(feature.priority)}`}>
                           {feature.priority}
                         </span>
+                        <ReleaseBadge releaseId={feature.releaseId} />
                         {formatDeadline(feature.deadline)}
                       </div>
                       <h3 
@@ -474,6 +476,7 @@ export default function FeaturesPage() {
             assignedTo?: number
             points: number
             deadline?: string
+            releaseId?: number
             itemType?: string
             itemId?: number
             tags: string
@@ -508,6 +511,7 @@ export default function FeaturesPage() {
             assignedTo?: number
             points: number
             deadline?: string
+            releaseId?: number
             tags: string
             cascadeCompletion: boolean
           }) => {

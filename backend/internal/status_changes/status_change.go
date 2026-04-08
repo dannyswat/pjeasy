@@ -27,12 +27,13 @@ const (
 	ItemTypeWikiPage      = "wiki-page"
 	ItemTypeSprint        = "sprint"
 	ItemTypeReview        = "review"
+	ItemTypeRelease       = "release"
 )
 
 func IsValidItemType(itemType string) bool {
 	switch itemType {
 	case ItemTypeIdea, ItemTypeIssue, ItemTypeFeature, ItemTypeTask,
-		ItemTypeServiceTicket, ItemTypeWikiPage, ItemTypeSprint, ItemTypeReview:
+		ItemTypeServiceTicket, ItemTypeWikiPage, ItemTypeSprint, ItemTypeReview, ItemTypeRelease:
 		return true
 	}
 	return false

@@ -13,6 +13,7 @@ type Sprint struct {
 	StartDate   *time.Time `json:"startDate,omitempty"`
 	EndDate     *time.Time `json:"endDate,omitempty"`
 	MilestoneID *int       `gorm:"index" json:"milestoneId,omitempty"`
+	ReleaseID   *int       `gorm:"index" json:"releaseId,omitempty"`
 	Status      string     `gorm:"not null;size:50;default:'Planning'" json:"status"` // Planning, Active, Closed
 	CreatedBy   int        `gorm:"not null;index" json:"createdBy"`
 	CreatedAt   time.Time  `gorm:"not null" json:"createdAt"`

@@ -7,6 +7,7 @@ import { useDeleteIdea } from './useDeleteIdea'
 import { IdeaStatus, type IdeaResponse } from './ideaTypes'
 import EditIdeaForm from './EditIdeaForm'
 import { useProjectRole } from '../projects/useProjectRole'
+import ReleaseBadge from '../components/ReleaseBadge'
 
 export default function IdeasPage() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -161,6 +162,7 @@ export default function IdeasPage() {
                         }`}>
                           {idea.status}
                         </span>
+                        <ReleaseBadge releaseId={idea.releaseId} />
                       </div>
                     </div>
                     

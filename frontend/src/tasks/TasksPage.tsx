@@ -21,6 +21,7 @@ import { useAddTaskToSprint } from '../sprints/useAddTaskToSprint'
 import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
 import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
+import ReleaseBadge from '../components/ReleaseBadge'
 
 // Default statuses exclude Completed and Closed
 const defaultTaskStatuses = [
@@ -122,6 +123,7 @@ export default function TasksPage() {
     estimatedHours?: number
     assigneeId?: number
     deadline?: string
+    releaseId?: number
     itemType?: string
     itemId?: number
     tags: string 
@@ -145,6 +147,7 @@ export default function TasksPage() {
     estimatedHours?: number
     assigneeId?: number
     deadline?: string
+    releaseId?: number
     tags: string
   }) => {
     if (!editingTask) return
@@ -353,6 +356,7 @@ export default function TasksPage() {
                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getPriorityColor(viewingTask.priority)}`}>
                     {viewingTask.priority}
                   </span>
+                  <ReleaseBadge releaseId={viewingTask.releaseId} />
                 </div>
               </div>
             </div>
@@ -771,6 +775,7 @@ export default function TasksPage() {
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(task.priority)}`}>
                           {task.priority}
                         </span>
+                          <ReleaseBadge releaseId={task.releaseId} />
                         {task.sprintId && (
                           <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 border border-green-200" title={`In Sprint`}>
                             🏃 Sprint

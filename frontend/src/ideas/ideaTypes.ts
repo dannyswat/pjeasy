@@ -5,6 +5,7 @@ export interface IdeaResponse {
   title: string
   description: string
   status: string // 'Open' | 'Closed'
+  releaseId?: number
   itemType?: string
   itemId?: number
   tags?: string
@@ -17,6 +18,7 @@ export interface IdeaResponse {
 export interface CreateIdeaRequest {
   title: string
   description: string
+  releaseId?: number
   itemType?: string
   itemId?: number
   tags?: string
@@ -26,6 +28,7 @@ export interface CreateIdeaRequest {
 export interface UpdateIdeaRequest {
   title: string
   description: string
+  releaseId?: number
   tags?: string
   cascadeCompletion?: boolean
 }

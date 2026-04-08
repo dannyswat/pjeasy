@@ -61,6 +61,9 @@ export default function ProjectDashboardPage() {
 
   const isLoading = memberLoading || managerLoading
   const isManager = managerData?.isManager ?? false
+  const showSprintOverview = !!managerData?.sprintTaskStats
+  const showServiceTickets = !!managerData?.serviceTicketStats &&
+    (managerData.serviceTicketStats.newCount > 0 || managerData.serviceTicketStats.openCount > 0)
 
   if (isLoading) {
     return (
@@ -86,9 +89,10 @@ export default function ProjectDashboardPage() {
       </div>
 
       {/* Manager Dashboard */}
-      {isManager && managerData && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {isManager && managerData && (showSprintOverview || showServiceTickets) && (
+        <div className={`grid grid-cols-1 gap-4 ${showSprintOverview && showServiceTickets ? 'lg:grid-cols-2' : ''}`}>
           {/* Sprint Task Stats */}
+          {showSprintOverview && (
           <div className="bg-white rounded-lg border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Sprint Overview</h2>
@@ -168,8 +172,10 @@ export default function ProjectDashboardPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Service Ticket Stats */}
+          {showServiceTickets && (
           <div className="bg-white rounded-lg border border-gray-200 p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Service Tickets</h2>
@@ -211,6 +217,7 @@ export default function ProjectDashboardPage() {
               </div>
             )}
           </div>
+          )}
         </div>
       )}
 

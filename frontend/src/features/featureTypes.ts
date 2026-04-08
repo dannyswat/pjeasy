@@ -10,6 +10,7 @@ export interface FeatureResponse {
   sprintId?: number
   points: number
   deadline?: string
+  releaseId?: number
   itemType?: string
   itemId?: number
   tags?: string
@@ -27,6 +28,7 @@ export interface CreateFeatureRequest {
   sprintId?: number
   points?: number
   deadline?: string
+  releaseId?: number
   itemType?: string
   itemId?: number
   tags?: string
@@ -41,6 +43,7 @@ export interface UpdateFeatureRequest {
   sprintId?: number
   points?: number
   deadline?: string
+  releaseId?: number
   tags?: string
   cascadeCompletion?: boolean
 }

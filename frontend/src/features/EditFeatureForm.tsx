@@ -4,6 +4,7 @@ import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import DatePicker from '../components/DatePicker'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { FeaturePriority, type FeatureResponse } from './featureTypes'
 
 interface EditFeatureFormProps {
@@ -16,6 +17,7 @@ interface EditFeatureFormProps {
     assignedTo?: number
     points: number
     deadline?: string
+    releaseId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -38,6 +40,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
   const [assignedTo, setAssignedTo] = useState<number | undefined>(feature.assignedTo)
   const [points, setPoints] = useState<number | undefined>(feature.points)
   const [deadline, setDeadline] = useState<string>(formatDateForInput(feature.deadline))
+  const [releaseId, setReleaseId] = useState<number | undefined>(feature.releaseId)
   const [tags, setTags] = useState<string[]>(feature.tags ? feature.tags.split(',').map(t => t.trim()) : [])
   const [cascadeCompletion, setCascadeCompletion] = useState(feature.cascadeCompletion)
 
@@ -50,6 +53,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
       assignedTo,
       points: points ?? 0,
       deadline: deadline || undefined,
+      releaseId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -162,6 +166,13 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
               placeholder="Select assignee (optional)"
             />
           </div>
+
+          <ReleaseSelect
+            projectId={projectId ?? feature.projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

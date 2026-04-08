@@ -2,11 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
+import ReleaseSelect from '../components/ReleaseSelect'
 import type { IdeaResponse } from './ideaTypes'
 
 interface EditIdeaFormProps {
   idea: IdeaResponse
-  onSubmit: (data: { title: string; description: string; tags: string; cascadeCompletion: boolean }) => Promise<void>
+  onSubmit: (data: { title: string; description: string; releaseId?: number; tags: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
@@ -14,6 +15,7 @@ interface EditIdeaFormProps {
 export default function EditIdeaForm({ idea, onSubmit, onCancel, isPending }: EditIdeaFormProps) {
   const [title, setTitle] = useState(idea.title)
   const [description, setDescription] = useState(idea.description)
+  const [releaseId, setReleaseId] = useState<number | undefined>(idea.releaseId)
   // Parse tags from comma-separated string on initialization
   const [tags, setTags] = useState<string[]>(
     idea.tags ? idea.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : []
@@ -25,6 +27,7 @@ export default function EditIdeaForm({ idea, onSubmit, onCancel, isPending }: Ed
     await onSubmit({
       title,
       description,
+      releaseId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -64,6 +67,13 @@ export default function EditIdeaForm({ idea, onSubmit, onCancel, isPending }: Ed
               placeholder="Enter idea description..."
             />
           </div>
+
+          <ReleaseSelect
+            projectId={idea.projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

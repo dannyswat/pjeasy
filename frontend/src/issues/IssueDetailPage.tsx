@@ -13,6 +13,7 @@ import ItemLink from '../components/ItemLink'
 import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 import { useProjectRole } from '../projects/useProjectRole'
+import ReleaseBadge from '../components/ReleaseBadge'
 
 export default function IssueDetailPage() {
   const { projectId, issueId } = useParams<{ projectId: string; issueId: string }>()
@@ -122,6 +123,7 @@ export default function IssueDetailPage() {
     priority: string
     assignedTo?: number
     points: number
+    releaseId?: number
     tags: string
     cascadeCompletion: boolean
   }) => {
@@ -199,6 +201,7 @@ export default function IssueDetailPage() {
                   <span className={`px-2 py-0.5 text-xs font-medium rounded border ${getPriorityColor(issue.priority)}`}>
                     {issue.priority}
                   </span>
+                  <ReleaseBadge releaseId={issue.releaseId} />
                   {issue.cascadeCompletion && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border bg-blue-50 text-blue-700 border-blue-200" title="Cascade Completion enabled">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -268,6 +271,7 @@ export default function IssueDetailPage() {
                             priority: issue.priority,
                             assignedTo: issue.assignedTo,
                             points: issue.points,
+                            releaseId: issue.releaseId,
                             tags: issue.tags || '',
                             cascadeCompletion: !issue.cascadeCompletion,
                           })

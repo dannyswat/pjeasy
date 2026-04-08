@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { IssuePriority, type IssueResponse } from './issueTypes'
 
 interface EditIssueFormProps {
@@ -13,6 +14,7 @@ interface EditIssueFormProps {
     priority: string
     assignedTo?: number
     points: number
+    releaseId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -26,6 +28,7 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
   const [priority, setPriority] = useState(issue.priority)
   const [assignedTo, setAssignedTo] = useState<number | undefined>(issue.assignedTo)
   const [points, setPoints] = useState<number | undefined>(issue.points)
+  const [releaseId, setReleaseId] = useState<number | undefined>(issue.releaseId)
   const [tags, setTags] = useState<string[]>(issue.tags ? issue.tags.split(',').map(t => t.trim()) : [])
   const [cascadeCompletion, setCascadeCompletion] = useState(issue.cascadeCompletion)
 
@@ -37,6 +40,7 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
       priority,
       assignedTo,
       points: points ?? 0,
+      releaseId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -118,6 +122,13 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
               placeholder="Select assignee (optional)"
             />
           </div>
+
+          <ReleaseSelect
+            projectId={issue.projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

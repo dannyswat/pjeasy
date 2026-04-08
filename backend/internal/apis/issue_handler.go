@@ -26,6 +26,7 @@ type CreateIssueRequest struct {
 	AssignedTo        int    `json:"assignedTo"`
 	SprintID          int    `json:"sprintId"`
 	Points            int    `json:"points"`
+	ReleaseID         *int   `json:"releaseId"`
 	ItemType          string `json:"itemType"`
 	ItemID            *int   `json:"itemId"`
 	Tags              string `json:"tags"`
@@ -39,6 +40,7 @@ type UpdateIssueRequest struct {
 	AssignedTo        int    `json:"assignedTo"`
 	SprintID          int    `json:"sprintId"`
 	Points            int    `json:"points"`
+	ReleaseID         *int   `json:"releaseId"`
 	Tags              string `json:"tags"`
 	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
@@ -67,6 +69,7 @@ type IssueResponse struct {
 	AssignedTo        int    `json:"assignedTo,omitempty"`
 	SprintID          int    `json:"sprintId,omitempty"`
 	Points            int    `json:"points"`
+	ReleaseID         *int   `json:"releaseId,omitempty"`
 	ItemType          string `json:"itemType,omitempty"`
 	ItemID            *int   `json:"itemId,omitempty"`
 	Tags              string `json:"tags,omitempty"`
@@ -100,6 +103,7 @@ func toIssueResponse(issue *issues.Issue) IssueResponse {
 		AssignedTo:        issue.AssignedTo,
 		SprintID:          issue.SprintID,
 		Points:            issue.Points,
+		ReleaseID:         issue.ReleaseID,
 		ItemType:          issue.ItemType,
 		ItemID:            issue.ItemID,
 		Tags:              issue.Tags,
@@ -131,7 +135,7 @@ func (h *IssueHandler) CreateIssue(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	issue, err := h.issueService.CreateIssue(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
+	issue, err := h.issueService.CreateIssue(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ReleaseID, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -161,7 +165,7 @@ func (h *IssueHandler) UpdateIssue(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	issue, err := h.issueService.UpdateIssue(issueID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.Tags, req.CascadeCompletion, userID)
+	issue, err := h.issueService.UpdateIssue(issueID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ReleaseID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

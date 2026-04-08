@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useGetSprintBoard } from './useGetSprintBoard'
+import { useAddCompletedItemsToRelease } from './useAddCompletedItemsToRelease'
 import { useUpdateTaskStatus } from '../tasks/useUpdateTaskStatus'
 import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from '../tasks/taskTypes'
 import { SprintStatus, SprintStatusDisplay } from './sprintTypes'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { UserLabel } from '../components/UserLabel'
 
 // Status columns order for the board view
@@ -20,12 +23,14 @@ export default function SprintBoardPage() {
   const { projectId, sprintId } = useParams<{ projectId: string; sprintId: string }>()
   const navigate = useNavigate()
   const [draggingTask, setDraggingTask] = useState<TaskResponse | null>(null)
+  const [selectedReleaseId, setSelectedReleaseId] = useState<number | undefined>(undefined)
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
   const sprintIdNum = sprintId ? parseInt(sprintId) : 0
 
   const { sprint, tasksByStatus, isLoading, refetch } = useGetSprintBoard({ sprintId: sprintIdNum })
   const updateTaskStatus = useUpdateTaskStatus()
+  const addCompletedItemsToRelease = useAddCompletedItemsToRelease()
 
   if (!projectId || !sprintId) {
     return (
@@ -69,6 +74,23 @@ export default function SprintBoardPage() {
       console.error('Failed to update task status:', error)
     } finally {
       setDraggingTask(null)
+    }
+  }
+
+  const handleAddCompletedItemsToRelease = async () => {
+    if (!sprint || !selectedReleaseId) {
+      return
+    }
+
+    try {
+      const result = await addCompletedItemsToRelease.mutateAsync({
+        sprintId: sprint.id,
+        releaseId: selectedReleaseId,
+      })
+      toast.success(`Added ${result.featuresUpdated + result.issuesUpdated + result.tasksUpdated} completed item(s) to the release`)
+      refetch()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add completed items to the release')
     }
   }
 
@@ -197,7 +219,25 @@ export default function SprintBoardPage() {
             )}
           </div>
         </div>
-
+    {sprint?.status === SprintStatus.ACTIVE && (
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+        <div className="min-w-52">
+          <ReleaseSelect
+            projectId={projectIdNum}
+            value={selectedReleaseId}
+            onChange={setSelectedReleaseId}
+            label=""
+          />
+        </div>
+        <button
+          onClick={handleAddCompletedItemsToRelease}
+          disabled={!selectedReleaseId || addCompletedItemsToRelease.isPending}
+          className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm disabled:opacity-50"
+        >
+          {addCompletedItemsToRelease.isPending ? 'Adding...' : 'Add Completed Items to Release'}
+        </button>
+      </div>
+    )}
 
       </div>
 

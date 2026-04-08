@@ -9,6 +9,7 @@ export interface IssueResponse {
   assignedTo?: number
   sprintId?: number
   points: number
+  releaseId?: number
   itemType?: string
   itemId?: number
   tags?: string
@@ -25,6 +26,7 @@ export interface CreateIssueRequest {
   assignedTo?: number
   sprintId?: number
   points?: number
+  releaseId?: number
   itemType?: string
   itemId?: number
   tags?: string
@@ -38,6 +40,7 @@ export interface UpdateIssueRequest {
   assignedTo?: number
   sprintId?: number
   points?: number
+  releaseId?: number
   tags?: string
   cascadeCompletion?: boolean
 }

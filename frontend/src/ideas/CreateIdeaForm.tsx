@@ -2,16 +2,19 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
+import ReleaseSelect from '../components/ReleaseSelect'
 
 interface CreateIdeaFormProps {
-  onSubmit: (data: { title: string; description: string; tags: string; cascadeCompletion: boolean }) => Promise<void>
+  projectId: number
+  onSubmit: (data: { title: string; description: string; releaseId?: number; tags: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
 
-export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: CreateIdeaFormProps) {
+export default function CreateIdeaForm({ projectId, onSubmit, onCancel, isPending }: CreateIdeaFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [releaseId, setReleaseId] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
@@ -20,6 +23,7 @@ export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: Create
     await onSubmit({
       title,
       description,
+      releaseId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -56,6 +60,13 @@ export default function CreateIdeaForm({ onSubmit, onCancel, isPending }: Create
               placeholder="Enter idea description..."
             />
           </div>
+
+          <ReleaseSelect
+            projectId={projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

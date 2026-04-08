@@ -5,6 +5,7 @@ import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { TaskPriority } from './taskTypes'
 
 interface CreateTaskFormProps {
@@ -19,6 +20,7 @@ interface CreateTaskFormProps {
     estimatedHours?: number
     assigneeId?: number
     deadline?: string
+    releaseId?: number
     itemType?: string
     itemId?: number
     tags: string
@@ -34,6 +36,7 @@ export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDe
   const [estimatedHours, setEstimatedHours] = useState('')
   const [assigneeId, setAssigneeId] = useState<number | undefined>()
   const [deadline, setDeadline] = useState('')
+  const [releaseId, setReleaseId] = useState<number | undefined>()
   const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>()
   const [tags, setTags] = useState<string[]>([])
 
@@ -46,6 +49,7 @@ export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDe
       estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
       assigneeId,
       deadline: deadline || undefined,
+      releaseId,
       itemType: linkedIdeaId ? 'ideas' : undefined,
       itemId: linkedIdeaId,
       tags: tags.join(','),
@@ -143,6 +147,13 @@ export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDe
               />
             </div>
           </div>
+
+          <ReleaseSelect
+            projectId={projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
 
           <IdeaReferenceSelect
             projectId={projectId}

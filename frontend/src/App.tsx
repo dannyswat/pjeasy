@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'react-hot-toast'
 import DefaultLayout from './layout/DefaultLayout'
 import LoginPage from './auth/LoginPage'
 import RegisterPage from './users/RegisterPage'
@@ -25,6 +26,8 @@ import FeatureDetailPage from './features/FeatureDetailPage'
 import WikiPage from './wiki/WikiPage'
 import ReviewsPage from './reviews/ReviewsPage'
 import ReviewDetailPage from './reviews/ReviewDetailPage'
+import ReleasesPage from './releases/ReleasesPage'
+import ReleaseDetailPage from './releases/ReleaseDetailPage'
 import { ProjectProvider, useProjectContext } from './projects/ProjectContext'
 import NoProjectPage from './projects/NoProjectPage'
 import UnauthorizedPage from './projects/UnauthorizedPage'
@@ -121,6 +124,7 @@ function ProjectRedirect() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" />
       <BrowserRouter>
         <Routes>
           <Route
@@ -386,6 +390,30 @@ function App() {
                 <ProjectProvider>
                   <DefaultLayout>
                     <SprintBoardPage />
+                  </DefaultLayout>
+                </ProjectProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/releases"
+            element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ReleasesPage />
+                  </DefaultLayout>
+                </ProjectProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/releases/:releaseId"
+            element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <ReleaseDetailPage />
                   </DefaultLayout>
                 </ProjectProvider>
               </ProtectedRoute>

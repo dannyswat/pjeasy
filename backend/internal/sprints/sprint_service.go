@@ -4,7 +4,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/features"
+	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
+	"github.com/dannyswat/pjeasy/internal/releases"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/status_changes"
 	"github.com/dannyswat/pjeasy/internal/tasks"
@@ -13,6 +16,9 @@ import (
 type SprintService struct {
 	sprintRepo  *SprintRepository
 	taskRepo    *tasks.TaskRepository
+	featureRepo *features.FeatureRepository
+	issueRepo   *issues.IssueRepository
+	releaseRepo *releases.ReleaseRepository
 	memberRepo  *projects.ProjectMemberRepository
 	projectRepo *projects.ProjectRepository
 	statusRepo  *status_changes.StatusChangeService
@@ -22,6 +28,9 @@ type SprintService struct {
 func NewSprintService(
 	sprintRepo *SprintRepository,
 	taskRepo *tasks.TaskRepository,
+	featureRepo *features.FeatureRepository,
+	issueRepo *issues.IssueRepository,
+	releaseRepo *releases.ReleaseRepository,
 	memberRepo *projects.ProjectMemberRepository,
 	projectRepo *projects.ProjectRepository,
 	statusRepo *status_changes.StatusChangeService,
@@ -30,11 +39,20 @@ func NewSprintService(
 	return &SprintService{
 		sprintRepo:  sprintRepo,
 		taskRepo:    taskRepo,
+		featureRepo: featureRepo,
+		issueRepo:   issueRepo,
+		releaseRepo: releaseRepo,
 		memberRepo:  memberRepo,
 		projectRepo: projectRepo,
 		statusRepo:  statusRepo,
 		uowFactory:  uowFactory,
 	}
+}
+
+type AddCompletedItemsToReleaseResult struct {
+	FeaturesUpdated int
+	IssuesUpdated   int
+	TasksUpdated    int
 }
 
 // CreateSprint creates a new sprint
@@ -535,4 +553,88 @@ func (s *SprintService) GetSprintTasksByAssignee(sprintID int, userID int) (map[
 	}
 
 	return tasksByAssignee, unassignedTasks, nil
+}
+
+// AddCompletedItemsToRelease links all completed sprint items to the selected release.
+func (s *SprintService) AddCompletedItemsToRelease(sprintID int, releaseID int, userID int) (*AddCompletedItemsToReleaseResult, error) {
+	sprint, err := s.sprintRepo.GetByID(sprintID)
+	if err != nil {
+		return nil, err
+	}
+	if sprint == nil {
+		return nil, errors.New("sprint not found")
+	}
+
+	release, err := s.releaseRepo.GetByID(releaseID)
+	if err != nil {
+		return nil, err
+	}
+	if release == nil {
+		return nil, errors.New("release not found")
+	}
+	if release.ProjectID != sprint.ProjectID {
+		return nil, errors.New("release does not belong to the same project as the sprint")
+	}
+
+	canWrite, err := s.memberRepo.CanUserWriteProject(sprint.ProjectID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !canWrite {
+		return nil, errors.New("project users can only read project items")
+	}
+
+	completedFeatures, err := s.featureRepo.GetByProjectIDAndSprintID(sprint.ProjectID, sprintID)
+	if err != nil {
+		return nil, err
+	}
+	completedIssues, err := s.issueRepo.GetByProjectIDAndSprintID(sprint.ProjectID, sprintID)
+	if err != nil {
+		return nil, err
+	}
+	completedTasks, _, err := s.taskRepo.GetBySprintID(sprintID, 0, 1000)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &AddCompletedItemsToReleaseResult{}
+	now := time.Now()
+
+	for _, feature := range completedFeatures {
+		if feature.Status != features.FeatureStatusCompleted && feature.Status != features.FeatureStatusClosed {
+			continue
+		}
+		feature.ReleaseID = &releaseID
+		feature.UpdatedAt = now
+		if err := s.featureRepo.Update(&feature); err != nil {
+			return nil, err
+		}
+		result.FeaturesUpdated++
+	}
+
+	for _, issue := range completedIssues {
+		if issue.Status != issues.IssueStatusCompleted && issue.Status != issues.IssueStatusClosed {
+			continue
+		}
+		issue.ReleaseID = &releaseID
+		issue.UpdatedAt = now
+		if err := s.issueRepo.Update(&issue); err != nil {
+			return nil, err
+		}
+		result.IssuesUpdated++
+	}
+
+	for _, task := range completedTasks {
+		if task.Status != tasks.TaskStatusCompleted && task.Status != tasks.TaskStatusClosed {
+			continue
+		}
+		task.ReleaseID = &releaseID
+		task.UpdatedAt = now
+		if err := s.taskRepo.Update(&task); err != nil {
+			return nil, err
+		}
+		result.TasksUpdated++
+	}
+
+	return result, nil
 }

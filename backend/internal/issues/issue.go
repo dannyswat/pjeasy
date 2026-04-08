@@ -16,6 +16,7 @@ type Issue struct {
 	AssignedTo        int       `gorm:"index" json:"assignedTo,omitempty"`
 	SprintID          int       `gorm:"index" json:"sprintId,omitempty"`
 	Points            int       `gorm:"default:0" json:"points"`
+	ReleaseID         *int      `gorm:"index" json:"releaseId,omitempty"`                       // Target release
 	ItemType          string    `gorm:"size:50;index:idx_issue_item" json:"itemType,omitempty"` // Type of related item (e.g., "service-tickets")
 	ItemID            *int      `gorm:"index:idx_issue_item" json:"itemId,omitempty"`           // ID of related item
 	Tags              string    `gorm:"type:text" json:"tags,omitempty"`                        // Comma-separated tags

@@ -28,6 +28,7 @@ type CreateFeatureRequest struct {
 	SprintID          int     `json:"sprintId"`
 	Points            int     `json:"points"`
 	Deadline          *string `json:"deadline"` // ISO 8601 format
+	ReleaseID         *int    `json:"releaseId"`
 	ItemType          string  `json:"itemType"`
 	ItemID            *int    `json:"itemId"`
 	Tags              string  `json:"tags"`
@@ -42,6 +43,7 @@ type UpdateFeatureRequest struct {
 	SprintID          int     `json:"sprintId"`
 	Points            int     `json:"points"`
 	Deadline          *string `json:"deadline"` // ISO 8601 format
+	ReleaseID         *int    `json:"releaseId"`
 	Tags              string  `json:"tags"`
 	CascadeCompletion bool    `json:"cascadeCompletion"`
 }
@@ -71,6 +73,7 @@ type FeatureResponse struct {
 	SprintID          int     `json:"sprintId,omitempty"`
 	Points            int     `json:"points"`
 	Deadline          *string `json:"deadline,omitempty"`
+	ReleaseID         *int    `json:"releaseId,omitempty"`
 	ItemType          string  `json:"itemType,omitempty"`
 	ItemID            *int    `json:"itemId,omitempty"`
 	Tags              string  `json:"tags,omitempty"`
@@ -111,6 +114,7 @@ func toFeatureResponse(feature *features.Feature) FeatureResponse {
 		SprintID:          feature.SprintID,
 		Points:            feature.Points,
 		Deadline:          deadline,
+		ReleaseID:         feature.ReleaseID,
 		ItemType:          feature.ItemType,
 		ItemID:            feature.ItemID,
 		Tags:              feature.Tags,
@@ -169,7 +173,7 @@ func (h *FeatureHandler) CreateFeature(c echo.Context) error {
 		return err
 	}
 
-	feature, err := h.featureService.CreateFeature(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
+	feature, err := h.featureService.CreateFeature(projectID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ReleaseID, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -204,7 +208,7 @@ func (h *FeatureHandler) UpdateFeature(c echo.Context) error {
 		return err
 	}
 
-	feature, err := h.featureService.UpdateFeature(featureID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.Tags, req.CascadeCompletion, userID)
+	feature, err := h.featureService.UpdateFeature(featureID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ReleaseID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

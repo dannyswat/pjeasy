@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useGetActiveSprint } from './useGetActiveSprint'
 import { useGetSprintBoard } from './useGetSprintBoard'
+import { useAddCompletedItemsToRelease } from './useAddCompletedItemsToRelease'
 import { useUpdateTaskStatus } from '../tasks/useUpdateTaskStatus'
 import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from '../tasks/taskTypes'
 import { SprintStatusDisplay } from './sprintTypes'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { UserLabel } from '../components/UserLabel'
 
 const statusColumns = [
@@ -20,6 +23,7 @@ export default function SprintDefaultPage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const [draggingTask, setDraggingTask] = useState<TaskResponse | null>(null)
+  const [selectedReleaseId, setSelectedReleaseId] = useState<number | undefined>(undefined)
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
 
@@ -28,6 +32,7 @@ export default function SprintDefaultPage() {
     sprintId: activeSprint?.id ?? 0,
   })
   const updateTaskStatus = useUpdateTaskStatus()
+  const addCompletedItemsToRelease = useAddCompletedItemsToRelease()
 
   const isLoading = isLoadingActive || (activeSprint && isLoadingBoard)
 
@@ -56,6 +61,23 @@ export default function SprintDefaultPage() {
       console.error('Failed to update task status:', error)
     } finally {
       setDraggingTask(null)
+    }
+  }
+
+  const handleAddCompletedItemsToRelease = async () => {
+    if (!activeSprint || !selectedReleaseId) {
+      return
+    }
+
+    try {
+      const result = await addCompletedItemsToRelease.mutateAsync({
+        sprintId: activeSprint.id,
+        releaseId: selectedReleaseId,
+      })
+      toast.success(`Added ${result.featuresUpdated + result.issuesUpdated + result.tasksUpdated} completed item(s) to the release`)
+      refetch()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add completed items to the release')
     }
   }
 
@@ -158,15 +180,36 @@ export default function SprintDefaultPage() {
             </div>
           )}
         </div>
-        <button
-          onClick={() => navigate(`/projects/${projectId}/sprints/list`)}
-          className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center text-sm"
-        >
-          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-          </svg>
-          All Sprints
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          {activeSprint && (
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <div className="min-w-52">
+                <ReleaseSelect
+                  projectId={projectIdNum}
+                  value={selectedReleaseId}
+                  onChange={setSelectedReleaseId}
+                  label=""
+                />
+              </div>
+              <button
+                onClick={handleAddCompletedItemsToRelease}
+                disabled={!selectedReleaseId || addCompletedItemsToRelease.isPending}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition text-sm disabled:opacity-50"
+              >
+                {addCompletedItemsToRelease.isPending ? 'Adding...' : 'Add Completed Items to Release'}
+              </button>
+            </div>
+          )}
+          <button
+            onClick={() => navigate(`/projects/${projectId}/sprints/list`)}
+            className="bg-white text-gray-700 border border-gray-300 px-4 py-2 rounded-lg hover:bg-gray-50 transition flex items-center text-sm"
+          >
+            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            All Sprints
+          </button>
+        </div>
       </div>
 
       {/* Sprint Goal */}

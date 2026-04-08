@@ -470,6 +470,7 @@ export default function ServiceTicketDetailPage() {
                 priority: data.priority,
                 assignedTo: data.assignedTo,
                 points: data.points,
+                releaseId: data.releaseId,
                 itemType: 'service-tickets',
                 itemId: ticket.id,
                 tags: data.tags,
@@ -489,12 +490,14 @@ export default function ServiceTicketDetailPage() {
       {/* Create Idea Modal */}
       {showCreateIdeaForm && ticket && (
         <CreateIdeaForm
+          projectId={projectIdNum}
           onSubmit={async (data) => {
             try {
               await createIdea.mutateAsync({
                 projectId: projectIdNum,
                 title: `[${ticket.refNum}] ${data.title}`,
                 description: data.description || `<p>Idea from service ticket: <strong>${ticket.title}</strong></p>`,
+                releaseId: data.releaseId,
                 itemType: 'service-tickets',
                 itemId: ticket.id,
                 tags: data.tags,

@@ -4,6 +4,7 @@ import DatePicker from '../components/DatePicker'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import ReleaseSelect from '../components/ReleaseSelect'
 import { TaskPriority } from './taskTypes'
 import type { TaskResponse } from './taskTypes'
 
@@ -16,6 +17,7 @@ interface EditTaskFormProps {
     estimatedHours?: number
     assigneeId?: number
     deadline?: string
+    releaseId?: number
     tags: string
   }) => Promise<void>
   onCancel: () => void
@@ -29,6 +31,7 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
   const [estimatedHours, setEstimatedHours] = useState(task.estimatedHours?.toString() || '')
   const [assigneeId, setAssigneeId] = useState<number | undefined>(task.assigneeId)
   const [deadline, setDeadline] = useState(task.deadline || '')
+  const [releaseId, setReleaseId] = useState<number | undefined>(task.releaseId)
   const [tags, setTags] = useState<string[]>(task.tags ? task.tags.split(',').map(t => t.trim()).filter(Boolean) : [])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -40,6 +43,7 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
       estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
       assigneeId,
       deadline: deadline || undefined,
+      releaseId,
       tags: tags.join(','),
     })
   }
@@ -135,6 +139,13 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
               />
             </div>
           </div>
+
+          <ReleaseSelect
+            projectId={task.projectId}
+            value={releaseId}
+            onChange={setReleaseId}
+            label="Release"
+          />
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

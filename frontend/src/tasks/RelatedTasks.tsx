@@ -85,6 +85,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
     estimatedHours?: number
     assigneeId?: number
     deadline?: string
+    releaseId?: number
     tags: string
   }) => {
     try {
@@ -96,6 +97,7 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
         itemId,
         assigneeId: data.assigneeId,
         deadline: data.deadline,
+        releaseId: data.releaseId,
         status: 'Open',
         priority: data.priority,
         estimatedHours: data.estimatedHours,

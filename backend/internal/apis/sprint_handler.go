@@ -48,6 +48,10 @@ type AddTaskToSprintRequest struct {
 	TaskID int `json:"taskId" validate:"required"`
 }
 
+type AddCompletedItemsToReleaseRequest struct {
+	ReleaseID int `json:"releaseId" validate:"required"`
+}
+
 type SprintResponse struct {
 	ID          int       `json:"id"`
 	ProjectID   int       `json:"projectId"`
@@ -83,6 +87,12 @@ type SprintSwimlaneResponse struct {
 	Sprint          SprintResponse         `json:"sprint"`
 	TasksByAssignee map[int][]TaskResponse `json:"tasksByAssignee"`
 	UnassignedTasks []TaskResponse         `json:"unassignedTasks"`
+}
+
+type AddCompletedItemsToReleaseResponse struct {
+	FeaturesUpdated int `json:"featuresUpdated"`
+	IssuesUpdated   int `json:"issuesUpdated"`
+	TasksUpdated    int `json:"tasksUpdated"`
 }
 
 func toSprintResponse(sprint *sprints.Sprint) SprintResponse {
@@ -148,6 +158,7 @@ func (h *SprintHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddlew
 	sprintGroup.POST("/:id/close", h.CloseSprint)
 	sprintGroup.GET("/:id/tasks", h.GetSprintTasks)
 	sprintGroup.POST("/:id/tasks", h.AddTaskToSprint)
+	sprintGroup.POST("/:id/completed-items/release", h.AddCompletedItemsToRelease)
 	sprintGroup.DELETE("/:id/tasks/:taskId", h.RemoveTaskFromSprint)
 	sprintGroup.GET("/:id/board", h.GetSprintBoard)
 	sprintGroup.GET("/:id/swimlane", h.GetSprintSwimlane)
@@ -491,6 +502,39 @@ func (h *SprintHandler) AddTaskToSprint(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, toTaskResponse(task))
+}
+
+// AddCompletedItemsToRelease links all completed sprint items to a release.
+func (h *SprintHandler) AddCompletedItemsToRelease(c echo.Context) error {
+	sprintID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid sprint ID")
+	}
+
+	req := new(AddCompletedItemsToReleaseRequest)
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
+	}
+
+	if err := c.Validate(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	result, err := h.sprintService.AddCompletedItemsToRelease(sprintID, req.ReleaseID, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, AddCompletedItemsToReleaseResponse{
+		FeaturesUpdated: result.FeaturesUpdated,
+		IssuesUpdated:   result.IssuesUpdated,
+		TasksUpdated:    result.TasksUpdated,
+	})
 }
 
 // RemoveTaskFromSprint removes a task from a sprint

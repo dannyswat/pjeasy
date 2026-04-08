@@ -13,6 +13,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
+	"github.com/dannyswat/pjeasy/internal/releases"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/reviews"
 	"github.com/dannyswat/pjeasy/internal/sequences"
@@ -50,6 +51,7 @@ type APIServer struct {
 	taskService          *tasks.TaskService
 	sprintService        *sprints.SprintService
 	reviewService        *reviews.ReviewService
+	releaseService       *releases.ReleaseService
 	wikiPageService      *wiki_pages.WikiPageService
 	statusChangeService  *status_changes.StatusChangeService
 	tokenService         *user_sessions.TokenService
@@ -66,6 +68,7 @@ type APIServer struct {
 	taskHandler          *TaskHandler
 	sprintHandler        *SprintHandler
 	reviewHandler        *ReviewHandler
+	releaseHandler       *ReleaseHandler
 	wikiPageHandler      *WikiPageHandler
 	statusChangeHandler  *StatusChangeHandler
 	dashboardHandler     *DashboardHandler
@@ -125,6 +128,7 @@ func (s *APIServer) AutoMigrate() error {
 		&sprints.Sprint{},
 		&reviews.Review{},
 		&reviews.ReviewItem{},
+		&releases.Release{},
 		&wiki_pages.WikiPage{},
 		&wiki_pages.WikiPageChange{},
 		&status_changes.StatusChange{},
@@ -210,9 +214,13 @@ func (s *APIServer) SetupAPIServer() error {
 	taskWorkflowAdapter := workflow.NewTaskWorkflowAdapter(s.workflowEngine)
 	s.taskService.SetStatusChangeHandler(taskWorkflowAdapter)
 
+	// Initialize release service
+	releaseRepo := releases.NewReleaseRepository(s.globalUOW)
+	s.releaseService = releases.NewReleaseService(releaseRepo, memberRepo, projectRepo, s.statusChangeService, s.uowFactory)
+
 	// Initialize sprint service
 	sprintRepo := sprints.NewSprintRepository(s.globalUOW)
-	s.sprintService = sprints.NewSprintService(sprintRepo, taskRepo, memberRepo, projectRepo, s.statusChangeService, s.uowFactory)
+	s.sprintService = sprints.NewSprintService(sprintRepo, taskRepo, featureRepo, issueRepo, releaseRepo, memberRepo, projectRepo, s.statusChangeService, s.uowFactory)
 
 	// Initialize review service
 	reviewRepo := reviews.NewReviewRepository(s.globalUOW)
@@ -232,6 +240,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.taskHandler = NewTaskHandler(s.taskService)
 	s.sprintHandler = NewSprintHandler(s.sprintService)
 	s.reviewHandler = NewReviewHandler(s.reviewService)
+	s.releaseHandler = NewReleaseHandler(s.releaseService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
 	s.statusChangeHandler = NewStatusChangeHandler(s.statusChangeService)
 	s.dashboardHandler = NewDashboardHandler(s.projectService, s.taskService, s.issueService, s.featureService, s.serviceTicketService, s.sprintService)
@@ -252,6 +261,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sprintHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.reviewHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.releaseHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.statusChangeHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)

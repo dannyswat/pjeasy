@@ -32,7 +32,7 @@ func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMember
 }
 
 // CreateIdea creates a new idea
-func (s *IdeaService) CreateIdea(projectID int, title, description, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Idea, error) {
+func (s *IdeaService) CreateIdea(projectID int, title, description string, releaseID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Idea, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -74,6 +74,7 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, itemType str
 		Title:             title,
 		Description:       description,
 		Status:            IdeaStatusOpen,
+		ReleaseID:         releaseID,
 		ItemType:          itemType,
 		ItemID:            itemID,
 		Tags:              tags,
@@ -98,7 +99,7 @@ func (s *IdeaService) CreateIdea(projectID int, title, description, itemType str
 }
 
 // UpdateIdea updates an idea's details
-func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, cascadeCompletion bool, updatedBy int) (*Idea, error) {
+func (s *IdeaService) UpdateIdea(ideaID int, title, description string, releaseID *int, tags string, cascadeCompletion bool, updatedBy int) (*Idea, error) {
 	idea, err := s.ideaRepo.GetByID(ideaID)
 	if err != nil {
 		return nil, err
@@ -120,6 +121,7 @@ func (s *IdeaService) UpdateIdea(ideaID int, title, description, tags string, ca
 
 	idea.Title = title
 	idea.Description = description
+	idea.ReleaseID = releaseID
 	idea.Tags = tags
 	idea.CascadeCompletion = cascadeCompletion
 	idea.UpdatedAt = time.Now()

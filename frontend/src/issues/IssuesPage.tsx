@@ -10,6 +10,7 @@ import EditIssueForm from './EditIssueForm'
 import CreateIssueForm from './CreateIssueForm'
 import { UserLabel } from '../components/UserLabel'
 import { useProjectRole } from '../projects/useProjectRole'
+import ReleaseBadge from '../components/ReleaseBadge'
 
 // Default statuses exclude Completed and Closed
 const defaultStatuses = [
@@ -375,6 +376,7 @@ export default function IssuesPage() {
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(issue.priority)}`}>
                           {issue.priority}
                         </span>
+                        <ReleaseBadge releaseId={issue.releaseId} />
                         {issue.points > 0 && (
                           <span className="text-xs text-gray-500">
                             {issue.points} pts

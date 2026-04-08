@@ -44,7 +44,7 @@ func (s *FeatureService) SetStatusChangeHandler(handler StatusChangeHandler) {
 }
 
 // CreateFeature creates a new feature
-func (s *FeatureService) CreateFeature(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Feature, error) {
+func (s *FeatureService) CreateFeature(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Feature, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -115,6 +115,7 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 		SprintID:          sprintID,
 		Points:            points,
 		Deadline:          deadline,
+		ReleaseID:         releaseID,
 		ItemType:          itemType,
 		ItemID:            itemID,
 		Tags:              tags,
@@ -139,7 +140,7 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 }
 
 // UpdateFeature updates a feature's details
-func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
+func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
 	feature, err := s.featureRepo.GetByID(featureID)
 	if err != nil {
 		return nil, err
@@ -182,6 +183,7 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 	feature.SprintID = sprintID
 	feature.Points = points
 	feature.Deadline = deadline
+	feature.ReleaseID = releaseID
 	feature.Tags = tags
 	feature.CascadeCompletion = cascadeCompletion
 	feature.UpdatedAt = time.Now()

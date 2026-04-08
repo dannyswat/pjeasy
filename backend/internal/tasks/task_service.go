@@ -53,7 +53,7 @@ func (s *TaskService) SetStatusChangeHandler(handler StatusChangeHandler) {
 }
 
 // CreateTask creates a new task
-func (s *TaskService) CreateTask(projectID int, title, description, status, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, itemType string, itemID *int, createdBy int) (*Task, error) {
+func (s *TaskService) CreateTask(projectID int, title, description, status, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, releaseID *int, itemType string, itemID *int, createdBy int) (*Task, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -110,6 +110,7 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 		AssigneeID:     assigneeID,
 		Deadline:       deadline,
 		SprintID:       sprintID,
+		ReleaseID:      releaseID,
 		ItemType:       itemType,
 		ItemID:         itemID,
 		Tags:           tags,
@@ -136,7 +137,7 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 }
 
 // UpdateTask updates a task's details
-func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, updatedBy int) (*Task, error) {
+func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, releaseID *int, updatedBy int) (*Task, error) {
 	task, err := s.taskRepo.GetByID(taskID)
 	if err != nil {
 		return nil, err
@@ -181,6 +182,7 @@ func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags 
 	task.AssigneeID = assigneeID
 	task.Deadline = deadline
 	task.SprintID = sprintID
+	task.ReleaseID = releaseID
 	task.Tags = tags
 	task.UpdatedAt = time.Now()
 

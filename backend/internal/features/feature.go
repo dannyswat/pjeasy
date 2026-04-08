@@ -17,6 +17,7 @@ type Feature struct {
 	SprintID          int        `gorm:"index" json:"sprintId,omitempty"`
 	Points            int        `gorm:"default:0" json:"points"`
 	Deadline          *time.Time `gorm:"index" json:"deadline,omitempty"`                          // Feature deadline
+	ReleaseID         *int       `gorm:"index" json:"releaseId,omitempty"`                         // Target release
 	ItemType          string     `gorm:"size:50;index:idx_feature_item" json:"itemType,omitempty"` // Type of related item (e.g., "ideas", "designs", "service-tickets")
 	ItemID            *int       `gorm:"index:idx_feature_item" json:"itemId,omitempty"`           // ID of related item
 	Tags              string     `gorm:"type:text" json:"tags,omitempty"`                          // Comma-separated tags

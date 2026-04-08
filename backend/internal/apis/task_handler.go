@@ -30,6 +30,7 @@ type CreateTaskRequest struct {
 	AssigneeID     *int    `json:"assigneeId"`
 	Deadline       *string `json:"deadline"`
 	SprintID       *int    `json:"sprintId"`
+	ReleaseID      *int    `json:"releaseId"`
 	ItemType       string  `json:"itemType"`
 	ItemID         *int    `json:"itemId"`
 	Tags           string  `json:"tags"`
@@ -43,6 +44,7 @@ type UpdateTaskRequest struct {
 	AssigneeID     *int    `json:"assigneeId"`
 	Deadline       *string `json:"deadline"`
 	SprintID       *int    `json:"sprintId"`
+	ReleaseID      *int    `json:"releaseId"`
 	Tags           string  `json:"tags"`
 }
 
@@ -71,6 +73,7 @@ type TaskResponse struct {
 	AssigneeID     *int      `json:"assigneeId"`
 	Deadline       *string   `json:"deadline"`
 	SprintID       *int      `json:"sprintId"`
+	ReleaseID      *int      `json:"releaseId"`
 	ItemType       string    `json:"itemType"`
 	ItemID         *int      `json:"itemId"`
 	Tags           string    `json:"tags"`
@@ -108,6 +111,7 @@ func toTaskResponse(task *tasks.Task) TaskResponse {
 		AssigneeID:     task.AssigneeID,
 		Deadline:       deadline,
 		SprintID:       task.SprintID,
+		ReleaseID:      task.ReleaseID,
 		ItemType:       task.ItemType,
 		ItemID:         task.ItemID,
 		Tags:           task.Tags,
@@ -167,6 +171,7 @@ func (h *TaskHandler) CreateTask(c echo.Context) error {
 		req.AssigneeID,
 		deadline,
 		req.SprintID,
+		req.ReleaseID,
 		req.ItemType,
 		req.ItemID,
 		userID,
@@ -218,6 +223,7 @@ func (h *TaskHandler) UpdateTask(c echo.Context) error {
 		req.AssigneeID,
 		deadline,
 		req.SprintID,
+		req.ReleaseID,
 		userID,
 	)
 	if err != nil {
