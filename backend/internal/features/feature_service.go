@@ -220,7 +220,7 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 }
 
 // UpdateFeature updates a feature's details
-func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, dependsOnFeatureID *int, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
+func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, dependsOnFeatureID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
 	feature, err := s.featureRepo.GetByID(featureID)
 	if err != nil {
 		return nil, err
@@ -282,6 +282,8 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 	feature.Deadline = deadline
 	feature.ReleaseID = releaseID
 	feature.DependsOnFeatureID = dependsOnFeatureID
+	feature.ItemType = itemType
+	feature.ItemID = itemID
 	feature.Tags = tags
 	feature.CascadeCompletion = cascadeCompletion
 	feature.UpdatedAt = time.Now()

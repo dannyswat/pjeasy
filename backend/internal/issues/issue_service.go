@@ -142,7 +142,7 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 }
 
 // UpdateIssue updates an issue's details
-func (s *IssueService) UpdateIssue(issueID int, title, description string, priority string, assignedTo int, sprintID int, points int, releaseID *int, tags string, cascadeCompletion bool, updatedBy int) (*Issue, error) {
+func (s *IssueService) UpdateIssue(issueID int, title, description string, priority string, assignedTo int, sprintID int, points int, releaseID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, updatedBy int) (*Issue, error) {
 	issue, err := s.issueRepo.GetByID(issueID)
 	if err != nil {
 		return nil, err
@@ -195,6 +195,8 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 	issue.SprintID = sprintID
 	issue.Points = points
 	issue.ReleaseID = releaseID
+	issue.ItemType = itemType
+	issue.ItemID = itemID
 	issue.Tags = tags
 	issue.CascadeCompletion = cascadeCompletion
 	issue.UpdatedAt = time.Now()

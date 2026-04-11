@@ -41,6 +41,8 @@ type UpdateIssueRequest struct {
 	SprintID          int    `json:"sprintId"`
 	Points            int    `json:"points"`
 	ReleaseID         *int   `json:"releaseId"`
+	ItemType          string `json:"itemType"`
+	ItemID            *int   `json:"itemId"`
 	Tags              string `json:"tags"`
 	CascadeCompletion bool   `json:"cascadeCompletion"`
 }
@@ -165,7 +167,7 @@ func (h *IssueHandler) UpdateIssue(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	issue, err := h.issueService.UpdateIssue(issueID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ReleaseID, req.Tags, req.CascadeCompletion, userID)
+	issue, err := h.issueService.UpdateIssue(issueID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, req.ReleaseID, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

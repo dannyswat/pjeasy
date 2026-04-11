@@ -144,6 +144,8 @@ export default function FeatureDetailPage() {
     deadline?: string
     releaseId?: number
     dependsOnFeatureId?: number
+    itemType?: string
+    itemId?: number
     tags: string
     cascadeCompletion: boolean
   }) => {

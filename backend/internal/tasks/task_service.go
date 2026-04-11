@@ -140,7 +140,7 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 }
 
 // UpdateTask updates a task's details
-func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, releaseID *int, updatedBy int) (*Task, error) {
+func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags string, estimatedHours float64, assigneeID *int, deadline *time.Time, sprintID *int, releaseID *int, itemType string, itemID *int, updatedBy int) (*Task, error) {
 	task, err := s.taskRepo.GetByID(taskID)
 	if err != nil {
 		return nil, err
@@ -186,6 +186,8 @@ func (s *TaskService) UpdateTask(taskID int, title, description, priority, tags 
 	task.Deadline = deadline
 	task.SprintID = sprintID
 	task.ReleaseID = releaseID
+	task.ItemType = itemType
+	task.ItemID = itemID
 	task.Tags = tags
 	task.UpdatedAt = time.Now()
 

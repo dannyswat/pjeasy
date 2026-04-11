@@ -124,6 +124,8 @@ export default function IssueDetailPage() {
     assignedTo?: number
     points: number
     releaseId?: number
+    itemType?: string
+    itemId?: number
     tags: string
     cascadeCompletion: boolean
   }) => {

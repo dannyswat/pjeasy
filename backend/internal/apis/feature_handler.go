@@ -46,6 +46,8 @@ type UpdateFeatureRequest struct {
 	Deadline           *string `json:"deadline"` // ISO 8601 format
 	ReleaseID          *int    `json:"releaseId"`
 	DependsOnFeatureID *int    `json:"dependsOnFeatureId"`
+	ItemType           string  `json:"itemType"`
+	ItemID             *int    `json:"itemId"`
 	Tags               string  `json:"tags"`
 	CascadeCompletion  bool    `json:"cascadeCompletion"`
 }
@@ -212,7 +214,7 @@ func (h *FeatureHandler) UpdateFeature(c echo.Context) error {
 		return err
 	}
 
-	feature, err := h.featureService.UpdateFeature(featureID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ReleaseID, req.DependsOnFeatureID, req.Tags, req.CascadeCompletion, userID)
+	feature, err := h.featureService.UpdateFeature(featureID, req.Title, req.Description, req.Priority, req.AssignedTo, req.SprintID, req.Points, deadline, req.ReleaseID, req.DependsOnFeatureID, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

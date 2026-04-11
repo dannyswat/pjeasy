@@ -5,6 +5,7 @@ import HtmlEditor from '../components/HtmlEditor'
 import DatePicker from '../components/DatePicker'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import ReleaseSelect from '../components/ReleaseSelect'
+import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
 import FeatureDependencySelect from './FeatureDependencySelect'
 import { FeaturePriority, type FeatureResponse } from './featureTypes'
 
@@ -20,6 +21,8 @@ interface EditFeatureFormProps {
     deadline?: string
     releaseId?: number
     dependsOnFeatureId?: number
+    itemType?: string
+    itemId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -44,6 +47,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
   const [deadline, setDeadline] = useState<string>(formatDateForInput(feature.deadline))
   const [releaseId, setReleaseId] = useState<number | undefined>(feature.releaseId)
   const [dependsOnFeatureId, setDependsOnFeatureId] = useState<number | undefined>(feature.dependsOnFeatureId)
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(feature.itemType === 'ideas' ? feature.itemId : undefined)
   const [tags, setTags] = useState<string[]>(feature.tags ? feature.tags.split(',').map(t => t.trim()) : [])
   const [cascadeCompletion, setCascadeCompletion] = useState(feature.cascadeCompletion)
 
@@ -58,6 +62,8 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
       deadline: deadline || undefined,
       releaseId,
       dependsOnFeatureId,
+      itemType: linkedIdeaId ? 'ideas' : undefined,
+      itemId: linkedIdeaId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -183,6 +189,12 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
             value={dependsOnFeatureId}
             onChange={setDependsOnFeatureId}
             excludeFeatureId={feature.id}
+          />
+
+          <IdeaReferenceSelect
+            projectId={projectId ?? feature.projectId}
+            value={linkedIdeaId}
+            onChange={setLinkedIdeaId}
           />
           
           <div>

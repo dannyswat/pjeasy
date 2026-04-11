@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
 import ReleaseSelect from '../components/ReleaseSelect'
 import { IssuePriority, type IssueResponse } from './issueTypes'
 
@@ -15,6 +16,8 @@ interface EditIssueFormProps {
     assignedTo?: number
     points: number
     releaseId?: number
+    itemType?: string
+    itemId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -29,6 +32,7 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
   const [assignedTo, setAssignedTo] = useState<number | undefined>(issue.assignedTo)
   const [points, setPoints] = useState<number | undefined>(issue.points)
   const [releaseId, setReleaseId] = useState<number | undefined>(issue.releaseId)
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(issue.itemType === 'ideas' ? issue.itemId : undefined)
   const [tags, setTags] = useState<string[]>(issue.tags ? issue.tags.split(',').map(t => t.trim()) : [])
   const [cascadeCompletion, setCascadeCompletion] = useState(issue.cascadeCompletion)
 
@@ -41,6 +45,8 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
       assignedTo,
       points: points ?? 0,
       releaseId,
+      itemType: linkedIdeaId ? 'ideas' : undefined,
+      itemId: linkedIdeaId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -128,6 +134,12 @@ export default function EditIssueForm({ issue, onSubmit, onCancel, isPending }: 
             value={releaseId}
             onChange={setReleaseId}
             label="Release"
+          />
+
+          <IdeaReferenceSelect
+            projectId={issue.projectId}
+            value={linkedIdeaId}
+            onChange={setLinkedIdeaId}
           />
           
           <div>

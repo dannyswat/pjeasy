@@ -41,6 +41,8 @@ export interface UpdateIssueRequest {
   sprintId?: number
   points?: number
   releaseId?: number
+  itemType?: string
+  itemId?: number
   tags?: string
   cascadeCompletion?: boolean
 }

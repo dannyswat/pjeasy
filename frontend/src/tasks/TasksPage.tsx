@@ -148,6 +148,8 @@ export default function TasksPage() {
     assigneeId?: number
     deadline?: string
     releaseId?: number
+    itemType?: string
+    itemId?: number
     tags: string
   }) => {
     if (!editingTask) return

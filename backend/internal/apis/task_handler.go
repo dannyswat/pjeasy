@@ -45,6 +45,8 @@ type UpdateTaskRequest struct {
 	Deadline       *string `json:"deadline"`
 	SprintID       *int    `json:"sprintId"`
 	ReleaseID      *int    `json:"releaseId"`
+	ItemType       string  `json:"itemType"`
+	ItemID         *int    `json:"itemId"`
 	Tags           string  `json:"tags"`
 }
 
@@ -224,6 +226,8 @@ func (h *TaskHandler) UpdateTask(c echo.Context) error {
 		deadline,
 		req.SprintID,
 		req.ReleaseID,
+		req.ItemType,
+		req.ItemID,
 		userID,
 	)
 	if err != nil {

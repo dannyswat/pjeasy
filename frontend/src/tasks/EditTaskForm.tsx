@@ -4,6 +4,7 @@ import DatePicker from '../components/DatePicker'
 import TagsInput from '../components/TagsInput'
 import HtmlEditor from '../components/HtmlEditor'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
+import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
 import ReleaseSelect from '../components/ReleaseSelect'
 import { TaskPriority } from './taskTypes'
 import type { TaskResponse } from './taskTypes'
@@ -18,6 +19,8 @@ interface EditTaskFormProps {
     assigneeId?: number
     deadline?: string
     releaseId?: number
+    itemType?: string
+    itemId?: number
     tags: string
   }) => Promise<void>
   onCancel: () => void
@@ -32,6 +35,7 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
   const [assigneeId, setAssigneeId] = useState<number | undefined>(task.assigneeId)
   const [deadline, setDeadline] = useState(task.deadline || '')
   const [releaseId, setReleaseId] = useState<number | undefined>(task.releaseId)
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(task.itemType === 'ideas' ? task.itemId : undefined)
   const [tags, setTags] = useState<string[]>(task.tags ? task.tags.split(',').map(t => t.trim()).filter(Boolean) : [])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -44,6 +48,8 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
       assigneeId,
       deadline: deadline || undefined,
       releaseId,
+      itemType: linkedIdeaId ? 'ideas' : undefined,
+      itemId: linkedIdeaId,
       tags: tags.join(','),
     })
   }
@@ -145,6 +151,12 @@ export default function EditTaskForm({ task, onSubmit, onCancel, isPending }: Ed
             value={releaseId}
             onChange={setReleaseId}
             label="Release"
+          />
+
+          <IdeaReferenceSelect
+            projectId={task.projectId}
+            value={linkedIdeaId}
+            onChange={setLinkedIdeaId}
           />
           
           <div>

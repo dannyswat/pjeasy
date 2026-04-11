@@ -43,6 +43,8 @@ export interface UpdateTaskRequest {
   deadline?: string
   sprintId?: number
   releaseId?: number
+  itemType?: string
+  itemId?: number
   tags?: string
 }
 
