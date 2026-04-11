@@ -95,6 +95,10 @@ func (s *ReviewService) CreateSprintReview(projectID int, sprintID int, title, d
 	}
 
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeReview, "", ReviewStatusDraft); err != nil {
+		return nil, err
+	}
+
 	review := &Review{
 		ProjectID:   projectID,
 		Title:       title,
@@ -142,6 +146,10 @@ func (s *ReviewService) CreateCustomReview(projectID int, title, description str
 	}
 
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeReview, "", ReviewStatusDraft); err != nil {
+		return nil, err
+	}
+
 	review := &Review{
 		ProjectID:   projectID,
 		Title:       title,
@@ -279,6 +287,9 @@ func (s *ReviewService) PublishReview(reviewID int, userID int) (*Review, error)
 
 	if review.Status == ReviewStatusPublished {
 		return nil, errors.New("review is already published")
+	}
+	if err := s.statusRepo.ValidateTransition(review.ProjectID, status_changes.ItemTypeReview, ReviewStatusDraft, ReviewStatusPublished); err != nil {
+		return nil, err
 	}
 
 	review.Status = ReviewStatusPublished

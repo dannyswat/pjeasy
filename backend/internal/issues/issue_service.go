@@ -102,6 +102,9 @@ func (s *IssueService) CreateIssue(projectID int, title, description string, pri
 	if assignedTo > 0 {
 		initialStatus = IssueStatusAssigned
 	}
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeIssue, "", initialStatus); err != nil {
+		return nil, err
+	}
 
 	now := time.Now()
 	issue := &Issue{
@@ -176,6 +179,16 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 		}
 	}
 
+	newStatus := issue.Status
+	if assignedTo > 0 && issue.AssignedTo == 0 && issue.Status == IssueStatusOpen {
+		newStatus = IssueStatusAssigned
+	} else if assignedTo == 0 && issue.AssignedTo > 0 && issue.Status == IssueStatusAssigned {
+		newStatus = IssueStatusOpen
+	}
+	if err := s.statusRepo.ValidateTransition(issue.ProjectID, status_changes.ItemTypeIssue, oldStatus, newStatus); err != nil {
+		return nil, err
+	}
+
 	issue.Title = title
 	issue.Description = description
 	issue.Priority = priority
@@ -185,13 +198,7 @@ func (s *IssueService) UpdateIssue(issueID int, title, description string, prior
 	issue.Tags = tags
 	issue.CascadeCompletion = cascadeCompletion
 	issue.UpdatedAt = time.Now()
-
-	// Auto-transition status based on assignment change
-	if assignedTo > 0 && issue.AssignedTo == 0 && issue.Status == IssueStatusOpen {
-		issue.Status = IssueStatusAssigned
-	} else if assignedTo == 0 && issue.AssignedTo > 0 && issue.Status == IssueStatusAssigned {
-		issue.Status = IssueStatusOpen
-	}
+	issue.Status = newStatus
 	issue.AssignedTo = assignedTo
 
 	if err := s.issueRepo.Update(issue); err != nil {
@@ -230,6 +237,9 @@ func (s *IssueService) UpdateIssueStatus(issueID int, status string, updatedBy i
 
 	// Capture old status before update
 	oldStatus := issue.Status
+	if err := s.statusRepo.ValidateTransition(issue.ProjectID, status_changes.ItemTypeIssue, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	if err := s.issueRepo.UpdateStatus(issueID, status); err != nil {
 		return nil, err
@@ -289,6 +299,16 @@ func (s *IssueService) UpdateIssueAssignee(issueID int, assignedTo int, updatedB
 		}
 	}
 
+	newStatus := oldStatus
+	if assignedTo > 0 && issue.AssignedTo == 0 && oldStatus == IssueStatusOpen {
+		newStatus = IssueStatusAssigned
+	} else if assignedTo == 0 && issue.AssignedTo > 0 && oldStatus == IssueStatusAssigned {
+		newStatus = IssueStatusOpen
+	}
+	if err := s.statusRepo.ValidateTransition(issue.ProjectID, status_changes.ItemTypeIssue, oldStatus, newStatus); err != nil {
+		return nil, err
+	}
+
 	// Auto-transition status based on assignment change
 	if assignedTo > 0 && issue.AssignedTo == 0 && issue.Status == IssueStatusOpen {
 		if err := s.issueRepo.UpdateStatus(issueID, IssueStatusAssigned); err != nil {
@@ -302,13 +322,6 @@ func (s *IssueService) UpdateIssueAssignee(issueID int, assignedTo int, updatedB
 
 	if err := s.issueRepo.UpdateAssignee(issueID, assignedTo); err != nil {
 		return nil, err
-	}
-
-	newStatus := oldStatus
-	if assignedTo > 0 && issue.AssignedTo == 0 && oldStatus == IssueStatusOpen {
-		newStatus = IssueStatusAssigned
-	} else if assignedTo == 0 && issue.AssignedTo > 0 && oldStatus == IssueStatusAssigned {
-		newStatus = IssueStatusOpen
 	}
 
 	if err := s.statusRepo.LogChange(issue.ProjectID, status_changes.ItemTypeIssue, issue.ID, oldStatus, newStatus, &updatedBy); err != nil {
@@ -497,6 +510,9 @@ func (s *IssueService) UpdateIssueStatusByWorkflow(issueID int, status string) e
 	}
 
 	oldStatus := issue.Status
+	if err := s.statusRepo.ValidateTransition(issue.ProjectID, status_changes.ItemTypeIssue, oldStatus, status); err != nil {
+		return err
+	}
 
 	if err := s.issueRepo.UpdateStatus(issueID, status); err != nil {
 		return err

@@ -165,6 +165,9 @@ func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, p
 
 	contentHash := computeHash(content)
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeWikiPage, "", WikiPageStatusDraft); err != nil {
+		return nil, err
+	}
 
 	page := &WikiPage{
 		ProjectID:   projectID,
@@ -314,6 +317,9 @@ func (s *WikiPageService) UpdateWikiPageStatus(pageID int, status string, update
 	}
 
 	oldStatus := page.Status
+	if err := s.statusRepo.ValidateTransition(page.ProjectID, status_changes.ItemTypeWikiPage, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	page.Status = status
 	page.UpdatedBy = updatedBy

@@ -54,6 +54,7 @@ type APIServer struct {
 	releaseService       *releases.ReleaseService
 	wikiPageService      *wiki_pages.WikiPageService
 	statusChangeService  *status_changes.StatusChangeService
+	statusFlowHandler    *StatusFlowHandler
 	tokenService         *user_sessions.TokenService
 	userHandler          *UserHandler
 	sessionHandler       *SessionHandler
@@ -132,6 +133,7 @@ func (s *APIServer) AutoMigrate() error {
 		&wiki_pages.WikiPage{},
 		&wiki_pages.WikiPageChange{},
 		&status_changes.StatusChange{},
+		&status_changes.StatusFlow{},
 	)
 }
 
@@ -163,7 +165,8 @@ func (s *APIServer) SetupAPIServer() error {
 	memberCache := projects.NewProjectMemberCache(memberRepo, 1*time.Hour)
 	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo, sequenceRepo, memberCache)
 	statusChangeRepo := status_changes.NewStatusChangeRepository(s.globalUOW)
-	s.statusChangeService = status_changes.NewStatusChangeService(statusChangeRepo, memberRepo)
+	statusFlowRepo := status_changes.NewStatusFlowRepository(s.globalUOW)
+	s.statusChangeService = status_changes.NewStatusChangeService(statusChangeRepo, statusFlowRepo, memberRepo)
 
 	// Initialize idea service
 	ideaRepo := ideas.NewIdeaRepository(s.globalUOW)
@@ -243,6 +246,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.releaseHandler = NewReleaseHandler(s.releaseService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
 	s.statusChangeHandler = NewStatusChangeHandler(s.statusChangeService)
+	s.statusFlowHandler = NewStatusFlowHandler(s.statusChangeService)
 	s.dashboardHandler = NewDashboardHandler(s.projectService, s.taskService, s.issueService, s.featureService, s.serviceTicketService, s.sprintService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
 	s.projectMiddleware = NewProjectMiddleware(memberCache)
@@ -264,6 +268,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.releaseHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.statusChangeHandler.RegisterRoutes(s.echo, s.authMiddleware)
+	s.statusFlowHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	// Register upload routes

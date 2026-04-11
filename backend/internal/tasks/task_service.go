@@ -80,6 +80,9 @@ func (s *TaskService) CreateTask(projectID int, title, description, status, prio
 	} else if !IsValidStatus(status) {
 		return nil, errors.New("invalid status")
 	}
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeTask, "", status); err != nil {
+		return nil, err
+	}
 
 	// Validate priority
 	if priority == "" {
@@ -217,6 +220,9 @@ func (s *TaskService) UpdateTaskStatus(taskID int, status string, updatedBy int)
 	}
 
 	oldStatus := task.Status
+	if err := s.statusRepo.ValidateTransition(task.ProjectID, status_changes.ItemTypeTask, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	if err := s.taskRepo.UpdateStatus(taskID, status); err != nil {
 		return nil, err

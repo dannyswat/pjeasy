@@ -102,6 +102,9 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 	if assignedTo > 0 {
 		initialStatus = FeatureStatusAssigned
 	}
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeFeature, "", initialStatus); err != nil {
+		return nil, err
+	}
 
 	now := time.Now()
 	feature := &Feature{
@@ -177,6 +180,16 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 		}
 	}
 
+	newStatus := feature.Status
+	if assignedTo > 0 && feature.AssignedTo == 0 && feature.Status == FeatureStatusOpen {
+		newStatus = FeatureStatusAssigned
+	} else if assignedTo == 0 && feature.AssignedTo > 0 && feature.Status == FeatureStatusAssigned {
+		newStatus = FeatureStatusOpen
+	}
+	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, newStatus); err != nil {
+		return nil, err
+	}
+
 	feature.Title = title
 	feature.Description = description
 	feature.Priority = priority
@@ -187,13 +200,7 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 	feature.Tags = tags
 	feature.CascadeCompletion = cascadeCompletion
 	feature.UpdatedAt = time.Now()
-
-	// Auto-transition status based on assignment change
-	if assignedTo > 0 && feature.AssignedTo == 0 && feature.Status == FeatureStatusOpen {
-		feature.Status = FeatureStatusAssigned
-	} else if assignedTo == 0 && feature.AssignedTo > 0 && feature.Status == FeatureStatusAssigned {
-		feature.Status = FeatureStatusOpen
-	}
+	feature.Status = newStatus
 	feature.AssignedTo = assignedTo
 
 	if err := s.featureRepo.Update(feature); err != nil {
@@ -231,6 +238,9 @@ func (s *FeatureService) UpdateFeatureStatus(featureID int, status string, updat
 	}
 
 	oldStatus := feature.Status
+	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	if err := s.featureRepo.UpdateStatus(featureID, status); err != nil {
 		return nil, err
@@ -289,6 +299,16 @@ func (s *FeatureService) UpdateFeatureAssignee(featureID int, assignedTo int, up
 		}
 	}
 
+	newStatus := oldStatus
+	if assignedTo > 0 && feature.AssignedTo == 0 && oldStatus == FeatureStatusOpen {
+		newStatus = FeatureStatusAssigned
+	} else if assignedTo == 0 && feature.AssignedTo > 0 && oldStatus == FeatureStatusAssigned {
+		newStatus = FeatureStatusOpen
+	}
+	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, newStatus); err != nil {
+		return nil, err
+	}
+
 	// Auto-transition status based on assignment change
 	if assignedTo > 0 && feature.AssignedTo == 0 && feature.Status == FeatureStatusOpen {
 		if err := s.featureRepo.UpdateStatus(featureID, FeatureStatusAssigned); err != nil {
@@ -302,13 +322,6 @@ func (s *FeatureService) UpdateFeatureAssignee(featureID int, assignedTo int, up
 
 	if err := s.featureRepo.UpdateAssignee(featureID, assignedTo); err != nil {
 		return nil, err
-	}
-
-	newStatus := oldStatus
-	if assignedTo > 0 && feature.AssignedTo == 0 && oldStatus == FeatureStatusOpen {
-		newStatus = FeatureStatusAssigned
-	} else if assignedTo == 0 && feature.AssignedTo > 0 && oldStatus == FeatureStatusAssigned {
-		newStatus = FeatureStatusOpen
 	}
 
 	if err := s.statusRepo.LogChange(feature.ProjectID, status_changes.ItemTypeFeature, feature.ID, oldStatus, newStatus, &updatedBy); err != nil {
@@ -476,6 +489,9 @@ func (s *FeatureService) UpdateFeatureStatusByWorkflow(featureID int, status str
 	}
 
 	oldStatus := feature.Status
+	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, status); err != nil {
+		return err
+	}
 
 	if err := s.featureRepo.UpdateStatus(featureID, status); err != nil {
 		return err

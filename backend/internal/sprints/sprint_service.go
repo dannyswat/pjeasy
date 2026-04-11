@@ -76,6 +76,10 @@ func (s *SprintService) CreateSprint(projectID int, name, goal string, startDate
 	}
 
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeSprint, "", SprintStatusPlanning); err != nil {
+		return nil, err
+	}
+
 	sprint := &Sprint{
 		ProjectID:   projectID,
 		Name:        name,
@@ -167,6 +171,10 @@ func (s *SprintService) StartSprint(sprintID int, userID int) (*Sprint, error) {
 		return nil, errors.New("project already has an active sprint. Close it before starting a new one")
 	}
 
+	if err := s.statusRepo.ValidateTransition(sprint.ProjectID, status_changes.ItemTypeSprint, SprintStatusPlanning, SprintStatusActive); err != nil {
+		return nil, err
+	}
+
 	sprint.Status = SprintStatusActive
 	if sprint.StartDate == nil {
 		now := time.Now()
@@ -207,6 +215,14 @@ func (s *SprintService) CloseSprint(sprintID int, createNewSprint bool, newSprin
 	// Can only close sprints that are Active
 	if sprint.Status != SprintStatusActive {
 		return nil, nil, errors.New("can only close sprints that are Active")
+	}
+	if err := s.statusRepo.ValidateTransition(sprint.ProjectID, status_changes.ItemTypeSprint, SprintStatusActive, SprintStatusClosed); err != nil {
+		return nil, nil, err
+	}
+	if createNewSprint {
+		if err := s.statusRepo.ValidateTransition(sprint.ProjectID, status_changes.ItemTypeSprint, "", SprintStatusActive); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// Close the sprint

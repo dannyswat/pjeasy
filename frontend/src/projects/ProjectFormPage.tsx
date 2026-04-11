@@ -8,6 +8,7 @@ import { useAddMember, useRemoveMember } from './useProjectMembers'
 import { useGenerateSequences } from './useGenerateSequences'
 import { useProjectContext } from './ProjectContext'
 import { useProjectRole } from './useProjectRole'
+import StatusWorkflowSection from './StatusWorkflowSection'
 
 export default function ProjectFormPage() {
   const navigate = useNavigate()
@@ -26,7 +27,7 @@ export default function ProjectFormPage() {
   const { addMember, isPending: isAddingMember } = useAddMember()
   const { removeMember, isPending: isRemovingMember } = useRemoveMember()
   const generateSequences = useGenerateSequences()
-  const { canWrite } = useProjectRole(projectId)
+  const { canWrite, isProjectAdmin } = useProjectRole(projectId)
 
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
@@ -391,6 +392,10 @@ export default function ProjectFormPage() {
             )}
           </div>
         </div>
+      )}
+
+      {isEditMode && projectId && (
+        <StatusWorkflowSection projectId={projectId} canManage={isProjectAdmin} />
       )}
     </div>
   )

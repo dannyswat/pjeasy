@@ -68,6 +68,10 @@ func (s *IdeaService) CreateIdea(projectID int, title, description string, relea
 	}
 
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeIdea, "", IdeaStatusOpen); err != nil {
+		return nil, err
+	}
+
 	idea := &Idea{
 		RefNum:            refNum,
 		ProjectID:         projectID,
@@ -157,6 +161,9 @@ func (s *IdeaService) UpdateIdeaStatus(ideaID int, status string, updatedBy int)
 	}
 
 	oldStatus := idea.Status
+	if err := s.statusRepo.ValidateTransition(idea.ProjectID, status_changes.ItemTypeIdea, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	if err := s.ideaRepo.UpdateStatus(ideaID, status); err != nil {
 		return nil, err
@@ -190,6 +197,9 @@ func (s *IdeaService) UpdateIdeaStatusByWorkflow(ideaID int, status string) erro
 	}
 
 	oldStatus := idea.Status
+	if err := s.statusRepo.ValidateTransition(idea.ProjectID, status_changes.ItemTypeIdea, oldStatus, status); err != nil {
+		return err
+	}
 
 	if err := s.ideaRepo.UpdateStatus(ideaID, status); err != nil {
 		return err

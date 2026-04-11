@@ -76,6 +76,10 @@ func (s *ServiceTicketService) CreateServiceTicket(projectID int, title, descrip
 	}
 
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeServiceTicket, "", ServiceTicketStatusNew); err != nil {
+		return nil, err
+	}
+
 	ticket := &ServiceTicket{
 		RefNum:            refNum,
 		ProjectID:         projectID,
@@ -186,6 +190,9 @@ func (s *ServiceTicketService) UpdateServiceTicketStatus(ticketID int, status st
 	}
 
 	oldStatus := ticket.Status
+	if err := s.statusRepo.ValidateTransition(ticket.ProjectID, status_changes.ItemTypeServiceTicket, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	ticket.Status = status
 	ticket.UpdatedAt = time.Now()
@@ -318,6 +325,9 @@ func (s *ServiceTicketService) UpdateServiceTicketStatusByWorkflow(ticketID int,
 	}
 
 	oldStatus := ticket.Status
+	if err := s.statusRepo.ValidateTransition(ticket.ProjectID, status_changes.ItemTypeServiceTicket, oldStatus, status); err != nil {
+		return err
+	}
 
 	ticket.Status = status
 	ticket.UpdatedAt = time.Now()

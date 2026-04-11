@@ -59,6 +59,10 @@ func (s *ReleaseService) CreateRelease(projectID int, version, description strin
 	description = htmlsanitizer.Sanitize(description)
 
 	now := time.Now()
+	if err := s.statusRepo.ValidateTransition(projectID, status_changes.ItemTypeRelease, "", ReleaseStatusOpen); err != nil {
+		return nil, err
+	}
+
 	release := &Release{
 		Version:     version,
 		ProjectID:   projectID,
@@ -136,6 +140,9 @@ func (s *ReleaseService) UpdateReleaseStatus(releaseID int, status string, updat
 	}
 
 	oldStatus := release.Status
+	if err := s.statusRepo.ValidateTransition(release.ProjectID, status_changes.ItemTypeRelease, oldStatus, status); err != nil {
+		return nil, err
+	}
 
 	if err := s.releaseRepo.UpdateStatus(releaseID, status); err != nil {
 		return nil, err
@@ -173,6 +180,9 @@ func (s *ReleaseService) CompleteRelease(releaseID int, confirmedItems []Confirm
 	}
 
 	oldStatus := release.Status
+	if err := s.statusRepo.ValidateTransition(release.ProjectID, status_changes.ItemTypeRelease, oldStatus, ReleaseStatusCompleted); err != nil {
+		return nil, err
+	}
 
 	confirmedIDsByType := map[string][]int{
 		"feature": {},
