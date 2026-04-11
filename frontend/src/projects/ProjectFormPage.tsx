@@ -10,6 +10,8 @@ import { useProjectContext } from './ProjectContext'
 import { useProjectRole } from './useProjectRole'
 import StatusWorkflowSection from './StatusWorkflowSection'
 
+type SettingsTab = 'details' | 'members' | 'workflow'
+
 export default function ProjectFormPage() {
   const navigate = useNavigate()
   const { setSelectedProjectId } = useProjectContext()
@@ -36,6 +38,7 @@ export default function ProjectFormPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<SettingsTab>('details')
 
   useEffect(() => {
     if (!project) return
@@ -171,6 +174,13 @@ export default function ProjectFormPage() {
   }
 
   const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember || generateSequences.isPending
+  const tabs: Array<{ id: SettingsTab; label: string }> = isEditMode
+    ? [
+        { id: 'details', label: 'Project Details' },
+        { id: 'members', label: 'Members' },
+        { id: 'workflow', label: 'Status Workflow' },
+      ]
+    : [{ id: 'details', label: 'Project Details' }]
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -207,7 +217,28 @@ export default function ProjectFormPage() {
         </div>
       )}
 
+      {isEditMode && (
+        <div className="mb-4 border-b border-gray-200">
+          <nav className="flex flex-wrap gap-2" aria-label="Project settings sections">
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTab
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`rounded-t-lg border px-4 py-2 text-sm font-medium transition ${isActive ? 'border-gray-200 border-b-white bg-white text-indigo-700' : 'border-transparent bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </nav>
+        </div>
+      )}
+
       {/* Project Form */}
+      {activeTab === 'details' && (
       <div className="bg-white rounded border border-gray-200 p-4 mb-4">
         <h2 className="text-base font-semibold mb-3">Project Details</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -309,9 +340,10 @@ export default function ProjectFormPage() {
           </div>
         </form>
       </div>
+      )}
 
       {/* Members Section - Only in Edit Mode */}
-      {isEditMode && (
+      {isEditMode && activeTab === 'members' && (
         <div className="bg-white rounded border border-gray-200 p-4">
           <h2 className="text-base font-semibold mb-3">Project Members</h2>
 
@@ -394,7 +426,7 @@ export default function ProjectFormPage() {
         </div>
       )}
 
-      {isEditMode && projectId && (
+      {isEditMode && projectId && activeTab === 'workflow' && (
         <StatusWorkflowSection projectId={projectId} canManage={isProjectAdmin} />
       )}
     </div>
