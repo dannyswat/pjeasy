@@ -258,7 +258,7 @@ export default function StatusWorkflowSection({ projectId, canManage }: StatusWo
 
       <div className="border border-gray-200 rounded-lg p-4">
         <div className="flex flex-col gap-3 mb-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[32rem]">
+          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-lg">
             <label className="block text-xs font-medium text-gray-700">
               Filter by item type
               <select
