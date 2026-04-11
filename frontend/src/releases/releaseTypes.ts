@@ -14,6 +14,7 @@ export interface CreateReleaseRequest {
   version: string
   description?: string
   targetDate?: string
+  selectedItems?: ConfirmedReleaseItem[]
 }
 
 export interface UpdateReleaseRequest {
@@ -24,6 +25,7 @@ export interface UpdateReleaseRequest {
 
 export interface UpdateReleaseStatusRequest {
   status: string
+  confirmedItems?: ConfirmedReleaseItem[]
 }
 
 export interface ConfirmedReleaseItem {
@@ -48,6 +50,15 @@ export interface ReleaseItemResponse {
   title: string
   status: string
   itemType: string
+}
+
+export interface ReleaseCandidateItemResponse {
+  id: number
+  refNum: string
+  title: string
+  status: string
+  itemType: string
+  linked: boolean
 }
 
 export const ReleaseStatus = {

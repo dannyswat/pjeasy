@@ -9,6 +9,7 @@ import { useCompleteRelease } from './useCompleteRelease'
 import { ReleaseStatus, ReleaseStatusDisplay, type ConfirmedReleaseItem, type ReleaseResponse } from './releaseTypes'
 import CreateReleaseForm from './CreateReleaseForm'
 import CompleteReleaseModal from './CompleteReleaseModal'
+import PrepareReleaseUATModal from './PrepareReleaseUATModal'
 import { useProjectRole } from '../projects/useProjectRole'
 
 export default function ReleasesPage() {
@@ -18,6 +19,7 @@ export default function ReleasesPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [completingRelease, setCompletingRelease] = useState<ReleaseResponse | null>(null)
+  const [uatRelease, setUATRelease] = useState<ReleaseResponse | null>(null)
   const pageSize = 20
 
   const projectIdNum = projectId ? parseInt(projectId) : 0
@@ -52,7 +54,7 @@ export default function ReleasesPage() {
     )
   }
 
-  const handleCreateSubmit = async (data: { version: string; description: string; targetDate?: string }) => {
+  const handleCreateSubmit = async (data: { version: string; description: string; targetDate?: string; selectedItems: ConfirmedReleaseItem[] }) => {
     try {
       await createRelease.mutateAsync({ projectId: projectIdNum, ...data })
       setShowCreateModal(false)
@@ -68,6 +70,17 @@ export default function ReleasesPage() {
       refetch()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update status')
+    }
+  }
+
+  const handleMoveToUAT = async (confirmedItems: ConfirmedReleaseItem[]) => {
+    if (!uatRelease) return
+    try {
+      await updateStatus.mutateAsync({ releaseId: uatRelease.id, status: ReleaseStatus.IN_UAT, confirmedItems })
+      setUATRelease(null)
+      refetch()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update release to UAT')
     }
   }
 
@@ -184,6 +197,8 @@ export default function ReleasesPage() {
                           onChange={(e) => {
                             if (e.target.value === 'complete') {
                               setCompletingRelease(release)
+                            } else if (e.target.value === ReleaseStatus.IN_UAT) {
+                              setUATRelease(release)
                             } else if (e.target.value) {
                               handleStatusChange(release.id, e.target.value)
                             }
@@ -243,9 +258,20 @@ export default function ReleasesPage() {
       {/* Create Modal */}
       {showCreateModal && (
         <CreateReleaseForm
+          projectId={projectIdNum}
           onSubmit={handleCreateSubmit}
           onCancel={() => setShowCreateModal(false)}
           isLoading={createRelease.isPending}
+        />
+      )}
+
+      {uatRelease && (
+        <PrepareReleaseUATModal
+          projectId={projectIdNum}
+          release={uatRelease}
+          onConfirm={handleMoveToUAT}
+          onCancel={() => setUATRelease(null)}
+          isLoading={updateStatus.isPending}
         />
       )}
 

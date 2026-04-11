@@ -17,6 +17,8 @@ export default function ItemLink({ itemType, itemId }: ItemLinkProps) {
 
   const getItemTypeSingular = (type: string) => {
     switch (type) {
+      case 'features':
+        return 'Feature'
       case 'ideas':
         return 'Idea'
       case 'issues':

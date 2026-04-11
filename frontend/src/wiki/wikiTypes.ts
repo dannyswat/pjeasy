@@ -136,6 +136,12 @@ export interface WikiPageTreeNode extends WikiPageResponse {
   children: WikiPageTreeNode[]
 }
 
+export interface WikiPageOption {
+  id: number
+  title: string
+  level: number
+}
+
 // Build tree structure from flat list
 export function buildWikiPageTree(pages: WikiPageResponse[]): WikiPageTreeNode[] {
   const pageMap = new Map<number, WikiPageTreeNode>()
@@ -164,4 +170,40 @@ export function buildWikiPageTree(pages: WikiPageResponse[]): WikiPageTreeNode[]
   sortNodes(rootPages)
 
   return rootPages
+}
+
+export function flattenWikiPageTree(nodes: WikiPageTreeNode[], level: number = 0): WikiPageOption[] {
+  return nodes.flatMap((node) => [
+    { id: node.id, title: node.title, level },
+    ...flattenWikiPageTree(node.children, level + 1),
+  ])
+}
+
+export function getWikiPageDescendantIds(nodes: WikiPageTreeNode[], pageId: number): Set<number> {
+  const descendants = new Set<number>()
+
+  const visit = (currentNodes: WikiPageTreeNode[]): boolean => {
+    for (const node of currentNodes) {
+      if (node.id === pageId) {
+        collect(node.children)
+        return true
+      }
+
+      if (visit(node.children)) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  const collect = (currentNodes: WikiPageTreeNode[]) => {
+    currentNodes.forEach((node) => {
+      descendants.add(node.id)
+      collect(node.children)
+    })
+  }
+
+  visit(nodes)
+  return descendants
 }

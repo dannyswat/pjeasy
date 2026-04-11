@@ -21,9 +21,10 @@ func NewReleaseHandler(releaseService *releases.ReleaseService) *ReleaseHandler 
 }
 
 type CreateReleaseRequest struct {
-	Version     string  `json:"version" validate:"required"`
-	Description string  `json:"description"`
-	TargetDate  *string `json:"targetDate"`
+	Version       string                 `json:"version" validate:"required"`
+	Description   string                 `json:"description"`
+	TargetDate    *string                `json:"targetDate"`
+	SelectedItems []ConfirmedItemRequest `json:"selectedItems"`
 }
 
 type UpdateReleaseRequest struct {
@@ -33,7 +34,8 @@ type UpdateReleaseRequest struct {
 }
 
 type UpdateReleaseStatusRequest struct {
-	Status string `json:"status" validate:"required"`
+	Status         string                 `json:"status" validate:"required"`
+	ConfirmedItems []ConfirmedItemRequest `json:"confirmedItems"`
 }
 
 type ConfirmedItemRequest struct {
@@ -70,6 +72,15 @@ type ReleaseItemResponse struct {
 	Title    string `json:"title"`
 	Status   string `json:"status"`
 	ItemType string `json:"itemType"`
+}
+
+type ReleaseCandidateItemResponse struct {
+	ID       int    `json:"id"`
+	RefNum   string `json:"refNum"`
+	Title    string `json:"title"`
+	Status   string `json:"status"`
+	ItemType string `json:"itemType"`
+	Linked   bool   `json:"linked"`
 }
 
 func toReleaseResponse(release *releases.Release) ReleaseResponse {
@@ -122,7 +133,12 @@ func (h *ReleaseHandler) CreateRelease(c echo.Context) error {
 		targetDate = &t
 	}
 
-	release, err := h.releaseService.CreateRelease(projectID, req.Version, req.Description, targetDate, userID)
+	selectedItems := make([]releases.ConfirmedReleaseItem, 0, len(req.SelectedItems))
+	for _, item := range req.SelectedItems {
+		selectedItems = append(selectedItems, releases.ConfirmedReleaseItem{ID: item.ID, ItemType: item.ItemType})
+	}
+
+	release, err := h.releaseService.CreateRelease(projectID, req.Version, req.Description, targetDate, selectedItems, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -189,12 +205,61 @@ func (h *ReleaseHandler) UpdateReleaseStatus(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	release, err := h.releaseService.UpdateReleaseStatus(releaseID, req.Status, userID)
+	var confirmedItems []releases.ConfirmedReleaseItem
+	if req.ConfirmedItems != nil {
+		confirmedItems = make([]releases.ConfirmedReleaseItem, 0, len(req.ConfirmedItems))
+		for _, item := range req.ConfirmedItems {
+			confirmedItems = append(confirmedItems, releases.ConfirmedReleaseItem{ID: item.ID, ItemType: item.ItemType})
+		}
+	}
+
+	release, err := h.releaseService.UpdateReleaseStatus(releaseID, req.Status, confirmedItems, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, toReleaseResponse(release))
+}
+
+func (h *ReleaseHandler) GetReleaseCandidateItems(c echo.Context) error {
+	userID, err := GetUserIDFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	projectID, err := strconv.Atoi(c.Param("projectId"))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID")
+	}
+
+	var releaseID *int
+	releaseIDParam := c.QueryParam("releaseId")
+	if releaseIDParam != "" {
+		parsedReleaseID, err := strconv.Atoi(releaseIDParam)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid release ID")
+		}
+		releaseID = &parsedReleaseID
+	}
+
+	items, err := h.releaseService.GetReleaseCandidateItems(projectID, releaseID, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	response := make([]ReleaseCandidateItemResponse, len(items))
+	for i, item := range items {
+		response[i] = ReleaseCandidateItemResponse{
+			ID:       item.ID,
+			RefNum:   item.RefNum,
+			Title:    item.Title,
+			Status:   item.Status,
+			ItemType: item.ItemType,
+			Linked:   item.Linked,
+		}
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 // CompleteRelease completes a release with confirmed items
@@ -354,6 +419,7 @@ func (h *ReleaseHandler) RegisterRoutes(e *echo.Echo, authMiddleware *AuthMiddle
 
 	releasesGroup.POST("", h.CreateRelease)
 	releasesGroup.GET("", h.GetProjectReleases)
+	releasesGroup.GET("/candidates", h.GetReleaseCandidateItems)
 
 	releaseItem := e.Group("/api/releases/:id", authMiddleware.RequireAuth)
 

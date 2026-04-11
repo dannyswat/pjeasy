@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import HtmlEditor from '../components/HtmlEditor'
-import type { WikiPageResponse, UpdateWikiPageRequest } from './wikiTypes'
+import { useWikiPageTree } from './useWikiPageTree'
+import { buildWikiPageTree, flattenWikiPageTree, getWikiPageDescendantIds, type WikiPageResponse, type UpdateWikiPageRequest } from './wikiTypes'
 
 interface EditWikiPageFormProps {
   wikiPage: WikiPageResponse
@@ -17,7 +18,14 @@ export default function EditWikiPageForm({ wikiPage, projectId, onClose, onSucce
   const [title, setTitle] = useState(wikiPage.title)
   const [content, setContent] = useState(wikiPage.content)
   const [sortOrder, setSortOrder] = useState(wikiPage.sortOrder)
+  const [selectedParentId, setSelectedParentId] = useState<number | ''>(wikiPage.parentId ?? '')
   const [error, setError] = useState<string | null>(null)
+  const { wikiPages } = useWikiPageTree(projectId)
+
+  const tree = buildWikiPageTree(wikiPages)
+  const blockedIds = getWikiPageDescendantIds(tree, wikiPage.id)
+  blockedIds.add(wikiPage.id)
+  const parentOptions = flattenWikiPageTree(tree).filter((option) => !blockedIds.has(option.id))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,9 +42,8 @@ export default function EditWikiPageForm({ wikiPage, projectId, onClose, onSucce
         projectId,
         data: {
           title: title.trim(),
-          parentId: wikiPage.parentId,
+          parentId: selectedParentId === '' ? undefined : selectedParentId,
           sortOrder,
-          content,
         } as UpdateWikiPageRequest,
       })
       onSuccess()
@@ -77,6 +84,25 @@ export default function EditWikiPageForm({ wikiPage, projectId, onClose, onSucce
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter wiki page title"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Parent Page
+            </label>
+            <select
+              value={selectedParentId}
+              onChange={(e) => setSelectedParentId(e.target.value ? parseInt(e.target.value, 10) : '')}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">No parent</option>
+              {parentOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {`${'  '.repeat(option.level)}${option.title}`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">Move this page under another page in the wiki tree.</p>
           </div>
 
           <div>

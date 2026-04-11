@@ -9,6 +9,7 @@ import Comments from '../comments/Comments'
 import RelatedTasks from '../tasks/RelatedTasks'
 import { UserLabel } from '../components/UserLabel'
 import { useUpdateFeature } from './useUpdateFeature'
+import { useGetFeature } from './useGetFeature'
 import ItemLink from '../components/ItemLink'
 import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
@@ -29,6 +30,7 @@ export default function FeatureDetailPage() {
   const deleteFeature = useDeleteFeature()
   const updateFeature = useUpdateFeature()
   const { canWrite } = useProjectRole(projectIdNum)
+  const { feature: dependencyFeature } = useGetFeature(feature?.dependsOnFeatureId ?? 0)
 
   const fetchFeature = async () => {
     try {
@@ -141,6 +143,7 @@ export default function FeatureDetailPage() {
     points: number
     deadline?: string
     releaseId?: number
+    dependsOnFeatureId?: number
     tags: string
     cascadeCompletion: boolean
   }) => {
@@ -290,6 +293,7 @@ export default function FeatureDetailPage() {
                             points: feature.points,
                             deadline: feature.deadline,
                             releaseId: feature.releaseId,
+                            dependsOnFeatureId: feature.dependsOnFeatureId,
                             tags: feature.tags || '',
                             cascadeCompletion: !feature.cascadeCompletion,
                           })
@@ -359,6 +363,17 @@ export default function FeatureDetailPage() {
                 {feature.itemType && feature.itemId && (
                   <div className="col-span-2">
                     <ItemLink itemType={feature.itemType} itemId={feature.itemId} />
+                  </div>
+                )}
+                {feature.dependsOnFeatureId && (
+                  <div className="col-span-2">
+                    <span className="text-gray-500">Depends on:</span>
+                    <button
+                      onClick={() => navigate(`/projects/${projectId}/features/${feature.dependsOnFeatureId}`)}
+                      className="ml-2 text-indigo-600 hover:text-indigo-800 text-xs font-medium underline"
+                    >
+                      {dependencyFeature?.refNum ? `[${dependencyFeature.refNum}]` : `Feature #${feature.dependsOnFeatureId}`}
+                    </button>
                   </div>
                 )}
               </div>

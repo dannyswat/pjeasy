@@ -477,6 +477,7 @@ export default function FeaturesPage() {
             points: number
             deadline?: string
             releaseId?: number
+            dependsOnFeatureId?: number
             itemType?: string
             itemId?: number
             tags: string
@@ -512,6 +513,7 @@ export default function FeaturesPage() {
             points: number
             deadline?: string
             releaseId?: number
+            dependsOnFeatureId?: number
             tags: string
             cascadeCompletion: boolean
           }) => {

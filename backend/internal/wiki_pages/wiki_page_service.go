@@ -192,6 +192,38 @@ func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, p
 	return page, nil
 }
 
+func (s *WikiPageService) validateParentRelationship(pageID int, projectID int, parentID *int) error {
+	if parentID == nil {
+		return nil
+	}
+
+	visited := map[int]struct{}{pageID: {}}
+	currentID := *parentID
+
+	for {
+		if _, exists := visited[currentID]; exists {
+			return errors.New("wiki page parent relationship cannot create a cycle")
+		}
+		visited[currentID] = struct{}{}
+
+		current, err := s.pageRepo.GetByID(currentID)
+		if err != nil {
+			return err
+		}
+		if current == nil {
+			return errors.New("parent wiki page not found")
+		}
+		if current.ProjectID != projectID {
+			return errors.New("parent wiki page belongs to a different project")
+		}
+		if current.ParentID == nil {
+			return nil
+		}
+
+		currentID = *current.ParentID
+	}
+}
+
 // UpdateWikiPage updates a wiki page's metadata (not content)
 func (s *WikiPageService) UpdateWikiPage(pageID int, title string, parentID *int, sortOrder int, updatedBy int) (*WikiPage, error) {
 	page, err := s.pageRepo.GetByID(pageID)
@@ -216,15 +248,8 @@ func (s *WikiPageService) UpdateWikiPage(pageID int, title string, parentID *int
 		if *parentID == pageID {
 			return nil, errors.New("wiki page cannot be its own parent")
 		}
-		parent, err := s.pageRepo.GetByID(*parentID)
-		if err != nil {
+		if err := s.validateParentRelationship(pageID, page.ProjectID, parentID); err != nil {
 			return nil, err
-		}
-		if parent == nil {
-			return nil, errors.New("parent wiki page not found")
-		}
-		if parent.ProjectID != page.ProjectID {
-			return nil, errors.New("parent wiki page belongs to a different project")
 		}
 	}
 

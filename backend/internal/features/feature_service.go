@@ -43,8 +43,80 @@ func (s *FeatureService) SetStatusChangeHandler(handler StatusChangeHandler) {
 	s.statusChangeHandler = handler
 }
 
+func dependencyBlocksStatus(status string) bool {
+	switch status {
+	case FeatureStatusInProgress, FeatureStatusInReview, FeatureStatusCompleted, FeatureStatusReopened:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *FeatureService) validateDependency(projectID int, featureID int, dependsOnFeatureID *int) error {
+	if dependsOnFeatureID == nil {
+		return nil
+	}
+
+	if featureID > 0 && *dependsOnFeatureID == featureID {
+		return errors.New("feature cannot depend on itself")
+	}
+
+	visited := map[int]struct{}{}
+	currentID := *dependsOnFeatureID
+
+	for currentID > 0 {
+		if currentID == featureID {
+			return errors.New("feature dependency cannot create a cycle")
+		}
+		if _, exists := visited[currentID]; exists {
+			return errors.New("feature dependency cannot create a cycle")
+		}
+		visited[currentID] = struct{}{}
+
+		dependency, err := s.featureRepo.GetByID(currentID)
+		if err != nil {
+			return err
+		}
+		if dependency == nil {
+			return errors.New("dependency feature not found")
+		}
+		if dependency.ProjectID != projectID {
+			return errors.New("dependency feature belongs to a different project")
+		}
+		if dependency.DependsOnFeatureID == nil {
+			return nil
+		}
+
+		currentID = *dependency.DependsOnFeatureID
+	}
+
+	return nil
+}
+
+func (s *FeatureService) ensureDependencyCompleted(projectID int, dependsOnFeatureID *int, targetStatus string) error {
+	if dependsOnFeatureID == nil || !dependencyBlocksStatus(targetStatus) {
+		return nil
+	}
+
+	dependency, err := s.featureRepo.GetByID(*dependsOnFeatureID)
+	if err != nil {
+		return err
+	}
+	if dependency == nil {
+		return errors.New("dependency feature not found")
+	}
+	if dependency.ProjectID != projectID {
+		return errors.New("dependency feature belongs to a different project")
+	}
+	if dependency.Status != FeatureStatusCompleted {
+		return errors.New("dependency feature must be completed before this feature can be started")
+	}
+
+	return nil
+}
+
 // CreateFeature creates a new feature
-func (s *FeatureService) CreateFeature(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Feature, error) {
+func (s *FeatureService) CreateFeature(projectID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, dependsOnFeatureID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Feature, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -84,6 +156,10 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 		}
 	}
 
+	if err := s.validateDependency(projectID, 0, dependsOnFeatureID); err != nil {
+		return nil, err
+	}
+
 	uow := s.uowFactory.NewUnitOfWork()
 	// Begin transaction to generate RefNum and create feature
 	if err := uow.BeginTransaction(); err != nil {
@@ -108,24 +184,25 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 
 	now := time.Now()
 	feature := &Feature{
-		RefNum:            refNum,
-		ProjectID:         projectID,
-		Title:             title,
-		Description:       description,
-		Status:            initialStatus,
-		Priority:          priority,
-		AssignedTo:        assignedTo,
-		SprintID:          sprintID,
-		Points:            points,
-		Deadline:          deadline,
-		ReleaseID:         releaseID,
-		ItemType:          itemType,
-		ItemID:            itemID,
-		Tags:              tags,
-		CascadeCompletion: cascadeCompletion,
-		CreatedBy:         createdBy,
-		CreatedAt:         now,
-		UpdatedAt:         now,
+		RefNum:             refNum,
+		ProjectID:          projectID,
+		Title:              title,
+		Description:        description,
+		Status:             initialStatus,
+		Priority:           priority,
+		AssignedTo:         assignedTo,
+		SprintID:           sprintID,
+		Points:             points,
+		Deadline:           deadline,
+		ReleaseID:          releaseID,
+		DependsOnFeatureID: dependsOnFeatureID,
+		ItemType:           itemType,
+		ItemID:             itemID,
+		Tags:               tags,
+		CascadeCompletion:  cascadeCompletion,
+		CreatedBy:          createdBy,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 
 	// Create a new repository instance with the transaction UOW
@@ -143,7 +220,7 @@ func (s *FeatureService) CreateFeature(projectID int, title, description string,
 }
 
 // UpdateFeature updates a feature's details
-func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
+func (s *FeatureService) UpdateFeature(featureID int, title, description string, priority string, assignedTo int, sprintID int, points int, deadline *time.Time, releaseID *int, dependsOnFeatureID *int, tags string, cascadeCompletion bool, updatedBy int) (*Feature, error) {
 	feature, err := s.featureRepo.GetByID(featureID)
 	if err != nil {
 		return nil, err
@@ -180,6 +257,10 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 		}
 	}
 
+	if err := s.validateDependency(feature.ProjectID, featureID, dependsOnFeatureID); err != nil {
+		return nil, err
+	}
+
 	newStatus := feature.Status
 	if assignedTo > 0 && feature.AssignedTo == 0 && feature.Status == FeatureStatusOpen {
 		newStatus = FeatureStatusAssigned
@@ -187,6 +268,9 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 		newStatus = FeatureStatusOpen
 	}
 	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, newStatus); err != nil {
+		return nil, err
+	}
+	if err := s.ensureDependencyCompleted(feature.ProjectID, dependsOnFeatureID, newStatus); err != nil {
 		return nil, err
 	}
 
@@ -197,6 +281,7 @@ func (s *FeatureService) UpdateFeature(featureID int, title, description string,
 	feature.Points = points
 	feature.Deadline = deadline
 	feature.ReleaseID = releaseID
+	feature.DependsOnFeatureID = dependsOnFeatureID
 	feature.Tags = tags
 	feature.CascadeCompletion = cascadeCompletion
 	feature.UpdatedAt = time.Now()
@@ -239,6 +324,9 @@ func (s *FeatureService) UpdateFeatureStatus(featureID int, status string, updat
 
 	oldStatus := feature.Status
 	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, status); err != nil {
+		return nil, err
+	}
+	if err := s.ensureDependencyCompleted(feature.ProjectID, feature.DependsOnFeatureID, status); err != nil {
 		return nil, err
 	}
 
@@ -351,6 +439,14 @@ func (s *FeatureService) DeleteFeature(featureID int, deletedBy int) error {
 		return errors.New("project users can only read project items")
 	}
 
+	hasDependents, err := s.featureRepo.HasDependents(featureID)
+	if err != nil {
+		return err
+	}
+	if hasDependents {
+		return errors.New("feature has dependent features and cannot be deleted")
+	}
+
 	return s.featureRepo.Delete(featureID)
 }
 
@@ -377,7 +473,7 @@ func (s *FeatureService) GetFeature(featureID int, requestedBy int) (*Feature, e
 }
 
 // GetProjectFeatures retrieves all features for a project with optional filters
-func (s *FeatureService) GetProjectFeatures(projectID int, statuses []string, priority string, page, pageSize int, requestedBy int) ([]Feature, int64, error) {
+func (s *FeatureService) GetProjectFeatures(projectID int, statuses []string, priority string, search string, excludeFeatureID *int, dependencySelectable bool, selectedFeatureID *int, page, pageSize int, requestedBy int) ([]Feature, int64, error) {
 	// Check if user is a member or admin of the project
 	isMember, err := s.memberRepo.IsUserMember(projectID, requestedBy)
 	if err != nil {
@@ -389,16 +485,29 @@ func (s *FeatureService) GetProjectFeatures(projectID int, statuses []string, pr
 
 	offset := (page - 1) * pageSize
 
+	if dependencySelectable || excludeFeatureID != nil {
+		for _, status := range statuses {
+			if !IsValidStatus(status) {
+				return nil, 0, errors.New("invalid status: " + status)
+			}
+		}
+		if priority != "" && !IsValidPriority(priority) {
+			return nil, 0, errors.New("invalid priority")
+		}
+
+		return s.featureRepo.GetByProjectIDWithSelectorFilters(projectID, statuses, priority, search, excludeFeatureID, dependencySelectable, selectedFeatureID, offset, pageSize)
+	}
+
 	// Apply filters based on parameters
 	if len(statuses) == 1 && priority != "" {
 		// Single status + priority - need to combine manually
-		return s.getFeaturesByStatusAndPriority(projectID, statuses[0], priority, offset, pageSize)
+		return s.getFeaturesByStatusAndPriority(projectID, statuses[0], priority, search, offset, pageSize)
 	} else if len(statuses) == 1 {
 		// Single status
 		if !IsValidStatus(statuses[0]) {
 			return nil, 0, errors.New("invalid status")
 		}
-		return s.featureRepo.GetByProjectIDAndStatus(projectID, statuses[0], offset, pageSize)
+		return s.featureRepo.GetByProjectIDAndStatus(projectID, statuses[0], search, offset, pageSize)
 	} else if len(statuses) > 1 {
 		// Multiple statuses - validate each and use IN query
 		for _, status := range statuses {
@@ -406,21 +515,24 @@ func (s *FeatureService) GetProjectFeatures(projectID int, statuses []string, pr
 				return nil, 0, errors.New("invalid status: " + status)
 			}
 		}
-		return s.featureRepo.GetByProjectIDAndStatuses(projectID, statuses, offset, pageSize)
+		return s.featureRepo.GetByProjectIDAndStatuses(projectID, statuses, search, offset, pageSize)
 	} else if priority != "" {
-		return s.featureRepo.GetByProjectIDAndPriority(projectID, priority, offset, pageSize)
+		return s.featureRepo.GetByProjectIDAndPriority(projectID, priority, search, offset, pageSize)
 	}
 
-	return s.featureRepo.GetByProjectID(projectID, offset, pageSize)
+	return s.featureRepo.GetByProjectID(projectID, search, offset, pageSize)
 }
 
 // getFeaturesByStatusAndPriority is a helper to filter by both status and priority
-func (s *FeatureService) getFeaturesByStatusAndPriority(projectID int, status, priority string, offset, limit int) ([]Feature, int64, error) {
+func (s *FeatureService) getFeaturesByStatusAndPriority(projectID int, status, priority string, search string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature
 	var total int64
 
-	query := s.featureRepo.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND status = ? AND priority = ?", projectID, status, priority)
+	query := applyFeatureSearch(
+		s.featureRepo.uow.GetDB().Model(&Feature{}).
+			Where("project_id = ? AND status = ? AND priority = ?", projectID, status, priority),
+		search,
+	)
 
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -435,7 +547,7 @@ func (s *FeatureService) getFeaturesByStatusAndPriority(projectID int, status, p
 }
 
 // GetMyFeatures retrieves features assigned to the user in a project
-func (s *FeatureService) GetMyFeatures(projectID int, page, pageSize int, userID int) ([]Feature, int64, error) {
+func (s *FeatureService) GetMyFeatures(projectID int, search string, page, pageSize int, userID int) ([]Feature, int64, error) {
 	// Check if user is a member or admin of the project
 	isMember, err := s.memberRepo.IsUserMember(projectID, userID)
 	if err != nil {
@@ -446,7 +558,7 @@ func (s *FeatureService) GetMyFeatures(projectID int, page, pageSize int, userID
 	}
 
 	offset := (page - 1) * pageSize
-	return s.featureRepo.GetByProjectIDAndAssignee(projectID, userID, offset, pageSize)
+	return s.featureRepo.GetByProjectIDAndAssignee(projectID, userID, search, offset, pageSize)
 }
 
 // GetFeaturesByAssignee retrieves features assigned to a user in a project (limited)
@@ -490,6 +602,9 @@ func (s *FeatureService) UpdateFeatureStatusByWorkflow(featureID int, status str
 
 	oldStatus := feature.Status
 	if err := s.statusRepo.ValidateTransition(feature.ProjectID, status_changes.ItemTypeFeature, oldStatus, status); err != nil {
+		return err
+	}
+	if err := s.ensureDependencyCompleted(feature.ProjectID, feature.DependsOnFeatureID, status); err != nil {
 		return err
 	}
 

@@ -6,6 +6,7 @@ import DatePicker from '../components/DatePicker'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import IdeaReferenceSelect from '../components/IdeaReferenceSelect'
 import ReleaseSelect from '../components/ReleaseSelect'
+import FeatureDependencySelect from './FeatureDependencySelect'
 import { FeaturePriority } from './featureTypes'
 
 interface CreateFeatureFormProps {
@@ -18,6 +19,7 @@ interface CreateFeatureFormProps {
     points: number
     deadline?: string
     releaseId?: number
+    dependsOnFeatureId?: number
     itemType?: string
     itemId?: number
     tags: string
@@ -35,6 +37,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
   const [points, setPoints] = useState<number | undefined>(undefined)
   const [deadline, setDeadline] = useState<string>('')
   const [releaseId, setReleaseId] = useState<number | undefined>(undefined)
+  const [dependsOnFeatureId, setDependsOnFeatureId] = useState<number | undefined>(undefined)
   const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
@@ -49,6 +52,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
       points: points ?? 0,
       deadline: deadline || undefined,
       releaseId,
+      dependsOnFeatureId,
       itemType: linkedIdeaId ? 'ideas' : undefined,
       itemId: linkedIdeaId,
       tags: tags.join(','),
@@ -161,6 +165,12 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
             value={releaseId}
             onChange={setReleaseId}
             label="Release"
+          />
+
+          <FeatureDependencySelect
+            projectId={projectId}
+            value={dependsOnFeatureId}
+            onChange={setDependsOnFeatureId}
           />
 
           <IdeaReferenceSelect

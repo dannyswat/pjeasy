@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useListWikiPages } from './useListWikiPages'
+import { useWikiPageTree } from './useWikiPageTree'
 import { useGetWikiPage } from './useGetWikiPage'
 import { useCreateWikiPage } from './useCreateWikiPage'
 import { useUpdateWikiPage, useUpdateWikiPageContent, useUpdateWikiPageStatus } from './useUpdateWikiPage'
 import { useDeleteWikiPage } from './useDeleteWikiPage'
 import { usePendingChanges } from './useWikiPageChanges'
-import { WikiPageStatus, WikiPageStatusDisplay, type WikiPageResponse } from './wikiTypes'
+import { WikiPageStatus, WikiPageStatusDisplay, buildWikiPageTree, flattenWikiPageTree, getWikiPageDescendantIds, type WikiPageTreeNode } from './wikiTypes'
 import { UserLabel } from '../components/UserLabel'
 import HtmlEditor from '../components/HtmlEditor'
 import WikiPageChangesPanel from './WikiPageChangesPanel'
@@ -38,14 +38,11 @@ export default function WikiPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [sortOrder, setSortOrder] = useState(0)
+  const [parentId, setParentId] = useState<number | ''>('')
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch all wiki pages for the sidebar
-  const { wikiPages, isLoading: isLoadingList, refetch: refetchList } = useListWikiPages({
-    projectId: projectIdNum,
-    page: 1,
-    pageSize: 100, // Get all pages for sidebar
-  })
+  // Fetch all wiki pages for the sidebar and parent selectors
+  const { wikiPages, isLoading: isLoadingList, refetch: refetchList } = useWikiPageTree(projectIdNum)
   
   // Fetch the current wiki page if we have a pageId
   const { wikiPage, isLoading: isLoadingPage, refetch: refetchPage } = useGetWikiPage(pageIdNum)
@@ -58,6 +55,13 @@ export default function WikiPage() {
   const updateWikiPageContent = useUpdateWikiPageContent()
   const updateWikiPageStatus = useUpdateWikiPageStatus()
   const deleteWikiPage = useDeleteWikiPage()
+  const tree = buildWikiPageTree(wikiPages)
+  const createParentOptions = flattenWikiPageTree(tree)
+  const blockedIds = pageIdNum ? getWikiPageDescendantIds(tree, pageIdNum) : new Set<number>()
+  if (pageIdNum) {
+    blockedIds.add(pageIdNum)
+  }
+  const editParentOptions = flattenWikiPageTree(tree).filter((option) => !blockedIds.has(option.id))
   
   // Navigate to first wiki page if none selected and pages exist
   useEffect(() => {
@@ -72,6 +76,7 @@ export default function WikiPage() {
     setTitle('')
     setContent('')
     setSortOrder(wikiPages.length)
+    setParentId('')
     setError(null)
   }
   
@@ -81,6 +86,7 @@ export default function WikiPage() {
       setTitle(wikiPage.title)
       setContent(wikiPage.content || '')
       setSortOrder(wikiPage.sortOrder)
+      setParentId(wikiPage.parentId ?? '')
       setError(null)
     }
   }
@@ -109,6 +115,7 @@ export default function WikiPage() {
         data: {
           title: title.trim(),
           content,
+          parentId: parentId === '' ? undefined : parentId,
           sortOrder,
         },
       })
@@ -140,7 +147,7 @@ export default function WikiPage() {
         projectId: projectIdNum,
         data: {
           title: title.trim(),
-          parentId: wikiPage?.parentId,
+          parentId: parentId === '' ? undefined : parentId,
           sortOrder,
         },
       })
@@ -203,6 +210,36 @@ export default function WikiPage() {
         return 'bg-gray-50 text-gray-600 border-gray-200'
     }
   }
+
+  const renderSidebarNode = (node: WikiPageTreeNode, level: number = 0) => (
+    <div key={node.id}>
+      <button
+        onClick={() => {
+          setInternalMode('view')
+          setShowSidebar(false)
+          navigate(`/projects/${projectId}/wiki/${node.id}`)
+        }}
+        className={`w-full text-left rounded-lg text-sm transition ${
+          node.id === pageIdNum
+            ? 'bg-blue-50 text-blue-700 font-medium'
+            : 'text-gray-700 hover:bg-gray-50'
+        }`}
+        style={{ padding: '0.5rem 0.75rem', paddingLeft: `${0.75 + level * 1}rem` }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span className="truncate">{node.title}</span>
+        </div>
+      </button>
+      {node.children.length > 0 && (
+        <div className="mt-1 space-y-1">
+          {node.children.map((child) => renderSidebarNode(child, level + 1))}
+        </div>
+      )}
+    </div>
+  )
 
   const isLoading = isLoadingList || (pageIdNum && isLoadingPage)
   const isPending = createWikiPage.isPending || updateWikiPage.isPending || updateWikiPageContent.isPending
@@ -272,28 +309,9 @@ export default function WikiPage() {
             </div>
           ) : (
             <nav className="p-2">
-              {wikiPages.map((page: WikiPageResponse) => (
-                <button
-                  key={page.id}
-                  onClick={() => {
-                    setInternalMode('view')
-                    setShowSidebar(false)
-                    navigate(`/projects/${projectId}/wiki/${page.id}`)
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                    page.id === pageIdNum
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="truncate">{page.title}</span>
-                  </div>
-                </button>
-              ))}
+              <div className="space-y-1">
+                {tree.map((node) => renderSidebarNode(node))}
+              </div>
             </nav>
           )}
         </div>
@@ -335,6 +353,25 @@ export default function WikiPage() {
                     placeholder="Enter wiki page title"
                     autoFocus
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Parent Page
+                  </label>
+                  <select
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value ? parseInt(e.target.value, 10) : '')}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">No parent</option>
+                    {createParentOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {`${'  '.repeat(option.level)}${option.title}`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Nest this page under an existing page.</p>
                 </div>
                 
                 <div>
@@ -394,6 +431,25 @@ export default function WikiPage() {
                     className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter wiki page title"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Parent Page
+                  </label>
+                  <select
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value ? parseInt(e.target.value, 10) : '')}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">No parent</option>
+                    {editParentOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {`${'  '.repeat(option.level)}${option.title}`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Choose where this page appears in the wiki menu.</p>
                 </div>
                 
                 <div>

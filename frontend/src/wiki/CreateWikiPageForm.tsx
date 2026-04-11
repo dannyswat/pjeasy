@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import HtmlEditor from '../components/HtmlEditor'
-import type { CreateWikiPageRequest } from './wikiTypes'
+import { useWikiPageTree } from './useWikiPageTree'
+import { buildWikiPageTree, flattenWikiPageTree, type CreateWikiPageRequest } from './wikiTypes'
 
 interface CreateWikiPageFormProps {
   projectId: number
@@ -16,7 +17,11 @@ interface CreateWikiPageFormProps {
 export default function CreateWikiPageForm({ projectId, onClose, onSuccess, createWikiPage, parentId }: CreateWikiPageFormProps) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [selectedParentId, setSelectedParentId] = useState<number | ''>(parentId ?? '')
   const [error, setError] = useState<string | null>(null)
+  const { wikiPages } = useWikiPageTree(projectId)
+
+  const parentOptions = flattenWikiPageTree(buildWikiPageTree(wikiPages))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +38,7 @@ export default function CreateWikiPageForm({ projectId, onClose, onSuccess, crea
         data: {
           title: title.trim(),
           content: content,
-          parentId: parentId,
+          parentId: selectedParentId === '' ? undefined : selectedParentId,
         },
       })
       onSuccess()
@@ -74,6 +79,25 @@ export default function CreateWikiPageForm({ projectId, onClose, onSuccess, crea
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter wiki page title"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Parent Page
+            </label>
+            <select
+              value={selectedParentId}
+              onChange={(e) => setSelectedParentId(e.target.value ? parseInt(e.target.value, 10) : '')}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">No parent</option>
+              {parentOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {`${'  '.repeat(option.level)}${option.title}`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-500">Choose a parent page to nest this page in the wiki menu.</p>
           </div>
 
           <div>

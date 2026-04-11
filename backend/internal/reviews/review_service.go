@@ -529,7 +529,7 @@ func (s *ReviewService) generateCustomReviewItems(review *Review) error {
 	completedPoints := 0
 
 	// Get all features for the project
-	allFeatures, _, err := s.featureRepo.GetByProjectID(review.ProjectID, 0, 10000)
+	allFeatures, _, err := s.featureRepo.GetByProjectID(review.ProjectID, "", 0, 10000)
 	if err != nil {
 		return err
 	}

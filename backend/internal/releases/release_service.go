@@ -2,12 +2,18 @@ package releases
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/features"
 	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
+	"github.com/dannyswat/pjeasy/internal/ideas"
+	"github.com/dannyswat/pjeasy/internal/issues"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"github.com/dannyswat/pjeasy/internal/status_changes"
+	"github.com/dannyswat/pjeasy/internal/tasks"
+	"gorm.io/gorm"
 )
 
 type ReleaseService struct {
@@ -35,7 +41,7 @@ func NewReleaseService(
 }
 
 // CreateRelease creates a new release
-func (s *ReleaseService) CreateRelease(projectID int, version, description string, targetDate *time.Time, createdBy int) (*Release, error) {
+func (s *ReleaseService) CreateRelease(projectID int, version, description string, targetDate *time.Time, selectedItems []ConfirmedReleaseItem, createdBy int) (*Release, error) {
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
 		return nil, err
@@ -74,7 +80,13 @@ func (s *ReleaseService) CreateRelease(projectID int, version, description strin
 		UpdatedAt:   now,
 	}
 
-	if err := s.releaseRepo.Create(release); err != nil {
+	if err := s.releaseRepo.uow.GetDB().Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(release).Error; err != nil {
+			return err
+		}
+
+		return syncReleaseWorkItems(tx, release.ID, projectID, selectedItems, false, false)
+	}); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +130,7 @@ func (s *ReleaseService) UpdateRelease(releaseID int, version, description strin
 }
 
 // UpdateReleaseStatus updates a release's status
-func (s *ReleaseService) UpdateReleaseStatus(releaseID int, status string, updatedBy int) (*Release, error) {
+func (s *ReleaseService) UpdateReleaseStatus(releaseID int, status string, confirmedItems []ConfirmedReleaseItem, updatedBy int) (*Release, error) {
 	if !IsValidStatus(status) {
 		return nil, errors.New("invalid status")
 	}
@@ -144,7 +156,17 @@ func (s *ReleaseService) UpdateReleaseStatus(releaseID int, status string, updat
 		return nil, err
 	}
 
-	if err := s.releaseRepo.UpdateStatus(releaseID, status); err != nil {
+	if err := s.releaseRepo.uow.GetDB().Transaction(func(tx *gorm.DB) error {
+		if status == ReleaseStatusInUAT && confirmedItems != nil {
+			if err := syncReleaseWorkItems(tx, releaseID, release.ProjectID, confirmedItems, true, true); err != nil {
+				return err
+			}
+		}
+
+		return tx.Model(&Release{}).
+			Where("id = ?", releaseID).
+			Update("status", status).Error
+	}); err != nil {
 		return nil, err
 	}
 
@@ -158,6 +180,15 @@ func (s *ReleaseService) UpdateReleaseStatus(releaseID int, status string, updat
 type ConfirmedReleaseItem struct {
 	ID       int
 	ItemType string
+}
+
+type ReleaseCandidateItem struct {
+	ID       int    `json:"id"`
+	RefNum   string `json:"refNum"`
+	Title    string `json:"title"`
+	Status   string `json:"status"`
+	ItemType string `json:"itemType"`
+	Linked   bool   `json:"linked"`
 }
 
 // CompleteRelease completes a release. confirmedItems contains the item type and ID pairs
@@ -184,46 +215,35 @@ func (s *ReleaseService) CompleteRelease(releaseID int, confirmedItems []Confirm
 		return nil, err
 	}
 
-	confirmedIDsByType := map[string][]int{
-		"feature": {},
-		"issue":   {},
-		"task":    {},
-		"idea":    {},
-		"sprint":  {},
-	}
-	for _, item := range confirmedItems {
-		confirmedIDsByType[item.ItemType] = append(confirmedIDsByType[item.ItemType], item.ID)
-	}
-
-	db := s.releaseRepo.uow.GetDB()
-
-	unlinkByType := func(table string, itemType string) error {
-		query := db.Table(table).Where("release_id = ?", releaseID)
-		confirmedIDs := confirmedIDsByType[itemType]
-		if len(confirmedIDs) > 0 {
-			query = query.Where("id NOT IN ?", confirmedIDs)
+	if err := s.releaseRepo.uow.GetDB().Transaction(func(tx *gorm.DB) error {
+		groupedItems, err := groupReleaseItems(confirmedItems)
+		if err != nil {
+			return err
 		}
-		return query.Update("release_id", nil).Error
-	}
 
-	if err := unlinkByType("features", "feature"); err != nil {
-		return nil, err
-	}
-	if err := unlinkByType("issues", "issue"); err != nil {
-		return nil, err
-	}
-	if err := unlinkByType("tasks", "task"); err != nil {
-		return nil, err
-	}
-	if err := unlinkByType("ideas", "idea"); err != nil {
-		return nil, err
-	}
-	if err := unlinkByType("sprints", "sprint"); err != nil {
-		return nil, err
-	}
+		for _, config := range completedReleaseItemConfigs() {
+			ids := groupedItems[config.key]
+			query := tx.Table(config.table).Where("project_id = ? AND release_id = ?", release.ProjectID, releaseID)
+			if len(ids) > 0 {
+				query = query.Where("id NOT IN ?", ids)
+			}
+			if err := query.Update("release_id", nil).Error; err != nil {
+				return err
+			}
 
-	// Update release status to Completed
-	if err := s.releaseRepo.UpdateStatus(releaseID, ReleaseStatusCompleted); err != nil {
+			if len(ids) == 0 {
+				continue
+			}
+
+			if err := s.markReleaseItemsCompleted(tx, release.ProjectID, ids, config, updatedBy); err != nil {
+				return err
+			}
+		}
+
+		return tx.Model(&Release{}).
+			Where("id = ?", releaseID).
+			Update("status", ReleaseStatusCompleted).Error
+	}); err != nil {
 		return nil, err
 	}
 
@@ -232,6 +252,79 @@ func (s *ReleaseService) CompleteRelease(releaseID int, confirmedItems []Confirm
 	}
 
 	return s.releaseRepo.GetByID(releaseID)
+}
+
+type completedReleaseItemConfig struct {
+	key             string
+	table           string
+	itemType        string
+	targetStatus    string
+	statusChangeKey string
+	updateStatus    bool
+}
+
+type releasableItemStatusRow struct {
+	ID     int
+	Status string
+}
+
+func completedReleaseItemConfigs() []completedReleaseItemConfig {
+	return []completedReleaseItemConfig{
+		{key: "feature", table: "features", itemType: "feature", targetStatus: features.FeatureStatusCompleted, statusChangeKey: status_changes.ItemTypeFeature, updateStatus: true},
+		{key: "issue", table: "issues", itemType: "issue", targetStatus: issues.IssueStatusCompleted, statusChangeKey: status_changes.ItemTypeIssue, updateStatus: true},
+		{key: "task", table: "tasks", itemType: "task", targetStatus: tasks.TaskStatusCompleted, statusChangeKey: status_changes.ItemTypeTask, updateStatus: true},
+		{key: "idea", table: "ideas", itemType: "idea", targetStatus: ideas.IdeaStatusClosed, statusChangeKey: status_changes.ItemTypeIdea, updateStatus: true},
+		{key: "sprint", table: "sprints", itemType: "sprint", targetStatus: "", statusChangeKey: status_changes.ItemTypeSprint, updateStatus: false},
+	}
+}
+
+func (s *ReleaseService) markReleaseItemsCompleted(tx *gorm.DB, projectID int, ids []int, config completedReleaseItemConfig, updatedBy int) error {
+	if !config.updateStatus {
+		return nil
+	}
+
+	var rows []releasableItemStatusRow
+	if err := tx.Table(config.table).
+		Select("id, status").
+		Where("project_id = ? AND id IN ? AND release_id IS NOT NULL", projectID, ids).
+		Find(&rows).Error; err != nil {
+		return err
+	}
+	if len(rows) != len(ids) {
+		return errors.New("one or more linked release items could not be found")
+	}
+
+	now := time.Now()
+	for _, row := range rows {
+		if row.Status == config.targetStatus {
+			continue
+		}
+
+		if err := s.statusRepo.ValidateTransition(projectID, config.statusChangeKey, row.Status, config.targetStatus); err != nil {
+			return err
+		}
+
+		if err := tx.Table(config.table).
+			Where("project_id = ? AND id = ?", projectID, row.ID).
+			Update("status", config.targetStatus).Error; err != nil {
+			return err
+		}
+
+		change := &status_changes.StatusChange{
+			ProjectID: projectID,
+			ItemType:  config.statusChangeKey,
+			ItemID:    row.ID,
+			OldStatus: row.Status,
+			NewStatus: config.targetStatus,
+			ChangedBy: &updatedBy,
+			ChangedAt: now,
+		}
+		if err := tx.Create(change).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // DeleteRelease deletes a release
@@ -377,4 +470,154 @@ func (s *ReleaseService) GetReleaseItems(releaseID int, requestedBy int) ([]Rele
 	items = append(items, sprintItems...)
 
 	return items, nil
+}
+
+func (s *ReleaseService) GetReleaseCandidateItems(projectID int, releaseID *int, requestedBy int) ([]ReleaseCandidateItem, error) {
+	isMember, err := s.memberRepo.IsUserMember(projectID, requestedBy)
+	if err != nil {
+		return nil, err
+	}
+	if !isMember {
+		return nil, errors.New("user is not a member of this project")
+	}
+
+	if releaseID != nil {
+		release, err := s.releaseRepo.GetByID(*releaseID)
+		if err != nil {
+			return nil, err
+		}
+		if release == nil || release.ProjectID != projectID {
+			return nil, errors.New("release not found")
+		}
+	}
+
+	items := make([]ReleaseCandidateItem, 0)
+	db := s.releaseRepo.uow.GetDB()
+
+	appendItems := func(table string, titleColumn string, itemType string, withRefNum bool) error {
+		refNumSelect := "'' as ref_num"
+		if withRefNum {
+			refNumSelect = "ref_num"
+		}
+
+		query := db.Table(table).
+			Select("id, "+refNumSelect+", "+titleColumn+" as title, status, ? as item_type, CASE WHEN release_id IS NOT NULL THEN true ELSE false END as linked", itemType).
+			Where("project_id = ?", projectID)
+
+		if releaseID == nil {
+			query = query.Where("release_id IS NULL")
+		} else {
+			query = query.Where("release_id IS NULL OR release_id = ?", *releaseID)
+		}
+
+		var rows []ReleaseCandidateItem
+		if err := query.Order("created_at DESC").Scan(&rows).Error; err != nil {
+			return err
+		}
+
+		items = append(items, rows...)
+		return nil
+	}
+
+	if err := appendItems("features", "title", "feature", true); err != nil {
+		return nil, err
+	}
+	if err := appendItems("issues", "title", "issue", true); err != nil {
+		return nil, err
+	}
+	if err := appendItems("tasks", "title", "task", false); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func syncReleaseWorkItems(tx *gorm.DB, releaseID int, projectID int, confirmedItems []ConfirmedReleaseItem, unlinkMissing bool, promoteInReview bool) error {
+	groupedItems, err := groupReleaseItems(confirmedItems)
+	if err != nil {
+		return err
+	}
+
+	types := []struct {
+		itemType   string
+		table      string
+		inProgress string
+		inReview   string
+		canPromote bool
+	}{
+		{itemType: "feature", table: "features", inProgress: features.FeatureStatusInProgress, inReview: features.FeatureStatusInReview, canPromote: true},
+		{itemType: "issue", table: "issues", inProgress: issues.IssueStatusInProgress, inReview: issues.IssueStatusInReview, canPromote: true},
+		{itemType: "task", table: "tasks", inProgress: tasks.TaskStatusInProgress, inReview: "", canPromote: false},
+	}
+
+	for _, itemConfig := range types {
+		ids := groupedItems[itemConfig.itemType]
+		if len(ids) > 0 {
+			var count int64
+			if err := tx.Table(itemConfig.table).
+				Where("project_id = ? AND id IN ?", projectID, ids).
+				Where("release_id IS NULL OR release_id = ?", releaseID).
+				Count(&count).Error; err != nil {
+				return err
+			}
+			if count != int64(len(ids)) {
+				return errors.New("one or more selected release items are invalid or already linked to another release")
+			}
+
+			if err := tx.Table(itemConfig.table).
+				Where("project_id = ? AND id IN ?", projectID, ids).
+				Update("release_id", releaseID).Error; err != nil {
+				return err
+			}
+
+			if promoteInReview && itemConfig.canPromote {
+				if err := tx.Table(itemConfig.table).
+					Where("project_id = ? AND id IN ? AND status = ?", projectID, ids, itemConfig.inProgress).
+					Update("status", itemConfig.inReview).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		if unlinkMissing {
+			query := tx.Table(itemConfig.table).Where("project_id = ? AND release_id = ?", projectID, releaseID)
+			if len(ids) > 0 {
+				query = query.Where("id NOT IN ?", ids)
+			}
+			if err := query.Update("release_id", nil).Error; err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func groupReleaseItems(confirmedItems []ConfirmedReleaseItem) (map[string][]int, error) {
+	groupedItems := map[string][]int{
+		"feature": {},
+		"issue":   {},
+		"task":    {},
+		"idea":    {},
+		"sprint":  {},
+	}
+
+	seen := make(map[string]struct{}, len(confirmedItems))
+	for _, item := range confirmedItems {
+		if item.ID <= 0 {
+			return nil, errors.New("release item id is required")
+		}
+		if _, ok := groupedItems[item.ItemType]; !ok {
+			return nil, errors.New("invalid release item type")
+		}
+
+		key := item.ItemType + ":" + strconv.Itoa(item.ID)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		groupedItems[item.ItemType] = append(groupedItems[item.ItemType], item.ID)
+	}
+
+	return groupedItems, nil
 }

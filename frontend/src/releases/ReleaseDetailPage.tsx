@@ -9,6 +9,7 @@ import { useCompleteRelease } from './useCompleteRelease'
 import { useDeleteRelease } from './useDeleteRelease'
 import { ReleaseStatus, ReleaseStatusDisplay, type ConfirmedReleaseItem } from './releaseTypes'
 import CompleteReleaseModal from './CompleteReleaseModal'
+import PrepareReleaseUATModal from './PrepareReleaseUATModal'
 import { useProjectRole } from '../projects/useProjectRole'
 
 export default function ReleaseDetailPage() {
@@ -30,6 +31,7 @@ export default function ReleaseDetailPage() {
   const [editDescription, setEditDescription] = useState('')
   const [editTargetDate, setEditTargetDate] = useState('')
   const [showCompleteModal, setShowCompleteModal] = useState(false)
+  const [showUATModal, setShowUATModal] = useState(false)
 
   const startEdit = () => {
     if (!release) return
@@ -62,6 +64,18 @@ export default function ReleaseDetailPage() {
       refetch()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update status')
+    }
+  }
+
+  const handleMoveToUAT = async (confirmedItems: ConfirmedReleaseItem[]) => {
+    if (!release) return
+    try {
+      await updateStatus.mutateAsync({ releaseId: release.id, status: ReleaseStatus.IN_UAT, confirmedItems })
+      setShowUATModal(false)
+      refetch()
+      refetchItems()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update release to UAT')
     }
   }
 
@@ -209,7 +223,7 @@ export default function ReleaseDetailPage() {
             {canWrite && release.status !== ReleaseStatus.COMPLETED && release.status !== ReleaseStatus.ABANDONED && (
               <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2 flex-wrap">
                 {release.status !== ReleaseStatus.IN_UAT && (
-                  <button onClick={() => handleStatusChange(ReleaseStatus.IN_UAT)} className="text-sm px-3 py-1 bg-orange-100 text-orange-800 rounded hover:bg-orange-200">Move to UAT</button>
+                  <button onClick={() => setShowUATModal(true)} className="text-sm px-3 py-1 bg-orange-100 text-orange-800 rounded hover:bg-orange-200">Move to UAT</button>
                 )}
                 <button onClick={() => setShowCompleteModal(true)} className="text-sm px-3 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200">Complete Release</button>
                 {release.status !== ReleaseStatus.ON_HOLD && (
@@ -255,6 +269,16 @@ export default function ReleaseDetailPage() {
           onComplete={handleComplete}
           onCancel={() => setShowCompleteModal(false)}
           isLoading={completeRelease.isPending}
+        />
+      )}
+
+      {showUATModal && (
+        <PrepareReleaseUATModal
+          projectId={projectIdNum}
+          release={release}
+          onConfirm={handleMoveToUAT}
+          onCancel={() => setShowUATModal(false)}
+          isLoading={updateStatus.isPending}
         />
       )}
     </div>

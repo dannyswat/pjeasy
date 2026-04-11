@@ -27,6 +27,7 @@ export default function RelatedFeatures({ projectId, itemType, itemId }: Related
     points: number
     deadline?: string
     releaseId?: number
+    dependsOnFeatureId?: number
     tags: string
   }) => {
     try {
@@ -39,6 +40,7 @@ export default function RelatedFeatures({ projectId, itemType, itemId }: Related
         points: data.points,
         deadline: data.deadline,
         releaseId: data.releaseId,
+        dependsOnFeatureId: data.dependsOnFeatureId,
         itemType,
         itemId,
         tags: data.tags,

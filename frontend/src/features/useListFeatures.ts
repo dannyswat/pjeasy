@@ -8,11 +8,12 @@ interface ListFeaturesParams {
   pageSize?: number
   status?: string | string[]
   priority?: string
+  search?: string
 }
 
-export function useListFeatures({ projectId, page = 1, pageSize = 20, status, priority }: ListFeaturesParams) {
+export function useListFeatures({ projectId, page = 1, pageSize = 20, status, priority, search }: ListFeaturesParams) {
   const query = useQuery({
-    queryKey: ['features', projectId, page, pageSize, status, priority],
+    queryKey: ['features', projectId, page, pageSize, status, priority, search],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -24,6 +25,7 @@ export function useListFeatures({ projectId, page = 1, pageSize = 20, status, pr
         params.append('status', statusValue)
       }
       if (priority) params.append('priority', priority)
+      if (search) params.append('search', search)
 
       return getSecureApi<FeaturesListResponse>(
         `/api/projects/${projectId}/features?${params.toString()}`

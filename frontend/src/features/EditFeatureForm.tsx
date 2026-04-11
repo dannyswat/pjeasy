@@ -5,6 +5,7 @@ import HtmlEditor from '../components/HtmlEditor'
 import DatePicker from '../components/DatePicker'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
 import ReleaseSelect from '../components/ReleaseSelect'
+import FeatureDependencySelect from './FeatureDependencySelect'
 import { FeaturePriority, type FeatureResponse } from './featureTypes'
 
 interface EditFeatureFormProps {
@@ -18,6 +19,7 @@ interface EditFeatureFormProps {
     points: number
     deadline?: string
     releaseId?: number
+    dependsOnFeatureId?: number
     tags: string
     cascadeCompletion: boolean
   }) => Promise<void>
@@ -41,6 +43,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
   const [points, setPoints] = useState<number | undefined>(feature.points)
   const [deadline, setDeadline] = useState<string>(formatDateForInput(feature.deadline))
   const [releaseId, setReleaseId] = useState<number | undefined>(feature.releaseId)
+  const [dependsOnFeatureId, setDependsOnFeatureId] = useState<number | undefined>(feature.dependsOnFeatureId)
   const [tags, setTags] = useState<string[]>(feature.tags ? feature.tags.split(',').map(t => t.trim()) : [])
   const [cascadeCompletion, setCascadeCompletion] = useState(feature.cascadeCompletion)
 
@@ -54,6 +57,7 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
       points: points ?? 0,
       deadline: deadline || undefined,
       releaseId,
+      dependsOnFeatureId,
       tags: tags.join(','),
       cascadeCompletion,
     })
@@ -172,6 +176,13 @@ export default function EditFeatureForm({ feature, projectId, onSubmit, onCancel
             value={releaseId}
             onChange={setReleaseId}
             label="Release"
+          />
+
+          <FeatureDependencySelect
+            projectId={projectId ?? feature.projectId}
+            value={dependsOnFeatureId}
+            onChange={setDependsOnFeatureId}
+            excludeFeatureId={feature.id}
           />
           
           <div>

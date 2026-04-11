@@ -1,9 +1,38 @@
 package features
 
 import (
+	"strings"
+
 	"github.com/dannyswat/pjeasy/internal/repositories"
 	"gorm.io/gorm"
 )
+
+func applyFeatureSearch(query *gorm.DB, search string) *gorm.DB {
+	trimmedSearch := strings.TrimSpace(search)
+	if trimmedSearch == "" {
+		return query
+	}
+
+	pattern := "%" + trimmedSearch + "%"
+	return query.Where("title ILIKE ? OR ref_num ILIKE ?", pattern, pattern)
+}
+
+func applyFeatureDependencySelection(query *gorm.DB, dependencySelectable bool, selectedFeatureID *int, excludeFeatureID *int) *gorm.DB {
+	if excludeFeatureID != nil {
+		query = query.Where("id != ?", *excludeFeatureID)
+	}
+
+	if !dependencySelectable {
+		return query
+	}
+
+	terminalStatuses := []string{FeatureStatusCompleted, FeatureStatusClosed}
+	if selectedFeatureID != nil {
+		return query.Where("status NOT IN ? OR id = ?", terminalStatuses, *selectedFeatureID)
+	}
+
+	return query.Where("status NOT IN ?", terminalStatuses)
+}
 
 type FeatureRepository struct {
 	uow *repositories.UnitOfWork
@@ -28,6 +57,15 @@ func (r *FeatureRepository) GetByID(id int) (*Feature, error) {
 	return &feature, err
 }
 
+// HasDependents checks whether other features depend on the given feature.
+func (r *FeatureRepository) HasDependents(featureID int) (bool, error) {
+	var count int64
+	err := r.uow.GetDB().Model(&Feature{}).
+		Where("depends_on_feature_id = ?", featureID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 // Update updates a feature
 func (r *FeatureRepository) Update(feature *Feature) error {
 	return r.uow.GetDB().Save(feature).Error
@@ -39,11 +77,11 @@ func (r *FeatureRepository) Delete(id int) error {
 }
 
 // GetByProjectID returns all features for a project with pagination
-func (r *FeatureRepository) GetByProjectID(projectID int, offset, limit int) ([]Feature, int64, error) {
+func (r *FeatureRepository) GetByProjectID(projectID int, search string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature
 	var total int64
 
-	query := r.uow.GetDB().Model(&Feature{}).Where("project_id = ?", projectID)
+	query := applyFeatureSearch(r.uow.GetDB().Model(&Feature{}).Where("project_id = ?", projectID), search)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -60,12 +98,15 @@ func (r *FeatureRepository) GetByProjectID(projectID int, offset, limit int) ([]
 }
 
 // GetByProjectIDAndStatus returns features filtered by status with pagination
-func (r *FeatureRepository) GetByProjectIDAndStatus(projectID int, status string, offset, limit int) ([]Feature, int64, error) {
+func (r *FeatureRepository) GetByProjectIDAndStatus(projectID int, status string, search string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature
 	var total int64
 
-	query := r.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND status = ?", projectID, status)
+	query := applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("project_id = ? AND status = ?", projectID, status),
+		search,
+	)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -82,12 +123,15 @@ func (r *FeatureRepository) GetByProjectIDAndStatus(projectID int, status string
 }
 
 // GetByProjectIDAndStatuses returns features filtered by multiple statuses with pagination
-func (r *FeatureRepository) GetByProjectIDAndStatuses(projectID int, statuses []string, offset, limit int) ([]Feature, int64, error) {
+func (r *FeatureRepository) GetByProjectIDAndStatuses(projectID int, statuses []string, search string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature
 	var total int64
 
-	query := r.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND status IN ?", projectID, statuses)
+	query := applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("project_id = ? AND status IN ?", projectID, statuses),
+		search,
+	)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -104,12 +148,15 @@ func (r *FeatureRepository) GetByProjectIDAndStatuses(projectID int, statuses []
 }
 
 // GetByProjectIDAndPriority returns features filtered by priority with pagination
-func (r *FeatureRepository) GetByProjectIDAndPriority(projectID int, priority string, offset, limit int) ([]Feature, int64, error) {
+func (r *FeatureRepository) GetByProjectIDAndPriority(projectID int, priority string, search string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature
 	var total int64
 
-	query := r.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND priority = ?", projectID, priority)
+	query := applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("project_id = ? AND priority = ?", projectID, priority),
+		search,
+	)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -126,12 +173,15 @@ func (r *FeatureRepository) GetByProjectIDAndPriority(projectID int, priority st
 }
 
 // GetByProjectIDAndAssignee returns features filtered by assignee with pagination
-func (r *FeatureRepository) GetByProjectIDAndAssignee(projectID int, assigneeId int, offset, limit int) ([]Feature, int64, error) {
+func (r *FeatureRepository) GetByProjectIDAndAssignee(projectID int, assigneeId int, search string, offset, limit int) ([]Feature, int64, error) {
 	var features []Feature
 	var total int64
 
-	query := r.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND assigned_to = ?", projectID, assigneeId)
+	query := applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("project_id = ? AND assigned_to = ?", projectID, assigneeId),
+		search,
+	)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -230,4 +280,34 @@ func (r *FeatureRepository) GetByProjectAndAssigneeLimited(projectID int, assign
 		Find(&features).Error
 
 	return features, err
+}
+
+func (r *FeatureRepository) GetByProjectIDWithSelectorFilters(projectID int, statuses []string, priority string, search string, excludeFeatureID *int, dependencySelectable bool, selectedFeatureID *int, offset, limit int) ([]Feature, int64, error) {
+	var features []Feature
+	var total int64
+
+	query := r.uow.GetDB().Model(&Feature{}).Where("project_id = ?", projectID)
+	query = applyFeatureSearch(query, search)
+	query = applyFeatureDependencySelection(query, dependencySelectable, selectedFeatureID, excludeFeatureID)
+
+	if len(statuses) == 1 {
+		query = query.Where("status = ?", statuses[0])
+	} else if len(statuses) > 1 {
+		query = query.Where("status IN ?", statuses)
+	}
+
+	if priority != "" {
+		query = query.Where("priority = ?", priority)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.Order("created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&features).Error
+
+	return features, total, err
 }
