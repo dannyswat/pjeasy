@@ -31,6 +31,8 @@ import ReleaseDetailPage from './releases/ReleaseDetailPage'
 import { ProjectProvider, useProjectContext } from './projects/ProjectContext'
 import NoProjectPage from './projects/NoProjectPage'
 import UnauthorizedPage from './projects/UnauthorizedPage'
+import UserDailyPage from './user_daily/UserDailyPage'
+import TimesheetSummaryPage from './user_daily/TimesheetSummaryPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -186,6 +188,30 @@ function App() {
                 <ProjectProvider>
                   <DefaultLayout>
                     <UnauthorizedPage />
+                  </DefaultLayout>
+                </ProjectProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my/daily"
+            element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <UserDailyPage />
+                  </DefaultLayout>
+                </ProjectProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my/timesheet"
+            element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <DefaultLayout>
+                    <TimesheetSummaryPage />
                   </DefaultLayout>
                 </ProjectProvider>
               </ProtectedRoute>

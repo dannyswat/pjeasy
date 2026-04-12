@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useListIssues } from './useListIssues'
 import { useUpdateIssue } from './useUpdateIssue'
 import { useDeleteIssue } from './useDeleteIssue'
@@ -11,6 +12,7 @@ import CreateIssueForm from './CreateIssueForm'
 import { UserLabel } from '../components/UserLabel'
 import { useProjectRole } from '../projects/useProjectRole'
 import ReleaseBadge from '../components/ReleaseBadge'
+import { useAddUserDailyItem } from '../user_daily/useUserDailyApi'
 
 // Default statuses exclude Completed and Closed
 const defaultStatuses = [
@@ -48,6 +50,7 @@ export default function IssuesPage() {
   const deleteIssue = useDeleteIssue()
   const createIssue = useCreateIssue()
   const batchUpdateIssueStatus = useBatchUpdateIssueStatus()
+  const addIssueToDaily = useAddUserDailyItem(new Date().toISOString().slice(0, 10))
   const { canWrite } = useProjectRole(projectIdNum)
 
   // Close dropdown when clicking outside
@@ -134,6 +137,20 @@ export default function IssuesPage() {
       refetch()
     } catch (error) {
       console.error('Failed to batch update issues:', error)
+    }
+  }
+
+  const handleAddToDaily = async (issueId: number) => {
+    try {
+      await addIssueToDaily.mutateAsync({
+        date: new Date().toISOString().slice(0, 10),
+        itemType: 'issue',
+        itemId: issueId,
+      })
+      toast.success('Added to daily')
+    } catch (error) {
+      console.error('Failed to add issue to daily:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to add to daily')
     }
   }
 
@@ -392,6 +409,19 @@ export default function IssuesPage() {
                           👤 <UserLabel userId={issue.assignedTo} />
                         </span>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddToDaily(issue.id)
+                        }}
+                        className="p-1.5 text-sky-600 hover:bg-sky-50 rounded transition"
+                        title="Add to Daily"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11v6m-3-3h6" />
+                        </svg>
+                      </button>
                       {canWrite && (
                       <>
                       <button

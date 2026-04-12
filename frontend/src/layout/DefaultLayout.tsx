@@ -213,6 +213,59 @@ export default function DefaultLayout({
           } fixed md:static md:left-0 top-12.25 bottom-0 z-30 w-56 bg-white border-r border-gray-200 transition-[left,width] duration-300 overflow-hidden`}
         >
           <nav className="p-3 space-y-1">
+            <div className="px-3 py-1.5">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                My Work
+              </div>
+            </div>
+            <Link
+              to="/my/daily"
+              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
+                location.pathname === '/my/daily'
+                  ? 'bg-emerald-50 text-emerald-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+              } transition-colors`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-7 9h8"
+                />
+              </svg>
+              <span>Daily Board</span>
+            </Link>
+            <Link
+              to="/my/timesheet"
+              className={`flex items-center space-x-2 px-3 py-2 rounded text-sm ${
+                location.pathname === '/my/timesheet'
+                  ? 'bg-emerald-50 text-emerald-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+              } transition-colors`}
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 3v18h18M8 17V9m5 8V5m5 12v-6"
+                />
+              </svg>
+              <span>Timesheet</span>
+            </Link>
+            <div className="my-2 border-t border-gray-200"></div>
+
             {/* Project Menu - Show when in project context */}
             {isInProject && (
               <>

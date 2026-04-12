@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useListTasks } from './useListTasks'
 import { useCreateTask } from './useCreateTask'
 import { useUpdateTask } from './useUpdateTask'
@@ -22,6 +23,7 @@ import { useRemoveTaskFromSprint } from '../sprints/useRemoveTaskFromSprint'
 import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 import ReleaseBadge from '../components/ReleaseBadge'
+import { useAddUserDailyItem } from '../user_daily/useUserDailyApi'
 
 // Default statuses exclude Completed and Closed
 const defaultTaskStatuses = [
@@ -78,6 +80,7 @@ export default function TasksPage() {
   const deleteTask = useDeleteTask()
   const addTaskToSprint = useAddTaskToSprint()
   const removeTaskFromSprint = useRemoveTaskFromSprint()
+  const addTaskToDaily = useAddUserDailyItem(new Date().toISOString().slice(0, 10))
 
   const totalPages = Math.ceil(total / pageSize)
 
@@ -231,6 +234,20 @@ export default function TasksPage() {
       refetch()
     } catch (error) {
       console.error('Failed to batch update tasks:', error)
+    }
+  }
+
+  const handleAddToDaily = async (taskId: number) => {
+    try {
+      await addTaskToDaily.mutateAsync({
+        date: new Date().toISOString().slice(0, 10),
+        itemType: 'task',
+        itemId: taskId,
+      })
+      toast.success('Added to daily')
+    } catch (error) {
+      console.error('Failed to add task to daily:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to add to daily')
     }
   }
 
@@ -849,6 +866,19 @@ export default function TasksPage() {
                           👤 Unassigned
                         </button>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAddToDaily(task.id)
+                        }}
+                        className="p-1.5 text-sky-600 hover:bg-sky-50 rounded transition"
+                        title="Add to Daily"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11v6m-3-3h6" />
+                        </svg>
+                      </button>
                       {canWrite && (
                       <button
                         onClick={(e) => {

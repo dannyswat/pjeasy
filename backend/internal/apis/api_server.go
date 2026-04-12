@@ -21,6 +21,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/sprints"
 	"github.com/dannyswat/pjeasy/internal/status_changes"
 	"github.com/dannyswat/pjeasy/internal/tasks"
+	"github.com/dannyswat/pjeasy/internal/user_dailies"
 	userroles "github.com/dannyswat/pjeasy/internal/user_roles"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
@@ -54,6 +55,7 @@ type APIServer struct {
 	releaseService       *releases.ReleaseService
 	wikiPageService      *wiki_pages.WikiPageService
 	statusChangeService  *status_changes.StatusChangeService
+	userDailyService     *user_dailies.UserDailyService
 	statusFlowHandler    *StatusFlowHandler
 	tokenService         *user_sessions.TokenService
 	userHandler          *UserHandler
@@ -72,6 +74,7 @@ type APIServer struct {
 	releaseHandler       *ReleaseHandler
 	wikiPageHandler      *WikiPageHandler
 	statusChangeHandler  *StatusChangeHandler
+	userDailyHandler     *UserDailyHandler
 	dashboardHandler     *DashboardHandler
 	authMiddleware       *AuthMiddleware
 	projectMiddleware    *ProjectMiddleware
@@ -134,6 +137,8 @@ func (s *APIServer) AutoMigrate() error {
 		&wiki_pages.WikiPageChange{},
 		&status_changes.StatusChange{},
 		&status_changes.StatusFlow{},
+		&user_dailies.UserDailyItem{},
+		&user_dailies.UserDailyTimeLog{},
 	)
 }
 
@@ -213,6 +218,11 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize task service
 	s.taskService = tasks.NewTaskService(taskRepo, memberRepo, projectRepo, sequenceRepo, serviceTicketRepo, s.wikiPageService, s.statusChangeService, s.uowFactory)
 
+	// Initialize user daily service
+	userDailyItemRepo := user_dailies.NewUserDailyItemRepository(s.globalUOW)
+	userDailyTimeLogRepo := user_dailies.NewUserDailyTimeLogRepository(s.globalUOW)
+	s.userDailyService = user_dailies.NewUserDailyService(userDailyItemRepo, userDailyTimeLogRepo, projectRepo, memberRepo, featureRepo, issueRepo, taskRepo, s.featureService, s.issueService, s.taskService)
+
 	// Connect workflow engine to task service
 	taskWorkflowAdapter := workflow.NewTaskWorkflowAdapter(s.workflowEngine)
 	s.taskService.SetStatusChangeHandler(taskWorkflowAdapter)
@@ -246,6 +256,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.releaseHandler = NewReleaseHandler(s.releaseService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
 	s.statusChangeHandler = NewStatusChangeHandler(s.statusChangeService)
+	s.userDailyHandler = NewUserDailyHandler(s.userDailyService)
 	s.statusFlowHandler = NewStatusFlowHandler(s.statusChangeService)
 	s.dashboardHandler = NewDashboardHandler(s.projectService, s.taskService, s.issueService, s.featureService, s.serviceTicketService, s.sprintService)
 	s.authMiddleware = NewAuthMiddleware(s.tokenService, s.adminService)
@@ -268,6 +279,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.releaseHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.wikiPageHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.statusChangeHandler.RegisterRoutes(s.echo, s.authMiddleware)
+	s.userDailyHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.statusFlowHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
