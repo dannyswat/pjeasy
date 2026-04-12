@@ -12,7 +12,7 @@ interface PrepareReleaseUATModalProps {
 }
 
 export default function PrepareReleaseUATModal({ projectId, release, onConfirm, onCancel, isLoading }: PrepareReleaseUATModalProps) {
-  const { items, isLoading: itemsLoading } = useGetReleaseCandidateItems(projectId, release.id)
+  const { items, isLoading: itemsLoading } = useGetReleaseCandidateItems(projectId, release.id, true, false, true)
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function PrepareReleaseUATModal({ projectId, release, onConfirm, 
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Prepare {release.version} for UAT</h3>
           <p className="text-sm text-gray-500 mt-1">
-            Select the features, issues, and tasks that belong in UAT. Unchecked linked items will be unlinked. Linked issues and features still in progress will be moved to In Review automatically.
+            Review the items already linked to this release before moving it to UAT. Unchecked linked items will be unlinked. Linked issues and features still in progress will be moved to In Review automatically.
           </p>
         </div>
 

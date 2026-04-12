@@ -242,7 +242,19 @@ func (h *ReleaseHandler) GetReleaseCandidateItems(c echo.Context) error {
 		releaseID = &parsedReleaseID
 	}
 
-	items, err := h.releaseService.GetReleaseCandidateItems(projectID, releaseID, userID)
+	excludeDone := false
+	switch c.QueryParam("excludeDone") {
+	case "true", "1", "yes":
+		excludeDone = true
+	}
+
+	linkedOnly := false
+	switch c.QueryParam("linkedOnly") {
+	case "true", "1", "yes":
+		linkedOnly = true
+	}
+
+	items, err := h.releaseService.GetReleaseCandidateItems(projectID, releaseID, excludeDone, linkedOnly, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

@@ -472,7 +472,7 @@ func (s *ReleaseService) GetReleaseItems(releaseID int, requestedBy int) ([]Rele
 	return items, nil
 }
 
-func (s *ReleaseService) GetReleaseCandidateItems(projectID int, releaseID *int, requestedBy int) ([]ReleaseCandidateItem, error) {
+func (s *ReleaseService) GetReleaseCandidateItems(projectID int, releaseID *int, excludeDone bool, linkedOnly bool, requestedBy int) ([]ReleaseCandidateItem, error) {
 	isMember, err := s.memberRepo.IsUserMember(projectID, requestedBy)
 	if err != nil {
 		return nil, err
@@ -494,7 +494,7 @@ func (s *ReleaseService) GetReleaseCandidateItems(projectID int, releaseID *int,
 	items := make([]ReleaseCandidateItem, 0)
 	db := s.releaseRepo.uow.GetDB()
 
-	appendItems := func(table string, titleColumn string, itemType string, withRefNum bool) error {
+	appendItems := func(table string, titleColumn string, itemType string, withRefNum bool, excludedStatuses []string) error {
 		refNumSelect := "'' as ref_num"
 		if withRefNum {
 			refNumSelect = "ref_num"
@@ -506,8 +506,14 @@ func (s *ReleaseService) GetReleaseCandidateItems(projectID int, releaseID *int,
 
 		if releaseID == nil {
 			query = query.Where("release_id IS NULL")
+		} else if linkedOnly {
+			query = query.Where("release_id = ?", *releaseID)
 		} else {
 			query = query.Where("release_id IS NULL OR release_id = ?", *releaseID)
+		}
+
+		if excludeDone && len(excludedStatuses) > 0 {
+			query = query.Where("status NOT IN ?", excludedStatuses)
 		}
 
 		var rows []ReleaseCandidateItem
@@ -519,13 +525,13 @@ func (s *ReleaseService) GetReleaseCandidateItems(projectID int, releaseID *int,
 		return nil
 	}
 
-	if err := appendItems("features", "title", "feature", true); err != nil {
+	if err := appendItems("features", "title", "feature", true, []string{features.FeatureStatusCompleted, features.FeatureStatusClosed}); err != nil {
 		return nil, err
 	}
-	if err := appendItems("issues", "title", "issue", true); err != nil {
+	if err := appendItems("issues", "title", "issue", true, []string{issues.IssueStatusCompleted, issues.IssueStatusClosed}); err != nil {
 		return nil, err
 	}
-	if err := appendItems("tasks", "title", "task", false); err != nil {
+	if err := appendItems("tasks", "title", "task", false, []string{tasks.TaskStatusCompleted, tasks.TaskStatusClosed}); err != nil {
 		return nil, err
 	}
 

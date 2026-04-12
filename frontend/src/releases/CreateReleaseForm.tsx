@@ -15,7 +15,7 @@ export default function CreateReleaseForm({ projectId, onSubmit, onCancel, isLoa
   const [description, setDescription] = useState('')
   const [targetDate, setTargetDate] = useState('')
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
-  const { items, isLoading: itemsLoading } = useGetReleaseCandidateItems(projectId)
+  const { items, isLoading: itemsLoading } = useGetReleaseCandidateItems(projectId, null, true, true)
 
   const toggleItem = (itemType: string, id: number) => {
     const key = getReleaseItemKey(itemType, id)
@@ -93,7 +93,7 @@ export default function CreateReleaseForm({ projectId, onSubmit, onCancel, isLoa
               <label className="block text-sm font-medium text-gray-700">Linked Items</label>
               <span className="text-xs text-gray-500">Optional</span>
             </div>
-            <p className="text-sm text-gray-500 mb-3">Select existing features, issues, or tasks to include in this release.</p>
+            <p className="text-sm text-gray-500 mb-3">Select existing features, issues, or tasks to include in this release. Completed and closed items are excluded.</p>
             <ReleaseItemsChecklist
               items={items}
               selectedKeys={selectedKeys}
