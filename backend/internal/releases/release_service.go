@@ -411,11 +411,12 @@ func (s *ReleaseService) GetProjectReleases(projectID int, statuses []string, pa
 
 // ReleaseItem represents an item linked to a release
 type ReleaseItem struct {
-	ID       int    `json:"id"`
-	RefNum   string `json:"refNum"`
-	Title    string `json:"title"`
-	Status   string `json:"status"`
-	ItemType string `json:"itemType"` // "feature", "issue", "task", "idea", "sprint"
+	ID          int    `json:"id"`
+	RefNum      string `json:"refNum"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	ItemType    string `json:"itemType"` // "feature", "issue", "task", "idea", "sprint"
 }
 
 // GetReleaseItems retrieves all items linked to a release
@@ -441,31 +442,53 @@ func (s *ReleaseService) GetReleaseItems(releaseID int, requestedBy int) ([]Rele
 
 	// Query features
 	var featureItems []ReleaseItem
-	db.Table("features").Select("id, ref_num, title, status, 'feature' as item_type").
+	db.Table("features").Select("id, ref_num, title, description, status, 'feature' as item_type").
 		Where("release_id = ?", releaseID).Scan(&featureItems)
 	items = append(items, featureItems...)
 
 	// Query issues
 	var issueItems []ReleaseItem
-	db.Table("issues").Select("id, ref_num, title, status, 'issue' as item_type").
+	db.Table("issues").Select("id, ref_num, title, description, status, 'issue' as item_type").
 		Where("release_id = ?", releaseID).Scan(&issueItems)
 	items = append(items, issueItems...)
 
 	// Query tasks
 	var taskItems []ReleaseItem
-	db.Table("tasks").Select("id, '' as ref_num, title, status, 'task' as item_type").
-		Where("release_id = ?", releaseID).Scan(&taskItems)
+	db.Table("tasks t").
+		Select(`t.id,
+			'' as ref_num,
+			t.title,
+			COALESCE(
+				NULLIF(
+					CASE
+						WHEN t.item_type = 'ideas' THEN linked_ideas.description
+						WHEN t.item_type = 'features' THEN linked_features.description
+						WHEN t.item_type = 'issues' THEN linked_issues.description
+						WHEN t.item_type = 'service-tickets' THEN linked_service_tickets.description
+						ELSE ''
+					END,
+					''
+				),
+				t.description
+			) as description,
+			t.status,
+			'task' as item_type`).
+		Joins("LEFT JOIN ideas linked_ideas ON t.item_type = ? AND t.item_id = linked_ideas.id", "ideas").
+		Joins("LEFT JOIN features linked_features ON t.item_type = ? AND t.item_id = linked_features.id", "features").
+		Joins("LEFT JOIN issues linked_issues ON t.item_type = ? AND t.item_id = linked_issues.id", "issues").
+		Joins("LEFT JOIN service_tickets linked_service_tickets ON t.item_type = ? AND t.item_id = linked_service_tickets.id", "service-tickets").
+		Where("t.release_id = ?", releaseID).Scan(&taskItems)
 	items = append(items, taskItems...)
 
 	// Query ideas
 	var ideaItems []ReleaseItem
-	db.Table("ideas").Select("id, ref_num, title, status, 'idea' as item_type").
+	db.Table("ideas").Select("id, ref_num, title, description, status, 'idea' as item_type").
 		Where("release_id = ?", releaseID).Scan(&ideaItems)
 	items = append(items, ideaItems...)
 
 	// Query sprints
 	var sprintItems []ReleaseItem
-	db.Table("sprints").Select("id, '' as ref_num, name as title, status, 'sprint' as item_type").
+	db.Table("sprints").Select("id, '' as ref_num, name as title, goal as description, status, 'sprint' as item_type").
 		Where("release_id = ?", releaseID).Scan(&sprintItems)
 	items = append(items, sprintItems...)
 

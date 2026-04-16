@@ -48,6 +48,7 @@ export interface ReleaseItemResponse {
   id: number
   refNum: string
   title: string
+  description: string
   status: string
   itemType: string
 }

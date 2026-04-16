@@ -29,6 +29,25 @@ function formatStatus(status: string) {
   return status.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (value) => value.toUpperCase())
 }
 
+function formatWorkItemLine(item: UserDailyItemResponse) {
+  const prefix = [item.itemType.toUpperCase(), item.refNum].filter(Boolean).join(' ')
+  return `${prefix}: ${item.title}`
+}
+
+async function copyTextToClipboard(text: string, successMessage: string) {
+  if (!text.trim()) {
+    toast.error('Nothing to copy yet')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(successMessage)
+  } catch {
+    toast.error('Failed to copy to clipboard')
+  }
+}
+
 function buildItemPath(item: UserDailyItemResponse) {
   switch (item.itemType) {
     case 'task':
@@ -79,6 +98,17 @@ export default function UserDailyPage() {
 
   const standardProgress = Math.min((board?.totalHours ?? 0) / standardDayHours, 1) * 100
 
+  const dailyWorkItemsText = useMemo(() => {
+    const itemBlocks = (board?.items ?? []).map((item, index) => {
+      return [
+        `${index + 1}. ${formatWorkItemLine(item)}`,
+        `Project: ${item.projectName}`,
+      ].join('\n')
+    })
+
+    return ['Please working on the following items', '', ...itemBlocks].join('\n\n')
+  }, [board?.items])
+
   const handleAddCandidate = async (itemType: 'task' | 'issue' | 'feature', itemId: number) => {
     try {
       await addItem.mutateAsync({ date: selectedDate, itemType, itemId })
@@ -113,6 +143,10 @@ export default function UserDailyPage() {
       console.error('Failed to delete time log:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to delete time log')
     }
+  }
+
+  const handleCopyWorkItems = async () => {
+    await copyTextToClipboard(dailyWorkItemsText, 'Work items copied')
   }
 
   const handleDropOnTimeUsage = async (event: React.DragEvent<HTMLDivElement>) => {
@@ -207,12 +241,19 @@ export default function UserDailyPage() {
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_1.65fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Daily list</h2>
               </div>
+              <button
+                onClick={handleCopyWorkItems}
+                disabled={board.items.length === 0}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Copy work items
+              </button>
             </div>
 
             <div className="mt-4 space-y-3">
@@ -291,23 +332,23 @@ export default function UserDailyPage() {
               className="mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-sky-500 focus:bg-white"
             />
 
-            <div className="mt-4 max-h-112 space-y-3 overflow-y-auto pr-1">
+            <div className="mt-4 max-h-112 space-y-3 overflow-x-hidden overflow-y-auto pr-1">
               {filteredCandidates.map((candidate) => (
                 <div key={`${candidate.itemType}-${candidate.itemId}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span className="rounded-full bg-white px-2 py-1 font-medium uppercase tracking-[0.16em] text-slate-700">{candidate.itemType}</span>
                         {candidate.refNum && <span>{candidate.refNum}</span>}
                         <span>{candidate.projectName}</span>
                       </div>
-                      <div className="mt-2 truncate text-sm font-semibold text-slate-900">{candidate.title}</div>
+                      <div className="mt-2 overflow-hidden wrap-break-word text-sm font-semibold text-slate-900">{candidate.title}</div>
                       <div className="mt-1 text-xs text-slate-500">{formatStatus(candidate.status)}</div>
                     </div>
                     <button
                       disabled={candidate.alreadyAdded || addItem.isPending}
                       onClick={() => handleAddCandidate(candidate.itemType, candidate.itemId)}
-                      className={`rounded-lg px-3 py-2 text-xs font-semibold ${candidate.alreadyAdded ? 'cursor-not-allowed border border-slate-200 bg-white text-slate-400' : 'bg-sky-600 text-white hover:bg-sky-700'}`}
+                      className={`shrink-0 self-start rounded-lg px-3 py-2 text-xs font-semibold ${candidate.alreadyAdded ? 'cursor-not-allowed border border-slate-200 bg-white text-slate-400' : 'bg-sky-600 text-white hover:bg-sky-700'}`}
                     >
                       {candidate.alreadyAdded ? 'Added' : 'Add'}
                     </button>
@@ -325,14 +366,14 @@ export default function UserDailyPage() {
           }}
           onDragLeave={() => setIsDropActive(false)}
           onDrop={handleDropOnTimeUsage}
-          className={`rounded-2xl border bg-white p-5 shadow-sm transition ${isDropActive ? 'border-sky-300 bg-sky-50/60' : 'border-slate-200'}`}
+          className={`min-w-0 rounded-2xl border bg-white p-5 shadow-sm transition ${isDropActive ? 'border-sky-300 bg-sky-50/60' : 'border-slate-200'}`}
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="text-lg font-semibold text-slate-900">Time usage</h2>
               <p className="text-sm text-slate-500">Drag a daily item here to log 1 hour. Drag the resize handle on an entry to change the time used.</p>
             </div>
-            <div className="min-w-56 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900">
+            <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 md:w-auto md:min-w-56 md:shrink-0">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <div className="mt-1 text-3xl font-semibold">{board.totalHours.toFixed(1)}h</div>
@@ -364,7 +405,7 @@ export default function UserDailyPage() {
               return (
                 <div key={log.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span className="rounded-full bg-white px-2 py-1 font-medium uppercase tracking-[0.16em] text-slate-700">Entry {index + 1}</span>
                         <span>{item.projectName}</span>
@@ -375,8 +416,8 @@ export default function UserDailyPage() {
                       </Link>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="w-52">
+                    <div className="flex shrink-0 flex-wrap items-center gap-3">
+                      <div className="w-full sm:w-52">
                         <div className="relative h-10 rounded-full bg-white shadow-sm ring-1 ring-slate-200">
                           <div className="absolute inset-y-1 left-1 rounded-full bg-sky-500" style={{ width: `calc(${width}% - 0.5rem)` }}>
                             <div className="flex h-full items-center justify-between gap-2 pl-3 pr-1.5 text-xs font-semibold text-white">

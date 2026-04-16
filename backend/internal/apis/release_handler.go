@@ -67,11 +67,12 @@ type ReleasesListResponse struct {
 }
 
 type ReleaseItemResponse struct {
-	ID       int    `json:"id"`
-	RefNum   string `json:"refNum"`
-	Title    string `json:"title"`
-	Status   string `json:"status"`
-	ItemType string `json:"itemType"`
+	ID          int    `json:"id"`
+	RefNum      string `json:"refNum"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	ItemType    string `json:"itemType"`
 }
 
 type ReleaseCandidateItemResponse struct {
@@ -414,11 +415,12 @@ func (h *ReleaseHandler) GetReleaseItems(c echo.Context) error {
 	itemResponses := make([]ReleaseItemResponse, len(items))
 	for i, item := range items {
 		itemResponses[i] = ReleaseItemResponse{
-			ID:       item.ID,
-			RefNum:   item.RefNum,
-			Title:    item.Title,
-			Status:   item.Status,
-			ItemType: item.ItemType,
+			ID:          item.ID,
+			RefNum:      item.RefNum,
+			Title:       item.Title,
+			Description: item.Description,
+			Status:      item.Status,
+			ItemType:    item.ItemType,
 		}
 	}
 

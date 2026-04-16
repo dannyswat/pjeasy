@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useGetRelease } from './useGetRelease'
@@ -11,6 +11,38 @@ import { ReleaseStatus, ReleaseStatusDisplay, type ConfirmedReleaseItem } from '
 import CompleteReleaseModal from './CompleteReleaseModal'
 import PrepareReleaseUATModal from './PrepareReleaseUATModal'
 import { useProjectRole } from '../projects/useProjectRole'
+
+function formatItemTypeLabel(itemType: string) {
+  return itemType.charAt(0).toUpperCase() + itemType.slice(1)
+}
+
+function formatProjectItemLine(item: { itemType: string; refNum?: string; title: string }) {
+  const prefix = [formatItemTypeLabel(item.itemType), item.refNum].filter(Boolean).join(' ')
+  return `${prefix}: ${item.title}`
+}
+
+function htmlToPlainText(html: string | undefined) {
+  if (!html?.trim()) {
+    return ''
+  }
+
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  return doc.body.textContent?.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() ?? ''
+}
+
+async function copyTextToClipboard(text: string, successMessage: string) {
+  if (!text.trim()) {
+    toast.error('Nothing to copy yet')
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(successMessage)
+  } catch {
+    toast.error('Failed to copy to clipboard')
+  }
+}
 
 export default function ReleaseDetailPage() {
   const { projectId, releaseId } = useParams<{ projectId: string; releaseId: string }>()
@@ -32,6 +64,27 @@ export default function ReleaseDetailPage() {
   const [editTargetDate, setEditTargetDate] = useState('')
   const [showCompleteModal, setShowCompleteModal] = useState(false)
   const [showUATModal, setShowUATModal] = useState(false)
+
+  const releaseNoteLines = useMemo(() => {
+    return items.map((item) => `- ${formatProjectItemLine(item)}`)
+  }, [items])
+
+  const releaseNoteText = useMemo(() => releaseNoteLines.join('\n'), [releaseNoteLines])
+
+  const aiWorkItemsText = useMemo(() => {
+    const itemBlocks = items.map((item, index) => {
+      const description = htmlToPlainText(item.description)
+      const lines = [`${index + 1}. ${formatProjectItemLine(item)}`]
+
+      if (description) {
+        lines.push(`Description: ${description}`)
+      }
+
+      return lines.join('\n')
+    })
+
+    return ['Please working on the following items', '', ...itemBlocks].join('\n\n')
+  }, [items])
 
   const startEdit = () => {
     if (!release) return
@@ -123,6 +176,14 @@ export default function ReleaseDetailPage() {
       case 'sprint': return 'bg-green-100 text-green-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const handleCopyReleaseNotes = async () => {
+    await copyTextToClipboard(releaseNoteText, 'Release notes copied')
+  }
+
+  const handleCopyAiItems = async () => {
+    await copyTextToClipboard(aiWorkItemsText, 'AI work items copied')
   }
 
   if (isLoading) {
@@ -260,6 +321,67 @@ export default function ReleaseDetailPage() {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="grid gap-6 mt-6 lg:grid-cols-2">
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Release Notes</h2>
+            </div>
+            <button
+              onClick={handleCopyReleaseNotes}
+              disabled={itemsLoading || items.length === 0}
+              className="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Copy
+            </button>
+          </div>
+          {itemsLoading ? (
+            <p className="text-sm text-gray-500">Preparing release notes...</p>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-gray-500">Link release items to generate release notes.</p>
+          ) : (
+            <ul className="space-y-2 list-disc list-inside text-sm text-gray-700">
+              {items.map((item) => (
+                <li key={`release-note-${item.itemType}-${item.id}`}>
+                  <span className="font-medium text-gray-900">{formatProjectItemLine(item)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">AI Work Items</h2>
+              <p className="text-sm text-gray-500 mt-1">Title and description list formatted for copy/paste into an AI prompt.</p>
+            </div>
+            <button
+              onClick={handleCopyAiItems}
+              disabled={itemsLoading || items.length === 0}
+              className="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Copy
+            </button>
+          </div>
+          {itemsLoading ? (
+            <p className="text-sm text-gray-500">Preparing AI work item list...</p>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-gray-500">Link release items to generate an AI-ready list.</p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-900">Please working on the following items</p>
+              <textarea
+                readOnly
+                value={aiWorkItemsText}
+                rows={Math.min(Math.max(items.length * 3 + 2, 8), 18)}
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-700 focus:outline-none"
+              />
+            </div>
+          )}
+        </section>
       </div>
 
       {/* Complete Modal */}
