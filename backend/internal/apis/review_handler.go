@@ -5,17 +5,20 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/item_follow_ups"
 	"github.com/dannyswat/pjeasy/internal/reviews"
 	"github.com/labstack/echo/v4"
 )
 
 type ReviewHandler struct {
-	reviewService *reviews.ReviewService
+	reviewService       *reviews.ReviewService
+	itemFollowUpService *item_follow_ups.ItemFollowUpService
 }
 
-func NewReviewHandler(reviewService *reviews.ReviewService) *ReviewHandler {
+func NewReviewHandler(reviewService *reviews.ReviewService, itemFollowUpService *item_follow_ups.ItemFollowUpService) *ReviewHandler {
 	return &ReviewHandler{
-		reviewService: reviewService,
+		reviewService:       reviewService,
+		itemFollowUpService: itemFollowUpService,
 	}
 }
 
@@ -83,8 +86,27 @@ type ReviewItemResponse struct {
 }
 
 type ReviewDetailResponse struct {
-	Review ReviewResponse       `json:"review"`
-	Items  []ReviewItemResponse `json:"items"`
+	Review    ReviewResponse               `json:"review"`
+	Items     []ReviewItemResponse         `json:"items"`
+	FollowUps []ReviewItemFollowUpResponse `json:"followUps"`
+}
+
+type ReviewItemFollowUpResponse struct {
+	ID             int    `json:"id"`
+	ItemID         int    `json:"itemId"`
+	ItemType       string `json:"itemType"`
+	FollowUpDate   string `json:"followUpDate"`
+	Content        string `json:"content"`
+	CreatedBy      int    `json:"createdBy"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
+	CreatorName    string `json:"creatorName"`
+	SourceItemID   int    `json:"sourceItemId"`
+	SourceType     string `json:"sourceType"`
+	SourceRefNum   string `json:"sourceRefNum"`
+	SourceTitle    string `json:"sourceTitle"`
+	SourceStatus   string `json:"sourceStatus"`
+	SourceCategory string `json:"sourceCategory"`
 }
 
 func toReviewResponse(review *reviews.Review) ReviewResponse {
@@ -156,6 +178,34 @@ func toReviewItemResponses(items []reviews.ReviewItem) []ReviewItemResponse {
 	responses := make([]ReviewItemResponse, len(items))
 	for i, item := range items {
 		responses[i] = toReviewItemResponse(&item)
+	}
+	return responses
+}
+
+func toReviewItemFollowUpResponse(followUp *item_follow_ups.ReviewItemFollowUp) ReviewItemFollowUpResponse {
+	return ReviewItemFollowUpResponse{
+		ID:             followUp.ItemFollowUp.ID,
+		ItemID:         followUp.ItemFollowUp.ItemID,
+		ItemType:       followUp.ItemFollowUp.ItemType,
+		FollowUpDate:   followUp.ItemFollowUp.FollowUpDate.Format("2006-01-02"),
+		Content:        followUp.ItemFollowUp.Content,
+		CreatedBy:      followUp.ItemFollowUp.CreatedBy,
+		CreatedAt:      followUp.ItemFollowUp.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:      followUp.ItemFollowUp.UpdatedAt.Format(time.RFC3339),
+		CreatorName:    followUp.CreatorName,
+		SourceItemID:   followUp.SourceItemID,
+		SourceType:     followUp.SourceType,
+		SourceRefNum:   followUp.SourceRefNum,
+		SourceTitle:    followUp.SourceTitle,
+		SourceStatus:   followUp.SourceStatus,
+		SourceCategory: followUp.SourceCategory,
+	}
+}
+
+func toReviewItemFollowUpResponses(followUps []item_follow_ups.ReviewItemFollowUp) []ReviewItemFollowUpResponse {
+	responses := make([]ReviewItemFollowUpResponse, len(followUps))
+	for i, followUp := range followUps {
+		responses[i] = toReviewItemFollowUpResponse(&followUp)
 	}
 	return responses
 }
@@ -336,9 +386,15 @@ func (h *ReviewHandler) GetReviewDetail(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	followUps, err := h.itemFollowUpService.GetFollowUpsForReview(id, userID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, ReviewDetailResponse{
-		Review: toReviewResponse(review),
-		Items:  toReviewItemResponses(items),
+		Review:    toReviewResponse(review),
+		Items:     toReviewItemResponses(items),
+		FollowUps: toReviewItemFollowUpResponses(followUps),
 	})
 }
 

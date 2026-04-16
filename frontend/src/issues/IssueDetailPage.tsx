@@ -14,6 +14,7 @@ import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 import { useProjectRole } from '../projects/useProjectRole'
 import ReleaseBadge from '../components/ReleaseBadge'
+import ItemFollowUps from '../item_follow_ups/ItemFollowUps'
 
 export default function IssueDetailPage() {
   const { projectId, issueId } = useParams<{ projectId: string; issueId: string }>()
@@ -399,6 +400,10 @@ export default function IssueDetailPage() {
               itemId={issue.id}
               itemRefNum={issue.refNum}
             />
+
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <ItemFollowUps itemId={issue.id} itemType="issues" />
+            </div>
 
             {/* Comments Section */}
             <div className="border-t border-gray-200 pt-4 mt-4">

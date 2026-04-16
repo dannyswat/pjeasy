@@ -13,6 +13,7 @@ import ItemLink from '../components/ItemLink'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 import { useProjectRole } from '../projects/useProjectRole'
 import ReleaseBadge from '../components/ReleaseBadge'
+import ItemFollowUps from '../item_follow_ups/ItemFollowUps'
 
 export default function IdeaDetailPage() {
   const { projectId, ideaId } = useParams<{ projectId: string; ideaId: string }>()
@@ -319,6 +320,10 @@ export default function IdeaDetailPage() {
               itemRefNum={idea.refNum}
               itemTitle={idea.title}
             />
+
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <ItemFollowUps itemId={idea.id} itemType="ideas" />
+            </div>
 
             {/* Comments Section */}
             <div className="border-t border-gray-200 pt-4 mt-4">

@@ -12,6 +12,7 @@ import (
 	"github.com/dannyswat/pjeasy/internal/features"
 	"github.com/dannyswat/pjeasy/internal/ideas"
 	"github.com/dannyswat/pjeasy/internal/issues"
+	"github.com/dannyswat/pjeasy/internal/item_follow_ups"
 	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/releases"
 	"github.com/dannyswat/pjeasy/internal/repositories"
@@ -48,6 +49,7 @@ type APIServer struct {
 	featureService       *features.FeatureService
 	serviceTicketService *service_tickets.ServiceTicketService
 	commentService       *comments.CommentService
+	itemFollowUpService  *item_follow_ups.ItemFollowUpService
 	sequenceService      *sequences.SequenceService
 	taskService          *tasks.TaskService
 	sprintService        *sprints.SprintService
@@ -67,6 +69,7 @@ type APIServer struct {
 	featureHandler       *FeatureHandler
 	serviceTicketHandler *ServiceTicketHandler
 	commentHandler       *CommentHandler
+	itemFollowUpHandler  *ItemFollowUpHandler
 	sequenceHandler      *SequenceHandler
 	taskHandler          *TaskHandler
 	sprintHandler        *SprintHandler
@@ -126,6 +129,7 @@ func (s *APIServer) AutoMigrate() error {
 		&features.Feature{},
 		&service_tickets.ServiceTicket{},
 		&comments.Comment{},
+		&item_follow_ups.ItemFollowUp{},
 		&sequences.Sequence{},
 		&sequences.SequenceNumber{},
 		&tasks.Task{},
@@ -208,6 +212,7 @@ func (s *APIServer) SetupAPIServer() error {
 
 	// Initialize comment service
 	commentRepo := comments.NewCommentRepository(s.globalUOW)
+	itemFollowUpRepo := item_follow_ups.NewItemFollowUpRepository(s.globalUOW)
 	wikiPageRepo := wiki_pages.NewWikiPageRepository(s.globalUOW)
 	s.commentService = comments.NewCommentService(commentRepo, userRepo, memberRepo, ideaRepo, issueRepo, featureRepo, taskRepo, serviceTicketRepo, wikiPageRepo)
 
@@ -238,6 +243,7 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize review service
 	reviewRepo := reviews.NewReviewRepository(s.globalUOW)
 	s.reviewService = reviews.NewReviewService(reviewRepo, sprintRepo, taskRepo, featureRepo, issueRepo, ideaRepo, memberRepo, projectRepo, s.statusChangeService, s.uowFactory)
+	s.itemFollowUpService = item_follow_ups.NewItemFollowUpService(itemFollowUpRepo, userRepo, memberRepo, ideaRepo, issueRepo, featureRepo, taskRepo, serviceTicketRepo, wikiPageRepo, reviewRepo)
 
 	// Initialize handlers
 	s.userHandler = NewUserHandler(s.userService)
@@ -249,10 +255,11 @@ func (s *APIServer) SetupAPIServer() error {
 	s.featureHandler = NewFeatureHandler(s.featureService)
 	s.serviceTicketHandler = NewServiceTicketHandler(s.serviceTicketService)
 	s.commentHandler = NewCommentHandler(s.commentService)
+	s.itemFollowUpHandler = NewItemFollowUpHandler(s.itemFollowUpService)
 	s.sequenceHandler = NewSequenceHandler(s.sequenceService)
 	s.taskHandler = NewTaskHandler(s.taskService)
 	s.sprintHandler = NewSprintHandler(s.sprintService)
-	s.reviewHandler = NewReviewHandler(s.reviewService)
+	s.reviewHandler = NewReviewHandler(s.reviewService, s.itemFollowUpService)
 	s.releaseHandler = NewReleaseHandler(s.releaseService)
 	s.wikiPageHandler = NewWikiPageHandler(s.wikiPageService)
 	s.statusChangeHandler = NewStatusChangeHandler(s.statusChangeService)
@@ -272,6 +279,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.featureHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.serviceTicketHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.commentHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
+	s.itemFollowUpHandler.RegisterRoutes(s.echo, s.authMiddleware)
 	s.sequenceHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.taskHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 	s.sprintHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)

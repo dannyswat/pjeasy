@@ -10,7 +10,7 @@ import {
   ReviewItemCategoryDisplay,
   ReviewItemTypeDisplay,
 } from './reviewTypes'
-import type { ReviewItemResponse } from './reviewTypes'
+import type { ReviewItemFollowUpResponse, ReviewItemResponse } from './reviewTypes'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 
 export default function ReviewDetailPage() {
@@ -18,7 +18,7 @@ export default function ReviewDetailPage() {
   const navigate = useNavigate()
   const projectIdNum = projectId ? parseInt(projectId) : 0
   const reviewIdNum = reviewId ? parseInt(reviewId) : 0
-  const { review, items, isLoading, refetch } = useGetReviewDetail(reviewIdNum)
+  const { review, items, followUps, isLoading, refetch } = useGetReviewDetail(reviewIdNum)
   const publishReview = usePublishReview()
   const regenerateReview = useRegenerateReview()
   const deleteReview = useDeleteReview()
@@ -156,6 +156,12 @@ export default function ReviewDetailPage() {
     )
   }
 
+  const renderFollowUpSource = (followUp: ReviewItemFollowUpResponse) => {
+    const itemTypeLabel = ReviewItemTypeDisplay[followUp.sourceType as keyof typeof ReviewItemTypeDisplay] || followUp.sourceType
+    const reference = followUp.sourceRefNum ? `${itemTypeLabel} ${followUp.sourceRefNum}` : itemTypeLabel
+    return `${reference}: ${followUp.sourceTitle}`
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 md:px-6">
       {/* Back Navigation */}
@@ -264,6 +270,37 @@ export default function ReviewDetailPage() {
           <p className="text-gray-700 whitespace-pre-wrap">{review.summary}</p>
         </div>
       )}
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">Item Follow-Ups</h3>
+        <p className="text-sm text-gray-500 mb-4">Updates pulled from the feature, issue, idea, and task items included in this review.</p>
+        {followUps.length === 0 ? (
+          <p className="text-gray-500">No follow-ups yet from the items in this review.</p>
+        ) : (
+          <div className="space-y-4">
+            {followUps.map((followUp) => (
+              <div key={`${followUp.sourceType}-${followUp.sourceItemId}-${followUp.id}`} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-900">{renderFollowUpSource(followUp)}</div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(`${followUp.followUpDate}T00:00:00`).toLocaleDateString()} by {followUp.creatorName}
+                      <span className="ml-2">{new Date(followUp.createdAt).toLocaleString()}</span>
+                      {followUp.createdAt !== followUp.updatedAt && (
+                        <span className="ml-2 italic">(edited)</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                    {ReviewItemCategoryDisplay[followUp.sourceCategory as keyof typeof ReviewItemCategoryDisplay] || followUp.sourceCategory}
+                  </span>
+                </div>
+                <div className="mt-3 whitespace-pre-wrap text-sm text-gray-700">{followUp.content}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <StatusChangeHistory
         projectId={projectIdNum}

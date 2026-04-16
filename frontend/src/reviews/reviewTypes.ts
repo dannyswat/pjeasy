@@ -61,9 +61,28 @@ export interface ReviewItemResponse {
   category: string
 }
 
+export interface ReviewItemFollowUpResponse {
+  id: number
+  itemId: number
+  itemType: string
+  followUpDate: string
+  content: string
+  createdBy: number
+  createdAt: string
+  updatedAt: string
+  creatorName: string
+  sourceItemId: number
+  sourceType: string
+  sourceRefNum: string
+  sourceTitle: string
+  sourceStatus: string
+  sourceCategory: string
+}
+
 export interface ReviewDetailResponse {
   review: ReviewResponse
   items: ReviewItemResponse[]
+  followUps: ReviewItemFollowUpResponse[]
 }
 
 export const ReviewType = {

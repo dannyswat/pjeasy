@@ -24,6 +24,7 @@ import WikiPageChanges from '../wiki/WikiPageChanges'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 import ReleaseBadge from '../components/ReleaseBadge'
 import { useAddUserDailyItem } from '../user_daily/useUserDailyApi'
+import ItemFollowUps from '../item_follow_ups/ItemFollowUps'
 
 // Default statuses exclude Completed and Closed
 const defaultTaskStatuses = [
@@ -564,6 +565,10 @@ export default function TasksPage() {
               itemId={viewingTask.id}
               itemRefNum={`Task #${viewingTask.id}`}
             />
+
+            <div className="border-t border-gray-200 pt-4">
+              <ItemFollowUps itemId={viewingTask.id} itemType="tasks" />
+            </div>
 
             {/* Comments Section */}
             <div className="border-t border-gray-200 pt-4">

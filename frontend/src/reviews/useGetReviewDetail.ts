@@ -17,6 +17,7 @@ export function useGetReviewDetail(reviewId: number) {
   return {
     review: data?.review ?? null,
     items: data?.items ?? [],
+    followUps: data?.followUps ?? [],
     isLoading,
     isError,
     error: error as Error | null,
