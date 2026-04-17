@@ -254,4 +254,9 @@ npm run build
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](./LICENSE).
+This project is dual-licensed. You may choose either:
+
+- **AGPLv3**: Use the project under the terms of the GNU Affero General Public License version 3. See [LICENSE](./LICENSE) for the full AGPLv3 text and details about network-service obligations.
+- **Commercial license**: If AGPLv3's obligations are not acceptable for your use case (for example, running proprietary network services without publishing source), contact the project maintainers to negotiate a commercial license.
+
+For questions about licensing or to request a commercial license, contact the maintainers listed in the project repository.
