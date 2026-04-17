@@ -3,24 +3,28 @@ package apis
 import (
 	"net/http"
 
+	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/users"
 	"github.com/labstack/echo/v4"
 )
 
 type UserHandler struct {
-	userService *users.UserService
+	userService    *users.UserService
+	projectService *projects.ProjectService
 }
 
-func NewUserHandler(userService *users.UserService) *UserHandler {
+func NewUserHandler(userService *users.UserService, projectService *projects.ProjectService) *UserHandler {
 	return &UserHandler{
-		userService: userService,
+		userService:    userService,
+		projectService: projectService,
 	}
 }
 
 type RegisterRequest struct {
-	LoginID  string `json:"loginId" validate:"required"`
-	Name     string `json:"name" validate:"required"`
-	Password string `json:"password" validate:"required,complexpassword"`
+	LoginID         string `json:"loginId" validate:"required"`
+	Name            string `json:"name" validate:"required"`
+	Password        string `json:"password" validate:"required,complexpassword"`
+	InvitationToken string `json:"invitationToken"`
 }
 
 type UserResponse struct {
@@ -40,9 +44,21 @@ func (h *UserHandler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if req.InvitationToken != "" {
+		if _, err := h.projectService.ResolveInvitation(req.InvitationToken); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	}
+
 	user, err := h.userService.RegisterWithPassword(req.LoginID, req.Name, req.Password)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if req.InvitationToken != "" {
+		if _, err := h.projectService.AcceptInvitation(req.InvitationToken, user.ID); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
 	}
 
 	response := &UserResponse{

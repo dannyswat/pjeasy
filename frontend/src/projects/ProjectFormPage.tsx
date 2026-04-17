@@ -6,9 +6,74 @@ import { useUpdateProject } from './useUpdateProject'
 import { useArchiveProject, useUnarchiveProject } from './useArchiveProject'
 import { useAddMember, useRemoveMember } from './useProjectMembers'
 import { useGenerateSequences } from './useGenerateSequences'
+import { useCreateProjectInvitation, useListProjectInvitations, useRevokeProjectInvitation } from './useProjectInvitations'
 import { useProjectContext } from './ProjectContext'
 import { useProjectRole } from './useProjectRole'
 import StatusWorkflowSection from './StatusWorkflowSection'
+import type { ProjectInvitationResponse } from './projectTypes'
+
+async function copyTextToClipboard(text: string) {
+  await navigator.clipboard.writeText(text)
+}
+
+const invitationExpirationOptions = [
+  { value: '1h', label: '1 hour' },
+  { value: '1d', label: '1 day' },
+  { value: '1w', label: '1 week' },
+  { value: '1m', label: '1 month' },
+  { value: '3m', label: '3 months' },
+  { value: '1y', label: '1 year' },
+  { value: 'never', label: 'Not expiring' },
+] as const
+
+type InvitationExpirationOption = typeof invitationExpirationOptions[number]['value']
+
+function formatInvitationRole(role: 'member' | 'user') {
+  return role === 'user' ? 'Project User' : 'Member'
+}
+
+function getInvitationStatus(invitation: ProjectInvitationResponse) {
+  if (invitation.revokedAt) {
+    return { label: 'Revoked', className: 'bg-red-50 text-red-700 border-red-200' }
+  }
+
+  if (invitation.expiresAt && new Date(invitation.expiresAt).getTime() < Date.now()) {
+    return { label: 'Expired', className: 'bg-amber-50 text-amber-700 border-amber-200' }
+  }
+
+  return { label: 'Active', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+}
+
+function calculateInvitationExpiry(option: InvitationExpirationOption): string | undefined {
+  if (option === 'never') {
+    return undefined
+  }
+
+  const expiresAt = new Date()
+
+  switch (option) {
+    case '1h':
+      expiresAt.setHours(expiresAt.getHours() + 1)
+      break
+    case '1d':
+      expiresAt.setDate(expiresAt.getDate() + 1)
+      break
+    case '1w':
+      expiresAt.setDate(expiresAt.getDate() + 7)
+      break
+    case '1m':
+      expiresAt.setMonth(expiresAt.getMonth() + 1)
+      break
+    case '3m':
+      expiresAt.setMonth(expiresAt.getMonth() + 3)
+      break
+    case '1y':
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1)
+      break
+  }
+
+  return expiresAt.toISOString()
+}
 
 type SettingsTab = 'details' | 'members' | 'workflow'
 
@@ -29,6 +94,9 @@ export default function ProjectFormPage() {
   const { addMember, isPending: isAddingMember } = useAddMember()
   const { removeMember, isPending: isRemovingMember } = useRemoveMember()
   const generateSequences = useGenerateSequences()
+  const { createProjectInvitation, isPending: isCreatingInvitation } = useCreateProjectInvitation()
+  const invitationsQuery = useListProjectInvitations(projectId)
+  const { revokeProjectInvitation, isPending: isRevokingInvitation } = useRevokeProjectInvitation()
   const { canWrite, isProjectAdmin } = useProjectRole(projectId)
 
   const [name, setName] = useState(project?.name || '')
@@ -37,6 +105,10 @@ export default function ProjectFormPage() {
   const [newMemberRole, setNewMemberRole] = useState<'member' | 'admin' | 'user'>('member')
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [invitationRole, setInvitationRole] = useState<'member' | 'user'>('member')
+  const [invitationExpiration, setInvitationExpiration] = useState<InvitationExpirationOption>('never')
+  const [generatedInvitation, setGeneratedInvitation] = useState<ProjectInvitationResponse | null>(null)
+  const [generatedInvitationUrl, setGeneratedInvitationUrl] = useState('')
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<SettingsTab>('details')
 
@@ -162,6 +234,74 @@ export default function ProjectFormPage() {
     }
   }
 
+  const handleGenerateInvitation = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    if (!projectId) return
+
+    try {
+      const response = await createProjectInvitation({
+        projectId,
+        data: {
+          role: invitationRole,
+          expiresAt: calculateInvitationExpiry(invitationExpiration),
+        },
+      })
+
+      const url = response.token ? `${window.location.origin}/invite/${response.token}` : ''
+      setGeneratedInvitation(response)
+      setGeneratedInvitationUrl(url)
+      setSuccessMessage('Invitation link generated successfully')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to generate invitation link')
+    }
+  }
+
+  const handleCopyInvitation = async () => {
+    if (!generatedInvitationUrl) {
+      return
+    }
+
+    try {
+      await copyTextToClipboard(generatedInvitationUrl)
+      setSuccessMessage('Invitation link copied to clipboard')
+    } catch {
+      setErrorMessage('Failed to copy invitation link')
+    }
+  }
+
+  const handleCopyInvitationFor = async (invitation: ProjectInvitationResponse) => {
+    if (!invitation.token) {
+      setErrorMessage('This invitation token is not available for copying')
+      return
+    }
+
+    try {
+      await copyTextToClipboard(`${window.location.origin}/invite/${invitation.token}`)
+      setSuccessMessage('Invitation link copied to clipboard')
+    } catch {
+      setErrorMessage('Failed to copy invitation link')
+    }
+  }
+
+  const handleRevokeInvitation = async (invitation: ProjectInvitationResponse) => {
+    if (!projectId) return
+    if (invitation.revokedAt) return
+    if (!confirm('Are you sure you want to revoke this invitation link?')) return
+
+    setErrorMessage('')
+    setSuccessMessage('')
+
+    try {
+      await revokeProjectInvitation({ projectId, invitationId: invitation.id })
+      setSuccessMessage('Invitation link revoked successfully')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to revoke invitation link')
+    }
+  }
+
   if (isEditMode && isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -173,7 +313,7 @@ export default function ProjectFormPage() {
     )
   }
 
-  const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember || generateSequences.isPending
+  const isPending = isCreating || isUpdating || isArchiving || isUnarchiving || isAddingMember || isRemovingMember || generateSequences.isPending || isCreatingInvitation || isRevokingInvitation
   const tabs: Array<{ id: SettingsTab; label: string }> = isEditMode
     ? [
         { id: 'details', label: 'Project Details' },
@@ -423,6 +563,146 @@ export default function ProjectFormPage() {
               ))
             )}
           </div>
+
+          {isProjectAdmin && (
+            <div className="mt-6 border-t border-gray-200 pt-4">
+              <h3 className="text-sm font-semibold text-gray-900">Invitation Links</h3>
+              <p className="mt-1 text-xs text-gray-600">Generate a reusable link that automatically adds anyone who signs in or registers through it.</p>
+
+              <form onSubmit={handleGenerateInvitation} className="mt-3 rounded bg-gray-50 p-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                  <div className="md:w-44">
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Role</label>
+                    <select
+                      value={invitationRole}
+                      onChange={(e) => setInvitationRole(e.target.value as 'member' | 'user')}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      disabled={isPending}
+                    >
+                      <option value="member">Member</option>
+                      <option value="user">Project User</option>
+                    </select>
+                  </div>
+
+                  <div className="md:flex-1">
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Expiration</label>
+                    <select
+                      value={invitationExpiration}
+                      onChange={(e) => setInvitationExpiration(e.target.value as InvitationExpirationOption)}
+                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                      disabled={isPending}
+                    >
+                      {invitationExpirationOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="bg-indigo-600 text-white px-4 py-1.5 text-sm font-medium rounded hover:bg-indigo-700 transition disabled:bg-gray-400"
+                  >
+                    {isCreatingInvitation ? 'Generating...' : 'Generate Link'}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">The expiry date is calculated automatically when you generate the link.</p>
+              </form>
+
+              {generatedInvitation && generatedInvitationUrl && (
+                <div className="mt-3 rounded border border-indigo-200 bg-indigo-50 p-3">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                    <input
+                      type="text"
+                      readOnly
+                      value={generatedInvitationUrl}
+                      className="min-w-0 flex-1 rounded border border-indigo-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyInvitation}
+                      className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                    >
+                      Copy Link
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-indigo-900/80">
+                    Grants {generatedInvitation.role === 'user' ? 'Project User' : 'Member'} access.
+                    {generatedInvitation.expiresAt ? ` Expires ${new Date(generatedInvitation.expiresAt).toLocaleString()}.` : ' This link does not expire.'}
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-semibold text-gray-900">Existing Links</h4>
+                  {invitationsQuery.isLoading && <span className="text-xs text-gray-500">Loading...</span>}
+                </div>
+
+                {invitationsQuery.isError ? (
+                  <p className="mt-2 text-xs text-red-600">Failed to load invitation links.</p>
+                ) : invitationsQuery.data?.invitations.length ? (
+                  <div className="mt-3 space-y-2">
+                    {invitationsQuery.data.invitations.map((invitation) => {
+                      const status = getInvitationStatus(invitation)
+                      const invitationUrl = invitation.token ? `${window.location.origin}/invite/${invitation.token}` : ''
+
+                      return (
+                        <div key={invitation.id} className="rounded border border-gray-200 bg-white p-3">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className={`rounded-full border px-2 py-0.5 text-xs font-medium ${status.className}`}>
+                                  {status.label}
+                                </span>
+                                <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                                  {formatInvitationRole(invitation.role)}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-xs text-gray-500">
+                                Created {invitation.createdAt ? new Date(invitation.createdAt).toLocaleString() : 'recently'}
+                                {invitation.expiresAt ? ` • Expires ${new Date(invitation.expiresAt).toLocaleString()}` : ' • Permanent'}
+                                {invitation.revokedAt ? ` • Revoked ${new Date(invitation.revokedAt).toLocaleString()}` : ''}
+                              </p>
+                              <input
+                                type="text"
+                                readOnly
+                                value={invitationUrl}
+                                className="mt-2 w-full rounded border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-700 outline-none"
+                              />
+                            </div>
+
+                            <div className="flex gap-2 md:shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => handleCopyInvitationFor(invitation)}
+                                disabled={!invitation.token}
+                                className="rounded border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                              >
+                                Copy
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleRevokeInvitation(invitation)}
+                                disabled={!!invitation.revokedAt || isPending}
+                                className="rounded bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+                              >
+                                Revoke
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-gray-500">No invitation links generated yet.</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

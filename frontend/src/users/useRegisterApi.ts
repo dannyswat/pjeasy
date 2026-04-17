@@ -6,6 +6,7 @@ interface RegisterRequest {
   loginId: string;
   name: string;
   password: string;
+  invitationToken?: string;
 }
 
 export function useRegisterApi() {
@@ -15,8 +16,8 @@ export function useRegisterApi() {
   });
 
   return {
-    register: (loginId: string, name: string, password: string) =>
-      mutation.mutateAsync({ loginId, name, password }),
+    register: (loginId: string, name: string, password: string, invitationToken?: string) =>
+      mutation.mutateAsync({ loginId, name, password, invitationToken }),
     isPending: mutation.isPending,
     isError: mutation.isError,
     error: mutation.error,

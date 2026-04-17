@@ -1,6 +1,14 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useLoginApi } from './useLoginApi'
+
+function getSafeRedirectPath(redirect: string | null, fallback: string) {
+  if (!redirect || !redirect.startsWith('/')) {
+    return fallback
+  }
+
+  return redirect
+}
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState('')
@@ -8,13 +16,17 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const { login, isPending, isError, error } = useLoginApi()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const invitationToken = searchParams.get('invite') ?? undefined
+  const redirectPath = getSafeRedirectPath(searchParams.get('redirect'), '/dashboard')
+  const registerSearch = searchParams.toString()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     try {
-      await login(loginId, password)
-      navigate('/dashboard')
+      await login(loginId, password, invitationToken)
+      navigate(redirectPath)
     } catch {
       // Error is already handled by the mutation
     }
@@ -37,6 +49,12 @@ export default function LoginPage() {
         {/* Login Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {invitationToken && (
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-3 py-2 rounded text-sm">
+                Signing in from an invitation link will automatically apply the project access.
+              </div>
+            )}
+
             {/* Error Message */}
             {isError && error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded flex items-start">
@@ -138,7 +156,7 @@ export default function LoginPage() {
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-600">
               Don't have an account?{' '}
-              <Link to="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
+              <Link to={registerSearch ? `/register?${registerSearch}` : '/register'} className="text-indigo-600 hover:text-indigo-700 font-medium">
                 Sign up
               </Link>
             </p>

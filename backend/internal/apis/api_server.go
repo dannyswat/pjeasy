@@ -124,6 +124,7 @@ func (s *APIServer) AutoMigrate() error {
 		&userroles.SystemAdmin{},
 		&projects.Project{},
 		&projects.ProjectMember{},
+		&projects.ProjectInvitation{},
 		&ideas.Idea{},
 		&issues.Issue{},
 		&features.Feature{},
@@ -171,8 +172,9 @@ func (s *APIServer) SetupAPIServer() error {
 	// Initialize project service
 	projectRepo := projects.NewProjectRepository(s.globalUOW)
 	memberRepo := projects.NewProjectMemberRepository(s.globalUOW)
+	invitationRepo := projects.NewProjectInvitationRepository(s.globalUOW)
 	memberCache := projects.NewProjectMemberCache(memberRepo, 1*time.Hour)
-	s.projectService = projects.NewProjectService(projectRepo, memberRepo, userRepo, sequenceRepo, memberCache)
+	s.projectService = projects.NewProjectService(projectRepo, memberRepo, invitationRepo, userRepo, sequenceRepo, memberCache)
 	statusChangeRepo := status_changes.NewStatusChangeRepository(s.globalUOW)
 	statusFlowRepo := status_changes.NewStatusFlowRepository(s.globalUOW)
 	s.statusChangeService = status_changes.NewStatusChangeService(statusChangeRepo, statusFlowRepo, memberRepo)
@@ -246,8 +248,8 @@ func (s *APIServer) SetupAPIServer() error {
 	s.itemFollowUpService = item_follow_ups.NewItemFollowUpService(itemFollowUpRepo, userRepo, memberRepo, ideaRepo, issueRepo, featureRepo, taskRepo, serviceTicketRepo, wikiPageRepo, reviewRepo)
 
 	// Initialize handlers
-	s.userHandler = NewUserHandler(s.userService)
-	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService)
+	s.userHandler = NewUserHandler(s.userService, s.projectService)
+	s.sessionHandler = NewSessionHandler(s.userService, s.sessionService, s.projectService)
 	s.adminHandler = NewAdminHandler(s.adminService)
 	s.projectHandler = NewProjectHandler(s.projectService, s.sequenceService)
 	s.ideaHandler = NewIdeaHandler(s.ideaService)

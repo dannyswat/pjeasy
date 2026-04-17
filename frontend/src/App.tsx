@@ -31,6 +31,7 @@ import ReleaseDetailPage from './releases/ReleaseDetailPage'
 import { ProjectProvider, useProjectContext } from './projects/ProjectContext'
 import NoProjectPage from './projects/NoProjectPage'
 import UnauthorizedPage from './projects/UnauthorizedPage'
+import ProjectInvitationPage from './projects/ProjectInvitationPage'
 import UserDailyPage from './user_daily/UserDailyPage'
 import TimesheetSummaryPage from './user_daily/TimesheetSummaryPage'
 
@@ -144,6 +145,10 @@ function App() {
                 <RegisterPage />
               </AuthRedirect>
             }
+          />
+          <Route
+            path="/invite/:token"
+            element={<ProjectInvitationPage />}
           />
           <Route
             path="/dashboard"

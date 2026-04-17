@@ -6,6 +6,7 @@ import { postApi } from '../apis/fetch'
 interface LoginRequest {
   loginId: string
   password: string
+  invitationToken?: string
 }
 
 interface BackendLoginResponse {
@@ -19,10 +20,11 @@ export function useLoginApi() {
   const { setSession } = useUserSession()
 
   const mutation = useMutation({
-    mutationFn: ({ loginId, password }: LoginRequest) => 
+    mutationFn: ({ loginId, password, invitationToken }: LoginRequest) => 
         postApi<BackendLoginResponse>('/api/auth/login', {
             loginId: loginId,
             password: password,
+        invitationToken,
         } as LoginRequest),
     onSuccess: (data) => {
       // Store session internally
@@ -36,7 +38,7 @@ export function useLoginApi() {
   })
 
   return {
-    login: (loginId: string, password: string) => mutation.mutateAsync({ loginId, password }),
+    login: (loginId: string, password: string, invitationToken?: string) => mutation.mutateAsync({ loginId, password, invitationToken }),
     isPending: mutation.isPending,
     isError: mutation.isError,
     error: mutation.error,

@@ -425,7 +425,7 @@ export default function FeaturesPage() {
                       </div>
                     </div>
                     </div>
-                    <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition">
+                    <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleAddToDaily(feature.id)}
                         className="p-1.5 text-sky-600 hover:bg-sky-50 rounded"

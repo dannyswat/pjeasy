@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/dannyswat/pjeasy/internal/projects"
 	"github.com/dannyswat/pjeasy/internal/user_sessions"
 	"github.com/dannyswat/pjeasy/internal/users"
 	"github.com/labstack/echo/v4"
@@ -12,19 +13,22 @@ import (
 type SessionHandler struct {
 	userService    *users.UserService
 	sessionService *user_sessions.SessionService
+	projectService *projects.ProjectService
 }
 
-func NewSessionHandler(userService *users.UserService, sessionService *user_sessions.SessionService) *SessionHandler {
+func NewSessionHandler(userService *users.UserService, sessionService *user_sessions.SessionService, projectService *projects.ProjectService) *SessionHandler {
 	return &SessionHandler{
 		userService:    userService,
 		sessionService: sessionService,
+		projectService: projectService,
 	}
 }
 
 type LoginRequest struct {
-	LoginID   string `json:"loginId" validate:"required"`
-	Password  string `json:"password" validate:"required"`
-	UseCookie bool   `json:"useCookie"`
+	LoginID         string `json:"loginId" validate:"required"`
+	Password        string `json:"password" validate:"required"`
+	InvitationToken string `json:"invitationToken"`
+	UseCookie       bool   `json:"useCookie"`
 }
 
 type LoginResponse struct {
@@ -55,6 +59,12 @@ func (h *SessionHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
+	if req.InvitationToken != "" {
+		if _, err := h.projectService.ResolveInvitation(req.InvitationToken); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+	}
+
 	// Get user agent and IP address
 	userAgent := c.Request().UserAgent()
 	ipAddress := c.RealIP()
@@ -63,6 +73,13 @@ func (h *SessionHandler) Login(c echo.Context) error {
 	result, err := h.sessionService.Login(req.LoginID, req.Password, userAgent, ipAddress)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
+	}
+
+	if req.InvitationToken != "" {
+		if _, err := h.projectService.AcceptInvitation(req.InvitationToken, result.User.ID); err != nil {
+			_ = h.sessionService.RevokeSession(result.SessionID.String(), result.RefreshToken)
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
 	}
 
 	response := &LoginResponse{

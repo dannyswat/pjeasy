@@ -1,6 +1,14 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useRegisterApi } from './useRegisterApi'
+
+function getSafeRedirectPath(redirect: string | null, fallback: string) {
+  if (!redirect || !redirect.startsWith('/')) {
+    return fallback
+  }
+
+  return redirect
+}
 
 export default function RegisterPage() {
   const [loginId, setLoginId] = useState('')
@@ -10,6 +18,10 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const { register, isPending, isError, error } = useRegisterApi()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const invitationToken = searchParams.get('invite') ?? undefined
+  const redirectPath = getSafeRedirectPath(searchParams.get('redirect'), '/dashboard')
+  const loginSearch = searchParams.toString()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,8 +31,12 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(loginId, name, password)
-      navigate('/login')
+      await register(loginId, name, password, invitationToken)
+      const nextSearch = new URLSearchParams()
+      if (redirectPath) {
+        nextSearch.set('redirect', redirectPath)
+      }
+      navigate(nextSearch.toString() ? `/login?${nextSearch.toString()}` : '/login')
     } catch {
       // Error is already handled by the mutation
     }
@@ -43,6 +59,12 @@ export default function RegisterPage() {
         {/* Registration Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {invitationToken && (
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-3 py-2 rounded text-sm">
+                This registration will also apply your invitation to the project.
+              </div>
+            )}
+
             {/* Error Message */}
             {isError && error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded flex items-start">
@@ -207,7 +229,7 @@ export default function RegisterPage() {
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
+              <Link to={loginSearch ? `/login?${loginSearch}` : '/login'} className="text-indigo-600 hover:text-indigo-700 font-medium">
                 Sign in
               </Link>
             </p>

@@ -1,6 +1,10 @@
 package projects
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"time"
 
@@ -9,20 +13,22 @@ import (
 )
 
 type ProjectService struct {
-	projectRepo  *ProjectRepository
-	memberRepo   *ProjectMemberRepository
-	memberCache  *ProjectMemberCache
-	userRepo     *users.UserRepository
-	sequenceRepo *sequences.SequenceRepository
+	projectRepo    *ProjectRepository
+	memberRepo     *ProjectMemberRepository
+	invitationRepo *ProjectInvitationRepository
+	memberCache    *ProjectMemberCache
+	userRepo       *users.UserRepository
+	sequenceRepo   *sequences.SequenceRepository
 }
 
-func NewProjectService(projectRepo *ProjectRepository, memberRepo *ProjectMemberRepository, userRepo *users.UserRepository, sequenceRepo *sequences.SequenceRepository, memberCache *ProjectMemberCache) *ProjectService {
+func NewProjectService(projectRepo *ProjectRepository, memberRepo *ProjectMemberRepository, invitationRepo *ProjectInvitationRepository, userRepo *users.UserRepository, sequenceRepo *sequences.SequenceRepository, memberCache *ProjectMemberCache) *ProjectService {
 	return &ProjectService{
-		projectRepo:  projectRepo,
-		memberRepo:   memberRepo,
-		memberCache:  memberCache,
-		userRepo:     userRepo,
-		sequenceRepo: sequenceRepo,
+		projectRepo:    projectRepo,
+		memberRepo:     memberRepo,
+		invitationRepo: invitationRepo,
+		memberCache:    memberCache,
+		userRepo:       userRepo,
+		sequenceRepo:   sequenceRepo,
 	}
 }
 
@@ -36,6 +42,16 @@ type ProjectWithMembers struct {
 type MemberWithUserInfo struct {
 	Member ProjectMember `json:"member"`
 	User   *users.User   `json:"user"`
+}
+
+type ProjectInvitationDetails struct {
+	Invitation *ProjectInvitation `json:"invitation"`
+	Project    *Project           `json:"project"`
+}
+
+type ProjectInvitationListItem struct {
+	Invitation *ProjectInvitation `json:"invitation"`
+	Project    *Project           `json:"project"`
 }
 
 // CreateProject creates a new project and adds creator as admin
@@ -368,4 +384,216 @@ func (s *ProjectService) UnarchiveProject(projectID int, unarchivedBy int) error
 // IsUserProjectAdmin checks if a user is a project admin
 func (s *ProjectService) IsUserProjectAdmin(projectID, userID int) (bool, error) {
 	return s.memberRepo.IsUserAdmin(projectID, userID)
+}
+
+func (s *ProjectService) CreateInvitation(projectID int, isUser bool, expiresAt *time.Time, createdBy int) (*ProjectInvitation, string, error) {
+	project, err := s.projectRepo.GetByID(projectID)
+	if err != nil {
+		return nil, "", err
+	}
+	if project == nil {
+		return nil, "", errors.New("project not found")
+	}
+	if project.IsArchived {
+		return nil, "", errors.New("cannot generate invitations for archived projects")
+	}
+
+	isAdmin, err := s.memberRepo.IsUserAdmin(projectID, createdBy)
+	if err != nil {
+		return nil, "", err
+	}
+	if !isAdmin {
+		return nil, "", errors.New("only project admins can generate invitation links")
+	}
+
+	if expiresAt != nil && expiresAt.Before(time.Now()) {
+		return nil, "", errors.New("invitation expiry must be in the future")
+	}
+
+	token, err := generateInvitationToken()
+	if err != nil {
+		return nil, "", err
+	}
+
+	invitation := &ProjectInvitation{
+		ProjectID: projectID,
+		Token:     token,
+		TokenHash: hashInvitationToken(token),
+		IsUser:    isUser,
+		ExpiresAt: expiresAt,
+		CreatedBy: createdBy,
+		CreatedAt: time.Now(),
+	}
+
+	if err := s.invitationRepo.Create(invitation); err != nil {
+		return nil, "", err
+	}
+
+	return invitation, token, nil
+}
+
+func (s *ProjectService) ResolveInvitation(token string) (*ProjectInvitationDetails, error) {
+	return s.getActiveInvitationDetails(token)
+}
+
+func (s *ProjectService) ListInvitations(projectID int, requestedBy int) ([]ProjectInvitationListItem, error) {
+	project, err := s.projectRepo.GetByID(projectID)
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.New("project not found")
+	}
+
+	isAdmin, err := s.memberRepo.IsUserAdmin(projectID, requestedBy)
+	if err != nil {
+		return nil, err
+	}
+	if !isAdmin {
+		return nil, errors.New("only project admins can view invitation links")
+	}
+
+	invitations, err := s.invitationRepo.ListByProjectID(projectID)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]ProjectInvitationListItem, 0, len(invitations))
+	for index := range invitations {
+		invitation := invitations[index]
+		items = append(items, ProjectInvitationListItem{
+			Invitation: &invitation,
+			Project:    project,
+		})
+	}
+
+	return items, nil
+}
+
+func (s *ProjectService) RevokeInvitation(projectID int, invitationID int, revokedBy int) error {
+	project, err := s.projectRepo.GetByID(projectID)
+	if err != nil {
+		return err
+	}
+	if project == nil {
+		return errors.New("project not found")
+	}
+
+	isAdmin, err := s.memberRepo.IsUserAdmin(projectID, revokedBy)
+	if err != nil {
+		return err
+	}
+	if !isAdmin {
+		return errors.New("only project admins can revoke invitation links")
+	}
+
+	invitation, err := s.invitationRepo.GetByID(invitationID)
+	if err != nil {
+		return err
+	}
+	if invitation == nil || invitation.ProjectID != projectID {
+		return errors.New("invitation not found")
+	}
+	if invitation.RevokedAt != nil {
+		return nil
+	}
+
+	now := time.Now()
+	invitation.RevokedAt = &now
+	return s.invitationRepo.Update(invitation)
+}
+
+func (s *ProjectService) AcceptInvitation(token string, userID int) (*ProjectMember, error) {
+	details, err := s.getActiveInvitationDetails(token)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, errors.New("user not found")
+	}
+
+	member, err := s.memberRepo.GetByProjectAndUser(details.Project.ID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if member == nil {
+		member = &ProjectMember{
+			ProjectID: details.Project.ID,
+			UserID:    userID,
+			IsAdmin:   false,
+			IsUser:    details.Invitation.IsUser,
+			AddedAt:   time.Now(),
+			AddedBy:   details.Invitation.CreatedBy,
+		}
+
+		if err := s.memberRepo.Create(member); err != nil {
+			return nil, err
+		}
+
+		s.memberCache.InvalidateProject(details.Project.ID)
+		return member, nil
+	}
+
+	if !details.Invitation.IsUser && member.IsUser {
+		member.IsUser = false
+		if err := s.memberRepo.Update(member); err != nil {
+			return nil, err
+		}
+		s.memberCache.InvalidateProject(details.Project.ID)
+	}
+
+	return member, nil
+}
+
+func (s *ProjectService) getActiveInvitationDetails(token string) (*ProjectInvitationDetails, error) {
+	if token == "" {
+		return nil, errors.New("invitation token is required")
+	}
+
+	invitation, err := s.invitationRepo.GetByTokenHash(hashInvitationToken(token))
+	if err != nil {
+		return nil, err
+	}
+	if invitation == nil {
+		return nil, errors.New("invitation link not found")
+	}
+	if !invitation.IsActive(time.Now()) {
+		return nil, errors.New("invitation link has expired")
+	}
+
+	project, err := s.projectRepo.GetByID(invitation.ProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if project == nil {
+		return nil, errors.New("project not found")
+	}
+	if project.IsArchived {
+		return nil, errors.New("project is archived")
+	}
+
+	return &ProjectInvitationDetails{
+		Invitation: invitation,
+		Project:    project,
+	}, nil
+}
+
+func generateInvitationToken() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(raw), nil
+}
+
+func hashInvitationToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }

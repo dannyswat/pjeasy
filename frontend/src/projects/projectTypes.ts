@@ -42,6 +42,31 @@ export interface AddMemberRequest {
   isUser: boolean
 }
 
+export interface CreateProjectInvitationRequest {
+  role: 'member' | 'user'
+  expiresAt?: string
+}
+
+export interface ProjectInvitationResponse {
+  id: number
+  token?: string
+  projectId: number
+  projectName: string
+  role: 'member' | 'user'
+  expiresAt?: string
+  createdAt?: string
+  revokedAt?: string
+}
+
+export interface ProjectInvitationListResponse {
+  invitations: ProjectInvitationResponse[]
+}
+
+export interface AcceptProjectInvitationResponse {
+  message: string
+  projectId: number
+}
+
 export interface ProjectsListResponse {
   projects: ProjectResponse[]
   total: number
