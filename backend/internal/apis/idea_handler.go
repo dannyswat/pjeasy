@@ -21,6 +21,7 @@ func NewIdeaHandler(ideaService *ideas.IdeaService) *IdeaHandler {
 
 type CreateIdeaRequest struct {
 	Title             string `json:"title" validate:"required"`
+	Label             string `json:"label" validate:"max=100"`
 	Description       string `json:"description"`
 	ReleaseID         *int   `json:"releaseId"`
 	ItemType          string `json:"itemType"`
@@ -31,6 +32,7 @@ type CreateIdeaRequest struct {
 
 type UpdateIdeaRequest struct {
 	Title             string `json:"title" validate:"required"`
+	Label             string `json:"label" validate:"max=100"`
 	Description       string `json:"description"`
 	ReleaseID         *int   `json:"releaseId"`
 	Tags              string `json:"tags"`
@@ -46,6 +48,7 @@ type IdeaResponse struct {
 	RefNum            string `json:"refNum"`
 	ProjectID         int    `json:"projectId"`
 	Title             string `json:"title"`
+	Label             string `json:"label,omitempty"`
 	Description       string `json:"description"`
 	Status            string `json:"status"`
 	ReleaseID         *int   `json:"releaseId,omitempty"`
@@ -72,6 +75,7 @@ func toIdeaResponse(idea *ideas.Idea) IdeaResponse {
 		RefNum:            idea.RefNum,
 		ProjectID:         idea.ProjectID,
 		Title:             idea.Title,
+		Label:             idea.Label,
 		Description:       idea.Description,
 		Status:            idea.Status,
 		ReleaseID:         idea.ReleaseID,
@@ -106,7 +110,7 @@ func (h *IdeaHandler) CreateIdea(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	idea, err := h.ideaService.CreateIdea(projectID, req.Title, req.Description, req.ReleaseID, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
+	idea, err := h.ideaService.CreateIdea(projectID, req.Title, req.Label, req.Description, req.ReleaseID, req.ItemType, req.ItemID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -136,7 +140,7 @@ func (h *IdeaHandler) UpdateIdea(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	idea, err := h.ideaService.UpdateIdea(ideaID, req.Title, req.Description, req.ReleaseID, req.Tags, req.CascadeCompletion, userID)
+	idea, err := h.ideaService.UpdateIdea(ideaID, req.Title, req.Label, req.Description, req.ReleaseID, req.Tags, req.CascadeCompletion, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

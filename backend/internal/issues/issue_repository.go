@@ -13,6 +13,12 @@ func NewIssueRepository(uow *repositories.UnitOfWork) *IssueRepository {
 	return &IssueRepository{uow: uow}
 }
 
+func withIssueLinkedIdeaLabel(query *gorm.DB) *gorm.DB {
+	return query.
+		Joins("LEFT JOIN ideas linked_ideas ON issues.item_type = ? AND issues.item_id = linked_ideas.id", "ideas").
+		Select("issues.*, linked_ideas.label AS linked_idea_label")
+}
+
 // Create creates a new issue
 func (r *IssueRepository) Create(issue *Issue) error {
 	return r.uow.GetDB().Create(issue).Error
@@ -43,7 +49,7 @@ func (r *IssueRepository) GetByProjectID(projectID int, offset, limit int) ([]Is
 	var issues []Issue
 	var total int64
 
-	query := r.uow.GetDB().Model(&Issue{}).Where("project_id = ?", projectID)
+	query := r.uow.GetDB().Model(&Issue{}).Where("issues.project_id = ?", projectID)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -51,7 +57,7 @@ func (r *IssueRepository) GetByProjectID(projectID int, offset, limit int) ([]Is
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withIssueLinkedIdeaLabel(r.uow.GetDB().Model(&Issue{}).Where("issues.project_id = ?", projectID)).Order("issues.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&issues).Error
@@ -65,7 +71,7 @@ func (r *IssueRepository) GetByProjectIDAndStatus(projectID int, status string, 
 	var total int64
 
 	query := r.uow.GetDB().Model(&Issue{}).
-		Where("project_id = ? AND status = ?", projectID, status)
+		Where("issues.project_id = ? AND issues.status = ?", projectID, status)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -73,7 +79,8 @@ func (r *IssueRepository) GetByProjectIDAndStatus(projectID int, status string, 
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withIssueLinkedIdeaLabel(r.uow.GetDB().Model(&Issue{}).
+		Where("issues.project_id = ? AND issues.status = ?", projectID, status)).Order("issues.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&issues).Error
@@ -87,7 +94,7 @@ func (r *IssueRepository) GetByProjectIDAndStatuses(projectID int, statuses []st
 	var total int64
 
 	query := r.uow.GetDB().Model(&Issue{}).
-		Where("project_id = ? AND status IN ?", projectID, statuses)
+		Where("issues.project_id = ? AND issues.status IN ?", projectID, statuses)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -95,7 +102,8 @@ func (r *IssueRepository) GetByProjectIDAndStatuses(projectID int, statuses []st
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withIssueLinkedIdeaLabel(r.uow.GetDB().Model(&Issue{}).
+		Where("issues.project_id = ? AND issues.status IN ?", projectID, statuses)).Order("issues.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&issues).Error
@@ -109,7 +117,7 @@ func (r *IssueRepository) GetByProjectIDAndPriority(projectID int, priority stri
 	var total int64
 
 	query := r.uow.GetDB().Model(&Issue{}).
-		Where("project_id = ? AND priority = ?", projectID, priority)
+		Where("issues.project_id = ? AND issues.priority = ?", projectID, priority)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -117,7 +125,8 @@ func (r *IssueRepository) GetByProjectIDAndPriority(projectID int, priority stri
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withIssueLinkedIdeaLabel(r.uow.GetDB().Model(&Issue{}).
+		Where("issues.project_id = ? AND issues.priority = ?", projectID, priority)).Order("issues.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&issues).Error
@@ -131,7 +140,7 @@ func (r *IssueRepository) GetByProjectIDAndAssignee(projectID int, assigneeId in
 	var total int64
 
 	query := r.uow.GetDB().Model(&Issue{}).
-		Where("project_id = ? AND assigned_to = ?", projectID, assigneeId)
+		Where("issues.project_id = ? AND issues.assigned_to = ?", projectID, assigneeId)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -139,7 +148,8 @@ func (r *IssueRepository) GetByProjectIDAndAssignee(projectID int, assigneeId in
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withIssueLinkedIdeaLabel(r.uow.GetDB().Model(&Issue{}).
+		Where("issues.project_id = ? AND issues.assigned_to = ?", projectID, assigneeId)).Order("issues.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&issues).Error
@@ -187,7 +197,7 @@ func (r *IssueRepository) GetByItemReference(projectID int, itemType string, ite
 	var total int64
 
 	query := r.uow.GetDB().Model(&Issue{}).
-		Where("project_id = ? AND item_type = ? AND item_id = ?", projectID, itemType, itemID)
+		Where("issues.project_id = ? AND issues.item_type = ? AND issues.item_id = ?", projectID, itemType, itemID)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -195,7 +205,8 @@ func (r *IssueRepository) GetByItemReference(projectID int, itemType string, ite
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withIssueLinkedIdeaLabel(r.uow.GetDB().Model(&Issue{}).
+		Where("issues.project_id = ? AND issues.item_type = ? AND issues.item_id = ?", projectID, itemType, itemID)).Order("issues.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&issues).Error

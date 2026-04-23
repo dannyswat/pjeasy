@@ -9,6 +9,7 @@ import { useBatchUpdateIssueStatus } from './useBatchUpdateIssueStatus'
 import { IssueStatus, IssuePriority, IssueStatusDisplay, type IssueResponse } from './issueTypes'
 import EditIssueForm from './EditIssueForm'
 import CreateIssueForm from './CreateIssueForm'
+import IdeaLabelBadge from '../components/IdeaLabelBadge'
 import { UserLabel } from '../components/UserLabel'
 import { useProjectRole } from '../projects/useProjectRole'
 import ReleaseBadge from '../components/ReleaseBadge'
@@ -387,6 +388,9 @@ export default function IssuesPage() {
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition">
                           {issue.title}
                         </h3>
+                        {issue.itemType === 'ideas' && issue.linkedIdeaLabel && (
+                          <IdeaLabelBadge label={issue.linkedIdeaLabel} />
+                        )}
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(issue.status)}`}>
                           {IssueStatusDisplay[issue.status]}
                         </span>

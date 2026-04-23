@@ -12,6 +12,7 @@ export interface IssueResponse {
   releaseId?: number
   itemType?: string
   itemId?: number
+  linkedIdeaLabel?: string
   tags?: string
   cascadeCompletion: boolean
   createdBy: number

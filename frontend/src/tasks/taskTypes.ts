@@ -12,6 +12,7 @@ export interface TaskResponse {
   releaseId?: number
   itemType?: string
   itemId?: number
+  linkedIdeaLabel?: string
   tags?: string
   createdBy: number
   createdAt: string

@@ -74,6 +74,7 @@ type IssueResponse struct {
 	ReleaseID         *int   `json:"releaseId,omitempty"`
 	ItemType          string `json:"itemType,omitempty"`
 	ItemID            *int   `json:"itemId,omitempty"`
+	LinkedIdeaLabel   string `json:"linkedIdeaLabel,omitempty"`
 	Tags              string `json:"tags,omitempty"`
 	CascadeCompletion bool   `json:"cascadeCompletion"`
 	CreatedBy         int    `json:"createdBy"`
@@ -108,6 +109,7 @@ func toIssueResponse(issue *issues.Issue) IssueResponse {
 		ReleaseID:         issue.ReleaseID,
 		ItemType:          issue.ItemType,
 		ItemID:            issue.ItemID,
+		LinkedIdeaLabel:   issue.LinkedIdeaLabel,
 		Tags:              issue.Tags,
 		CascadeCompletion: issue.CascadeCompletion,
 		CreatedBy:         issue.CreatedBy,

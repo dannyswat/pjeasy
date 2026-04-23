@@ -66,22 +66,23 @@ type UpdateTaskAssigneeRequest struct {
 type TaskResponse struct {
 	ID int `json:"id"`
 
-	ProjectID      int       `json:"projectId"`
-	Title          string    `json:"title"`
-	Description    string    `json:"description"`
-	Status         string    `json:"status"`
-	Priority       string    `json:"priority"`
-	EstimatedHours float64   `json:"estimatedHours"`
-	AssigneeID     *int      `json:"assigneeId"`
-	Deadline       *string   `json:"deadline"`
-	SprintID       *int      `json:"sprintId"`
-	ReleaseID      *int      `json:"releaseId"`
-	ItemType       string    `json:"itemType"`
-	ItemID         *int      `json:"itemId"`
-	Tags           string    `json:"tags"`
-	CreatedBy      int       `json:"createdBy"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+	ProjectID       int       `json:"projectId"`
+	Title           string    `json:"title"`
+	Description     string    `json:"description"`
+	Status          string    `json:"status"`
+	Priority        string    `json:"priority"`
+	EstimatedHours  float64   `json:"estimatedHours"`
+	AssigneeID      *int      `json:"assigneeId"`
+	Deadline        *string   `json:"deadline"`
+	SprintID        *int      `json:"sprintId"`
+	ReleaseID       *int      `json:"releaseId"`
+	ItemType        string    `json:"itemType"`
+	ItemID          *int      `json:"itemId"`
+	LinkedIdeaLabel string    `json:"linkedIdeaLabel,omitempty"`
+	Tags            string    `json:"tags"`
+	CreatedBy       int       `json:"createdBy"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
 }
 
 type TaskListResponse struct {
@@ -103,23 +104,24 @@ func toTaskResponse(task *tasks.Task) TaskResponse {
 	}
 
 	return TaskResponse{
-		ID:             task.ID,
-		ProjectID:      task.ProjectID,
-		Title:          task.Title,
-		Description:    task.Description,
-		Status:         task.Status,
-		Priority:       task.Priority,
-		EstimatedHours: task.EstimatedHours,
-		AssigneeID:     task.AssigneeID,
-		Deadline:       deadline,
-		SprintID:       task.SprintID,
-		ReleaseID:      task.ReleaseID,
-		ItemType:       task.ItemType,
-		ItemID:         task.ItemID,
-		Tags:           task.Tags,
-		CreatedBy:      task.CreatedBy,
-		CreatedAt:      task.CreatedAt,
-		UpdatedAt:      task.UpdatedAt,
+		ID:              task.ID,
+		ProjectID:       task.ProjectID,
+		Title:           task.Title,
+		Description:     task.Description,
+		Status:          task.Status,
+		Priority:        task.Priority,
+		EstimatedHours:  task.EstimatedHours,
+		AssigneeID:      task.AssigneeID,
+		Deadline:        deadline,
+		SprintID:        task.SprintID,
+		ReleaseID:       task.ReleaseID,
+		ItemType:        task.ItemType,
+		ItemID:          task.ItemID,
+		LinkedIdeaLabel: task.LinkedIdeaLabel,
+		Tags:            task.Tags,
+		CreatedBy:       task.CreatedBy,
+		CreatedAt:       task.CreatedAt,
+		UpdatedAt:       task.UpdatedAt,
 	}
 }
 

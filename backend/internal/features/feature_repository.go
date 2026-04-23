@@ -14,7 +14,7 @@ func applyFeatureSearch(query *gorm.DB, search string) *gorm.DB {
 	}
 
 	pattern := "%" + trimmedSearch + "%"
-	return query.Where("title ILIKE ? OR ref_num ILIKE ?", pattern, pattern)
+	return query.Where("features.title ILIKE ? OR features.ref_num ILIKE ?", pattern, pattern)
 }
 
 func applyFeatureDependencySelection(query *gorm.DB, dependencySelectable bool, selectedFeatureID *int, excludeFeatureID *int) *gorm.DB {
@@ -40,6 +40,12 @@ type FeatureRepository struct {
 
 func NewFeatureRepository(uow *repositories.UnitOfWork) *FeatureRepository {
 	return &FeatureRepository{uow: uow}
+}
+
+func withFeatureLinkedIdeaLabel(query *gorm.DB) *gorm.DB {
+	return query.
+		Joins("LEFT JOIN ideas linked_ideas ON features.item_type = ? AND features.item_id = linked_ideas.id", "ideas").
+		Select("features.*, linked_ideas.label AS linked_idea_label")
 }
 
 // Create creates a new feature
@@ -81,7 +87,7 @@ func (r *FeatureRepository) GetByProjectID(projectID int, search string, offset,
 	var features []Feature
 	var total int64
 
-	query := applyFeatureSearch(r.uow.GetDB().Model(&Feature{}).Where("project_id = ?", projectID), search)
+	query := applyFeatureSearch(r.uow.GetDB().Model(&Feature{}).Where("features.project_id = ?", projectID), search)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -89,7 +95,7 @@ func (r *FeatureRepository) GetByProjectID(projectID int, search string, offset,
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withFeatureLinkedIdeaLabel(applyFeatureSearch(r.uow.GetDB().Model(&Feature{}).Where("features.project_id = ?", projectID), search)).Order("features.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&features).Error
@@ -104,7 +110,7 @@ func (r *FeatureRepository) GetByProjectIDAndStatus(projectID int, status string
 
 	query := applyFeatureSearch(
 		r.uow.GetDB().Model(&Feature{}).
-			Where("project_id = ? AND status = ?", projectID, status),
+			Where("features.project_id = ? AND features.status = ?", projectID, status),
 		search,
 	)
 
@@ -114,7 +120,11 @@ func (r *FeatureRepository) GetByProjectIDAndStatus(projectID int, status string
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withFeatureLinkedIdeaLabel(applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("features.project_id = ? AND features.status = ?", projectID, status),
+		search,
+	)).Order("features.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&features).Error
@@ -129,7 +139,7 @@ func (r *FeatureRepository) GetByProjectIDAndStatuses(projectID int, statuses []
 
 	query := applyFeatureSearch(
 		r.uow.GetDB().Model(&Feature{}).
-			Where("project_id = ? AND status IN ?", projectID, statuses),
+			Where("features.project_id = ? AND features.status IN ?", projectID, statuses),
 		search,
 	)
 
@@ -139,7 +149,11 @@ func (r *FeatureRepository) GetByProjectIDAndStatuses(projectID int, statuses []
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withFeatureLinkedIdeaLabel(applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("features.project_id = ? AND features.status IN ?", projectID, statuses),
+		search,
+	)).Order("features.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&features).Error
@@ -154,7 +168,7 @@ func (r *FeatureRepository) GetByProjectIDAndPriority(projectID int, priority st
 
 	query := applyFeatureSearch(
 		r.uow.GetDB().Model(&Feature{}).
-			Where("project_id = ? AND priority = ?", projectID, priority),
+			Where("features.project_id = ? AND features.priority = ?", projectID, priority),
 		search,
 	)
 
@@ -164,7 +178,11 @@ func (r *FeatureRepository) GetByProjectIDAndPriority(projectID int, priority st
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withFeatureLinkedIdeaLabel(applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("features.project_id = ? AND features.priority = ?", projectID, priority),
+		search,
+	)).Order("features.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&features).Error
@@ -179,7 +197,7 @@ func (r *FeatureRepository) GetByProjectIDAndAssignee(projectID int, assigneeId 
 
 	query := applyFeatureSearch(
 		r.uow.GetDB().Model(&Feature{}).
-			Where("project_id = ? AND assigned_to = ?", projectID, assigneeId),
+			Where("features.project_id = ? AND features.assigned_to = ?", projectID, assigneeId),
 		search,
 	)
 
@@ -189,7 +207,11 @@ func (r *FeatureRepository) GetByProjectIDAndAssignee(projectID int, assigneeId 
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withFeatureLinkedIdeaLabel(applyFeatureSearch(
+		r.uow.GetDB().Model(&Feature{}).
+			Where("features.project_id = ? AND features.assigned_to = ?", projectID, assigneeId),
+		search,
+	)).Order("features.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&features).Error
@@ -237,7 +259,7 @@ func (r *FeatureRepository) GetByItemReference(projectID int, itemType string, i
 	var total int64
 
 	query := r.uow.GetDB().Model(&Feature{}).
-		Where("project_id = ? AND item_type = ? AND item_id = ?", projectID, itemType, itemID)
+		Where("features.project_id = ? AND features.item_type = ? AND features.item_id = ?", projectID, itemType, itemID)
 
 	// Get total count
 	if err := query.Count(&total).Error; err != nil {
@@ -245,7 +267,8 @@ func (r *FeatureRepository) GetByItemReference(projectID int, itemType string, i
 	}
 
 	// Get paginated results
-	err := query.Order("created_at DESC").
+	err := withFeatureLinkedIdeaLabel(r.uow.GetDB().Model(&Feature{}).
+		Where("features.project_id = ? AND features.item_type = ? AND features.item_id = ?", projectID, itemType, itemID)).Order("features.created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&features).Error

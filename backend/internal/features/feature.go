@@ -21,8 +21,9 @@ type Feature struct {
 	DependsOnFeatureID *int       `gorm:"index" json:"dependsOnFeatureId,omitempty"`                // Blocking dependency on another feature
 	ItemType           string     `gorm:"size:50;index:idx_feature_item" json:"itemType,omitempty"` // Type of related item (e.g., "ideas", "designs", "service-tickets")
 	ItemID             *int       `gorm:"index:idx_feature_item" json:"itemId,omitempty"`           // ID of related item
-	Tags               string     `gorm:"type:text" json:"tags,omitempty"`                          // Comma-separated tags
-	CascadeCompletion  bool       `gorm:"default:false" json:"cascadeCompletion"`                   // Auto-complete when all related tasks are completed
+	LinkedIdeaLabel    string     `gorm:"->;column:linked_idea_label;-:migration" json:"linkedIdeaLabel,omitempty"`
+	Tags               string     `gorm:"type:text" json:"tags,omitempty"`        // Comma-separated tags
+	CascadeCompletion  bool       `gorm:"default:false" json:"cascadeCompletion"` // Auto-complete when all related tasks are completed
 	CreatedBy          int        `gorm:"not null;index" json:"createdBy"`
 	CreatedAt          time.Time  `gorm:"not null" json:"createdAt"`
 	UpdatedAt          time.Time  `gorm:"not null" json:"updatedAt"`

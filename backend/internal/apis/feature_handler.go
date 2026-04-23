@@ -81,6 +81,7 @@ type FeatureResponse struct {
 	DependsOnFeatureID *int    `json:"dependsOnFeatureId,omitempty"`
 	ItemType           string  `json:"itemType,omitempty"`
 	ItemID             *int    `json:"itemId,omitempty"`
+	LinkedIdeaLabel    string  `json:"linkedIdeaLabel,omitempty"`
 	Tags               string  `json:"tags,omitempty"`
 	CascadeCompletion  bool    `json:"cascadeCompletion"`
 	CreatedBy          int     `json:"createdBy"`
@@ -123,6 +124,7 @@ func toFeatureResponse(feature *features.Feature) FeatureResponse {
 		DependsOnFeatureID: feature.DependsOnFeatureID,
 		ItemType:           feature.ItemType,
 		ItemID:             feature.ItemID,
+		LinkedIdeaLabel:    feature.LinkedIdeaLabel,
 		Tags:               feature.Tags,
 		CascadeCompletion:  feature.CascadeCompletion,
 		CreatedBy:          feature.CreatedBy,

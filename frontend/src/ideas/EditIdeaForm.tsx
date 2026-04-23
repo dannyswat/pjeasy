@@ -7,13 +7,14 @@ import type { IdeaResponse } from './ideaTypes'
 
 interface EditIdeaFormProps {
   idea: IdeaResponse
-  onSubmit: (data: { title: string; description: string; releaseId?: number; tags: string; cascadeCompletion: boolean }) => Promise<void>
+  onSubmit: (data: { title: string; label: string; description: string; releaseId?: number; tags: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
 
 export default function EditIdeaForm({ idea, onSubmit, onCancel, isPending }: EditIdeaFormProps) {
   const [title, setTitle] = useState(idea.title)
+  const [label, setLabel] = useState(idea.label ?? '')
   const [description, setDescription] = useState(idea.description)
   const [releaseId, setReleaseId] = useState<number | undefined>(idea.releaseId)
   // Parse tags from comma-separated string on initialization
@@ -26,6 +27,7 @@ export default function EditIdeaForm({ idea, onSubmit, onCancel, isPending }: Ed
     e.preventDefault()
     await onSubmit({
       title,
+      label,
       description,
       releaseId,
       tags: tags.join(','),
@@ -53,6 +55,20 @@ export default function EditIdeaForm({ idea, onSubmit, onCancel, isPending }: Ed
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Label
+            </label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              maxLength={100}
+              placeholder="Optional short label for linked items"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>

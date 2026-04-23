@@ -6,6 +6,7 @@ import { useUpdateIdea } from './useUpdateIdea'
 import { useDeleteIdea } from './useDeleteIdea'
 import { IdeaStatus, type IdeaResponse } from './ideaTypes'
 import EditIdeaForm from './EditIdeaForm'
+import IdeaLabelBadge from '../components/IdeaLabelBadge'
 import { useProjectRole } from '../projects/useProjectRole'
 import ReleaseBadge from '../components/ReleaseBadge'
 
@@ -155,6 +156,7 @@ export default function IdeasPage() {
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
                           <span className="text-gray-500 mr-1.5 text-xs">[{idea.refNum}]</span><span>{idea.title}</span>
                         </h3>
+                        <IdeaLabelBadge label={idea.label} />
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
                           idea.status === IdeaStatus.OPEN 
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 

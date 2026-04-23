@@ -12,6 +12,7 @@ import { TaskStatus, TaskStatusDisplay, TaskPriority, type TaskResponse } from '
 import CreateTaskForm from './CreateTaskForm'
 import EditTaskForm from './EditTaskForm'
 import Comments from '../comments/Comments'
+import IdeaLabelBadge from '../components/IdeaLabelBadge'
 import ItemLink from '../components/ItemLink'
 import { UserLabel } from '../components/UserLabel'
 import ProjectMemberSelect from '../components/ProjectMemberSelect'
@@ -793,6 +794,9 @@ export default function TasksPage() {
                         <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
                           <span>{task.title}</span>
                         </h3>
+                        {task.itemType === 'ideas' && task.linkedIdeaLabel && (
+                          <IdeaLabelBadge label={task.linkedIdeaLabel} />
+                        )}
                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(task.status)}`}>
                           {TaskStatusDisplay[task.status as keyof typeof TaskStatusDisplay]}
                         </span>

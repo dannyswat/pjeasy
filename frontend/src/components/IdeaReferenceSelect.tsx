@@ -37,7 +37,7 @@ export default function IdeaReferenceSelect({
         <option value="">No linked idea</option>
         {ideas.map((idea) => (
           <option key={idea.id} value={idea.id}>
-            [{idea.refNum}] {idea.title}
+            [{idea.refNum}] {idea.title}{idea.label ? ` - ${idea.label}` : ''}
           </option>
         ))}
       </select>

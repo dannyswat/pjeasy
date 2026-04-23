@@ -2,6 +2,7 @@ package ideas
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/htmlsanitizer"
@@ -10,6 +11,10 @@ import (
 	"github.com/dannyswat/pjeasy/internal/sequences"
 	"github.com/dannyswat/pjeasy/internal/status_changes"
 )
+
+func normalizeIdeaLabel(label string) string {
+	return strings.TrimSpace(label)
+}
 
 type IdeaService struct {
 	ideaRepo     *IdeaRepository
@@ -32,7 +37,7 @@ func NewIdeaService(ideaRepo *IdeaRepository, memberRepo *projects.ProjectMember
 }
 
 // CreateIdea creates a new idea
-func (s *IdeaService) CreateIdea(projectID int, title, description string, releaseID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Idea, error) {
+func (s *IdeaService) CreateIdea(projectID int, title, label, description string, releaseID *int, itemType string, itemID *int, tags string, cascadeCompletion bool, createdBy int) (*Idea, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -52,6 +57,7 @@ func (s *IdeaService) CreateIdea(projectID int, title, description string, relea
 	}
 
 	description = htmlsanitizer.Sanitize(description)
+	label = normalizeIdeaLabel(label)
 
 	uow := s.uowFactory.NewUnitOfWork()
 	// Begin transaction to generate RefNum and create idea
@@ -76,6 +82,7 @@ func (s *IdeaService) CreateIdea(projectID int, title, description string, relea
 		RefNum:            refNum,
 		ProjectID:         projectID,
 		Title:             title,
+		Label:             label,
 		Description:       description,
 		Status:            IdeaStatusOpen,
 		ReleaseID:         releaseID,
@@ -103,7 +110,7 @@ func (s *IdeaService) CreateIdea(projectID int, title, description string, relea
 }
 
 // UpdateIdea updates an idea's details
-func (s *IdeaService) UpdateIdea(ideaID int, title, description string, releaseID *int, tags string, cascadeCompletion bool, updatedBy int) (*Idea, error) {
+func (s *IdeaService) UpdateIdea(ideaID int, title, label, description string, releaseID *int, tags string, cascadeCompletion bool, updatedBy int) (*Idea, error) {
 	idea, err := s.ideaRepo.GetByID(ideaID)
 	if err != nil {
 		return nil, err
@@ -124,6 +131,7 @@ func (s *IdeaService) UpdateIdea(ideaID int, title, description string, releaseI
 	description = htmlsanitizer.Sanitize(description)
 
 	idea.Title = title
+	idea.Label = normalizeIdeaLabel(label)
 	idea.Description = description
 	idea.ReleaseID = releaseID
 	idea.Tags = tags

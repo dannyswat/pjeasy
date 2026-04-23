@@ -10,6 +10,7 @@ type Idea struct {
 	RefNum            string    `gorm:"column:ref_num;not null;size:50;uniqueIndex:idx_project_refnum,composite:projectId" json:"refNum"`
 	ProjectID         int       `gorm:"not null;index;uniqueIndex:idx_project_refnum,composite:refNum" json:"projectId"`
 	Title             string    `gorm:"not null;size:255" json:"title"`
+	Label             string    `gorm:"size:100" json:"label,omitempty"`
 	Description       string    `gorm:"type:text" json:"description"`
 	Status            string    `gorm:"not null;size:50;default:'Open'" json:"status"`         // Open, Closed
 	ReleaseID         *int      `gorm:"index" json:"releaseId,omitempty"`                      // Target release

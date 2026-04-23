@@ -6,13 +6,14 @@ import ReleaseSelect from '../components/ReleaseSelect'
 
 interface CreateIdeaFormProps {
   projectId: number
-  onSubmit: (data: { title: string; description: string; releaseId?: number; tags: string; cascadeCompletion: boolean }) => Promise<void>
+  onSubmit: (data: { title: string; label: string; description: string; releaseId?: number; tags: string; cascadeCompletion: boolean }) => Promise<void>
   onCancel: () => void
   isPending: boolean
 }
 
 export default function CreateIdeaForm({ projectId, onSubmit, onCancel, isPending }: CreateIdeaFormProps) {
   const [title, setTitle] = useState('')
+  const [label, setLabel] = useState('')
   const [description, setDescription] = useState('')
   const [releaseId, setReleaseId] = useState<number | undefined>(undefined)
   const [tags, setTags] = useState<string[]>([])
@@ -22,6 +23,7 @@ export default function CreateIdeaForm({ projectId, onSubmit, onCancel, isPendin
     e.preventDefault()
     await onSubmit({
       title,
+      label,
       description,
       releaseId,
       tags: tags.join(','),
@@ -46,6 +48,20 @@ export default function CreateIdeaForm({ projectId, onSubmit, onCancel, isPendin
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Label
+            </label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              maxLength={100}
+              placeholder="Optional short label for linked items"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>

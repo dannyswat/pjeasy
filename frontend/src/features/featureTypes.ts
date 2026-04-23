@@ -14,6 +14,7 @@ export interface FeatureResponse {
   dependsOnFeatureId?: number
   itemType?: string
   itemId?: number
+  linkedIdeaLabel?: string
   tags?: string
   cascadeCompletion: boolean
   createdBy: number

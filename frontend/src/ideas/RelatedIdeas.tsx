@@ -3,6 +3,7 @@ import { useListIdeasByItem } from './useListIdeasByItem'
 import { useCreateIdea } from './useCreateIdea'
 import { useUpdateIdeaStatus } from './useUpdateIdeaStatus'
 import { type IdeaResponse } from './ideaTypes'
+import IdeaLabelBadge from '../components/IdeaLabelBadge'
 import CreateIdeaForm from './CreateIdeaForm'
 
 interface RelatedIdeasProps {
@@ -21,6 +22,7 @@ export default function RelatedIdeas({ projectId, itemType, itemId }: RelatedIde
 
   const handleCreateIdea = async (data: {
     title: string
+    label: string
     description: string
     releaseId?: number
     tags: string
@@ -30,6 +32,7 @@ export default function RelatedIdeas({ projectId, itemType, itemId }: RelatedIde
       await createIdea.mutateAsync({
         projectId,
         title: data.title,
+        label: data.label,
         description: data.description,
         releaseId: data.releaseId,
         itemType,
@@ -120,6 +123,7 @@ export default function RelatedIdeas({ projectId, itemType, itemId }: RelatedIde
                       <span className="text-gray-500 mr-1.5 text-xs">[{idea.refNum}]</span>
                       {idea.title}
                     </h4>
+                    <IdeaLabelBadge label={idea.label} className="px-1.5 py-0.5 text-[10px] font-medium rounded" />
                   </div>
                   {idea.tags && (
                     <div className="flex flex-wrap gap-1 ml-7">

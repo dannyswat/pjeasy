@@ -9,6 +9,7 @@ import { useBatchUpdateFeatureStatus } from './useBatchUpdateFeatureStatus'
 import { FeatureStatus, FeaturePriority, FeatureStatusDisplay, type FeatureResponse } from './featureTypes'
 import EditFeatureForm from './EditFeatureForm'
 import CreateFeatureForm from './CreateFeatureForm'
+import IdeaLabelBadge from '../components/IdeaLabelBadge'
 import { UserLabel } from '../components/UserLabel'
 import { useProjectRole } from '../projects/useProjectRole'
 import ReleaseBadge from '../components/ReleaseBadge'
@@ -390,6 +391,9 @@ export default function FeaturesPage() {
                       <div className="flex-1 min-w-0">
                       <div className="flex items-center flex-wrap gap-1 mb-1">
                         <span className="text-xs font-mono text-gray-500">{feature.refNum}</span>
+                        {feature.itemType === 'ideas' && feature.linkedIdeaLabel && (
+                          <IdeaLabelBadge label={feature.linkedIdeaLabel} className="px-2 py-0.5 text-xs rounded-full" />
+                        )}
                         <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(feature.status)}`}>
                           {FeatureStatusDisplay[feature.status] || feature.status}
                         </span>

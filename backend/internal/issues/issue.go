@@ -19,8 +19,9 @@ type Issue struct {
 	ReleaseID         *int      `gorm:"index" json:"releaseId,omitempty"`                       // Target release
 	ItemType          string    `gorm:"size:50;index:idx_issue_item" json:"itemType,omitempty"` // Type of related item (e.g., "service-tickets")
 	ItemID            *int      `gorm:"index:idx_issue_item" json:"itemId,omitempty"`           // ID of related item
-	Tags              string    `gorm:"type:text" json:"tags,omitempty"`                        // Comma-separated tags
-	CascadeCompletion bool      `gorm:"default:false" json:"cascadeCompletion"`                 // Auto-complete when all related tasks are completed
+	LinkedIdeaLabel   string    `gorm:"->;column:linked_idea_label;-:migration" json:"linkedIdeaLabel,omitempty"`
+	Tags              string    `gorm:"type:text" json:"tags,omitempty"`        // Comma-separated tags
+	CascadeCompletion bool      `gorm:"default:false" json:"cascadeCompletion"` // Auto-complete when all related tasks are completed
 	CreatedBy         int       `gorm:"not null;index" json:"createdBy"`
 	CreatedAt         time.Time `gorm:"not null" json:"createdAt"`
 	UpdatedAt         time.Time `gorm:"not null" json:"updatedAt"`

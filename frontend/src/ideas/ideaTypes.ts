@@ -3,6 +3,7 @@ export interface IdeaResponse {
   refNum: string
   projectId: number
   title: string
+  label?: string
   description: string
   status: string // 'Open' | 'Closed'
   releaseId?: number
@@ -17,6 +18,7 @@ export interface IdeaResponse {
 
 export interface CreateIdeaRequest {
   title: string
+  label?: string
   description: string
   releaseId?: number
   itemType?: string
@@ -27,6 +29,7 @@ export interface CreateIdeaRequest {
 
 export interface UpdateIdeaRequest {
   title: string
+  label?: string
   description: string
   releaseId?: number
   tags?: string

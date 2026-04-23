@@ -9,6 +9,7 @@ import Comments from '../comments/Comments'
 import RelatedTasks from '../tasks/RelatedTasks'
 import RelatedFeatures from '../features/RelatedFeatures'
 import { useUpdateIdea } from './useUpdateIdea'
+import IdeaLabelBadge from '../components/IdeaLabelBadge'
 import ItemLink from '../components/ItemLink'
 import StatusChangeHistory from '../status_changes/StatusChangeHistory'
 import { useProjectRole } from '../projects/useProjectRole'
@@ -79,6 +80,7 @@ export default function IdeaDetailPage() {
 
   const handleUpdateSubmit = async (data: {
     title: string
+    label: string
     description: string
     releaseId?: number
     tags: string
@@ -152,6 +154,7 @@ export default function IdeaDetailPage() {
                 <div className="flex items-center space-x-2 flex-wrap">
                   <h1 className="text-xl font-semibold text-gray-900">{idea.title}</h1>
                   <span className="text-xs text-gray-500">[{idea.refNum}]</span>
+                  <IdeaLabelBadge label={idea.label} className="px-2 py-0.5 text-xs font-medium rounded" />
                   <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                     idea.status === 'Open' 
                       ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
@@ -216,6 +219,7 @@ export default function IdeaDetailPage() {
                             ideaId: idea.id,
                             projectId: projectIdNum,
                             title: idea.title,
+                            label: idea.label || '',
                             description: idea.description,
                             releaseId: idea.releaseId,
                             tags: idea.tags || '',
