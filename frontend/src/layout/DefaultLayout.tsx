@@ -8,6 +8,7 @@ import ProjectSelector from "./ProjectSelector";
 import { useCheckAdmin } from "../admins/useCheckAdmin";
 import { useRevokeSession } from "../auth/useRevokeSession";
 import { useUserSession } from "../auth/useUserSession";
+import { syncAuthCookie } from "../apis/fetch";
 
 export default function DefaultLayout({
   children,
@@ -39,6 +40,16 @@ export default function DefaultLayout({
   const { logout } = useRevokeSession();
   const { getUser } = useUserSession();
   const currentUser = getUser();
+
+  useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    void syncAuthCookie().catch((error) => {
+      console.error("Failed to sync auth cookie:", error);
+    });
+  }, [currentUser]);
 
   const getInitials = (name: string) => {
     return name

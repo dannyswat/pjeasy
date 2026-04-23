@@ -4,6 +4,7 @@ import { useUserSession } from './useUserSession'
 interface RefreshTokenRequest {
   sessionId: string
   refreshToken: string
+  useCookie?: boolean
 }
 
 interface RefreshTokenResponse {
@@ -27,6 +28,7 @@ async function refreshTokenRequest(sessionId: string, refreshToken: string): Pro
     body: JSON.stringify({
       sessionId: sessionId,
       refreshToken: refreshToken,
+      useCookie: true,
     } as RefreshTokenRequest),
   })
 

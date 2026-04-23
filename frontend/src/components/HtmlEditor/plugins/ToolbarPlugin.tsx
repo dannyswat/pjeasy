@@ -3,6 +3,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import {
   $getSelection,
   $isRangeSelection,
+  $isNodeSelection,
   FORMAT_TEXT_COMMAND,
   FORMAT_ELEMENT_COMMAND,
   SELECTION_CHANGE_COMMAND,
@@ -32,7 +33,7 @@ import { $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link'
 import { $findMatchingParent, mergeRegister } from '@lexical/utils'
 import { INSERT_TABLE_COMMAND } from '@lexical/table'
 import { $createCodeNode, $isCodeNode } from '@lexical/code'
-import { $createImageNode } from '../nodes/ImageNode'
+import { $createImageNode, $isImageNode } from '../nodes/ImageNode'
 import { $insertNodes } from 'lexical'
 import { uploadImage, validateImageFile, ImageUploadError } from '../imageUpload'
 
@@ -57,7 +58,14 @@ const CODE_LANGUAGES = [
   { label: 'C++', value: 'cpp' },
 ]
 
-export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen, onPasteMarkdown }: { isFullscreen?: boolean; onToggleFullscreen?: () => void; onPasteMarkdown?: () => void }) {
+interface ToolbarPluginProps {
+  isFullscreen?: boolean
+  onToggleFullscreen?: () => void
+  onOpenDiagram?: (imageUrl?: string) => void
+  onPasteMarkdown?: () => void
+}
+
+export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen, onOpenDiagram, onPasteMarkdown }: ToolbarPluginProps) {
   const [editor] = useLexicalComposerContext()
   const [isBold, setIsBold] = useState(false)
   const [isItalic, setIsItalic] = useState(false)
@@ -69,6 +77,7 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen, onPast
   const [fontColor, setFontColor] = useState<string>('#000000')
   const [codeLanguage, setCodeLanguage] = useState<string>('')
   const [elementFormat, setElementFormat] = useState<ElementFormatType>('')
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | undefined>(undefined)
   const [showTablePicker, setShowTablePicker] = useState(false)
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [hoveredRows, setHoveredRows] = useState(0)
@@ -80,6 +89,13 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen, onPast
 
   const updateToolbar = useCallback(() => {
     const selection = $getSelection()
+    if ($isNodeSelection(selection)) {
+      const imageNode = selection.getNodes().find($isImageNode)
+      setSelectedImageSrc(imageNode ? imageNode.getSrc() : undefined)
+      return
+    }
+
+    setSelectedImageSrc(undefined)
     if ($isRangeSelection(selection)) {
       setIsBold(selection.hasFormat('bold'))
       setIsItalic(selection.hasFormat('italic'))
@@ -606,6 +622,20 @@ export default function ToolbarPlugin({ isFullscreen, onToggleFullscreen, onPast
           <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
         </svg>
       </button>
+
+      {onOpenDiagram && (
+        <button
+          type="button"
+          className="toolbar-button"
+          onClick={() => onOpenDiagram(selectedImageSrc)}
+          title="Insert or Update Diagram"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M1 1h4v4H1V1zm1 1v2h2V2H2zm6-1h4v4H8V1zm1 1v2h2V2H9zM1 8h4v4H1V8zm1 1v2h2V9H2zm10.5-1.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm0 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" />
+            <path d="M5 3h3v1H5V3zm0 5h3v1H5V8zM3 5v3H2V5h1zm7 0v3h-1V5h1z" opacity="0.4" />
+          </svg>
+        </button>
+      )}
 
       {/* Paste Markdown */}
       <button

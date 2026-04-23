@@ -353,7 +353,7 @@ func (s *APIServer) SetupAPIServer() error {
 	s.dashboardHandler.RegisterRoutes(s.echo, s.authMiddleware, s.projectMiddleware)
 
 	// Register upload routes
-	RegisterUploadRoutes(s.echo, s, s.authMiddleware)
+	RegisterUploadRoutes(s.echo, s, s.authMiddleware, s.projectMiddleware)
 
 	// Serve frontend static files if configured
 	if s.config.Server.FrontendDir != "" {

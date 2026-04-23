@@ -7,6 +7,7 @@ interface LoginRequest {
   loginId: string
   password: string
   invitationToken?: string
+  useCookie?: boolean
 }
 
 interface BackendLoginResponse {
@@ -24,7 +25,8 @@ export function useLoginApi() {
         postApi<BackendLoginResponse>('/api/auth/login', {
             loginId: loginId,
             password: password,
-        invitationToken,
+      invitationToken,
+      useCookie: true,
         } as LoginRequest),
     onSuccess: (data) => {
       // Store session internally

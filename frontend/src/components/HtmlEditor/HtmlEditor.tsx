@@ -15,13 +15,15 @@ import { LinkNode, AutoLinkNode } from '@lexical/link'
 import { TableNode, TableCellNode, TableRowNode } from '@lexical/table'
 import { CodeNode, CodeHighlightNode, registerCodeHighlighting } from '@lexical/code'
 import { $generateHtmlFromNodes, $generateNodesFromDOM } from '@lexical/html'
-import { $getRoot, $insertNodes, TextNode, type EditorState } from 'lexical'
+import { $getRoot, $insertNodes, $nodesOfType, TextNode, type EditorState, type LexicalEditor } from 'lexical'
+import DiagramModal from './DiagramModal'
 import ToolbarPlugin from './plugins/ToolbarPlugin'
 import TableActionMenuPlugin from './plugins/TableActionMenuPlugin'
 import ImagePlugin from './plugins/ImagePlugin'
 import PasteMarkdownPlugin from './plugins/PasteMarkdownPlugin'
-import { ImageNode } from './nodes/ImageNode'
+import { $createImageNode, ImageNode } from './nodes/ImageNode'
 import { ExtendedTextNode } from './nodes/ExtendedTextNode'
+import { getDiagramIdFromUrl } from './diagramApi'
 import './HtmlEditor.css'
 import Prism from 'prismjs'
 import loadLanguages from 'prismjs/components/index'
@@ -33,6 +35,8 @@ if (!(globalThis as { Prism?: typeof Prism }).Prism) {
 
 export interface HtmlEditorRef {
   resetContent: (html: string) => void
+  insertImage: (src: string, altText?: string) => void
+  replaceImageSrc: (oldSrc: string, newSrc: string) => void
 }
 
 interface HtmlEditorProps {
@@ -40,10 +44,34 @@ interface HtmlEditorProps {
   onChange: (value: string) => void
   placeholder?: string
   minHeight?: string
+  projectId?: number
 }
 
 function normalizeHtml(html: string): string {
   return html.trim().replace(/><\/p>/g, '></p>')
+}
+
+function resolveProjectID(explicitProjectID?: number): number | null {
+  if (typeof explicitProjectID === 'number' && Number.isInteger(explicitProjectID) && explicitProjectID > 0) {
+    return explicitProjectID
+  }
+
+  const match = globalThis.location?.pathname.match(/\/projects\/(\d+)(?:\/|$)/)
+  if (!match) {
+    return null
+  }
+
+  const parsed = Number.parseInt(match[1], 10)
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return null
+  }
+
+  return parsed
+}
+
+function appendCacheBust(url: string): string {
+  const separator = url.includes('?') ? '&' : '?'
+  return `${url}${separator}t=${Date.now()}`
 }
 
 // Plugin to keep editor content in sync with external HTML value
@@ -119,6 +147,16 @@ function CodeHighlightingPlugin() {
   return null
 }
 
+function EditorRefPlugin({ onEditorReady }: { onEditorReady: (editor: LexicalEditor) => void }) {
+  const [editor] = useLexicalComposerContext()
+
+  useEffect(() => {
+    onEditorReady(editor)
+  }, [editor, onEditorReady])
+
+  return null
+}
+
 const theme = {
   paragraph: 'editor-paragraph',
   heading: {
@@ -188,9 +226,13 @@ function onError(error: Error) {
 }
 
 const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
-  ({ value, onChange, placeholder = 'Enter description...', minHeight = '200px' }, ref) => {
+  ({ value, onChange, placeholder = 'Enter description...', minHeight = '200px', projectId }, ref) => {
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [showPasteMarkdown, setShowPasteMarkdown] = useState(false)
+    const [isDiagramModalOpen, setIsDiagramModalOpen] = useState(false)
+    const [selectedDiagramURL, setSelectedDiagramURL] = useState<string | undefined>(undefined)
+    const editorRef = useRef<LexicalEditor | null>(null)
+    const activeProjectID = resolveProjectID(projectId)
 
     const initialConfig = {
       namespace: 'HtmlEditor',
@@ -221,6 +263,64 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
     // Ref to store reset function
     const resetContentRef = useRef<((html: string) => void) | null>(null)
 
+    const handleEditorReady = useCallback((editor: LexicalEditor) => {
+      editorRef.current = editor
+    }, [])
+
+    const insertImage = useCallback((src: string, altText = '') => {
+      const editor = editorRef.current
+      if (!editor) {
+        return
+      }
+
+      editor.update(() => {
+        const imageNode = $createImageNode({ src, altText })
+        $insertNodes([imageNode])
+      })
+    }, [])
+
+    const replaceImageSrc = useCallback((oldSrc: string, newSrc: string) => {
+      const editor = editorRef.current
+      if (!editor) {
+        return
+      }
+
+      editor.update(() => {
+        const oldBaseURL = oldSrc.split('?')[0]
+        const imageNode = $nodesOfType(ImageNode).find((node) => node.getSrc().split('?')[0] === oldBaseURL)
+        if (imageNode) {
+          imageNode.setSrc(newSrc)
+        }
+      })
+    }, [])
+
+    const closeDiagramModal = useCallback(() => {
+      setIsDiagramModalOpen(false)
+      setSelectedDiagramURL(undefined)
+    }, [])
+
+    const openDiagramModal = useCallback((imageURL?: string) => {
+      if (!activeProjectID) {
+        return
+      }
+
+      const nextDiagramURL = getDiagramIdFromUrl(activeProjectID, imageURL) ? imageURL : undefined
+      setSelectedDiagramURL(nextDiagramURL)
+      setIsDiagramModalOpen(true)
+    }, [activeProjectID])
+
+    const handleDiagramSaved = useCallback((imageURL: string, saveAsNew: boolean) => {
+      const nextImageURL = appendCacheBust(imageURL)
+
+      if (selectedDiagramURL && !saveAsNew) {
+        replaceImageSrc(selectedDiagramURL, nextImageURL)
+      } else {
+        insertImage(nextImageURL, 'Diagram')
+      }
+
+      closeDiagramModal()
+    }, [closeDiagramModal, insertImage, replaceImageSrc, selectedDiagramURL])
+
     // Callback to set the reset function
     const handleResetRef = useCallback((fn: (html: string) => void) => {
       resetContentRef.current = fn
@@ -233,6 +333,8 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
           resetContentRef.current(html)
         }
       },
+      insertImage,
+      replaceImageSrc,
     }))
 
     // Handle Escape to exit fullscreen
@@ -252,6 +354,7 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
             <ToolbarPlugin
               isFullscreen={isFullscreen}
               onToggleFullscreen={() => setIsFullscreen((f) => !f)}
+              onOpenDiagram={activeProjectID ? openDiagramModal : undefined}
               onPasteMarkdown={() => setShowPasteMarkdown(true)}
             />
             <div className="editor-inner">
@@ -273,9 +376,18 @@ const HtmlEditor = forwardRef<HtmlEditorRef, HtmlEditorProps>(
               />
               <SyncHtmlContentPlugin value={value} onResetRef={handleResetRef} />
               <HtmlChangePlugin onChange={onChange} />
+              <EditorRefPlugin onEditorReady={handleEditorReady} />
             </div>
           </div>
         </LexicalComposer>
+        {activeProjectID && isDiagramModalOpen && (
+          <DiagramModal
+            projectId={activeProjectID}
+            diagramUrl={selectedDiagramURL}
+            onClose={closeDiagramModal}
+            onSaved={handleDiagramSaved}
+          />
+        )}
       </div>
     )
   }

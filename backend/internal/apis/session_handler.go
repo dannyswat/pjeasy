@@ -2,6 +2,7 @@ package apis
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/projects"
@@ -9,6 +10,11 @@ import (
 	"github.com/dannyswat/pjeasy/internal/users"
 	"github.com/labstack/echo/v4"
 )
+
+type authCookieOptions struct {
+	secure   bool
+	sameSite http.SameSite
+}
 
 type SessionHandler struct {
 	userService    *users.UserService
@@ -89,16 +95,15 @@ func (h *SessionHandler) Login(c echo.Context) error {
 			Name:            result.User.Name,
 			ProfileImageURL: result.User.ProfileImageURL,
 		},
+		SessionID:    result.SessionID.String(),
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
 	}
 
 	if req.UseCookie {
-		// Set cookies for better security
+		// Set cookies in addition to the JSON payload so existing token-based
+		// clients continue to work.
 		h.setAuthCookies(c, result.SessionID.String(), result.AccessToken, result.RefreshToken)
-	} else {
-		// Return tokens in response
-		response.SessionID = result.SessionID.String()
-		response.AccessToken = result.AccessToken
-		response.RefreshToken = result.RefreshToken
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -106,23 +111,20 @@ func (h *SessionHandler) Login(c echo.Context) error {
 
 func (h *SessionHandler) RefreshToken(c echo.Context) error {
 	req := new(RefreshTokenRequest)
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
 
-	// Try to get from cookies first if UseCookie is requested
-	if req.UseCookie {
+	// If cookie mode is enabled and the caller omitted one of the values,
+	// backfill from cookies.
+	if req.UseCookie && (req.SessionID == "" || req.RefreshToken == "") {
 		sessionCookie, err := c.Cookie("session_id")
-		if err == nil {
+		if err == nil && req.SessionID == "" {
 			req.SessionID = sessionCookie.Value
 		}
 		refreshCookie, err := c.Cookie("refresh_token")
-		if err == nil {
+		if err == nil && req.RefreshToken == "" {
 			req.RefreshToken = refreshCookie.Value
-		}
-	}
-
-	// If not in cookies, try body
-	if req.SessionID == "" || req.RefreshToken == "" {
-		if err := c.Bind(req); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 		}
 	}
 
@@ -142,16 +144,15 @@ func (h *SessionHandler) RefreshToken(c echo.Context) error {
 			Name:            result.User.Name,
 			ProfileImageURL: result.User.ProfileImageURL,
 		},
+		SessionID:    result.SessionID.String(),
+		AccessToken:  result.AccessToken,
+		RefreshToken: result.RefreshToken,
 	}
 
 	if req.UseCookie {
-		// Update cookies
+		// Update cookies in addition to the JSON payload so existing token-based
+		// clients continue to work.
 		h.setAuthCookies(c, result.SessionID.String(), result.AccessToken, result.RefreshToken)
-	} else {
-		// Return tokens in response
-		response.SessionID = result.SessionID.String()
-		response.AccessToken = result.AccessToken
-		response.RefreshToken = result.RefreshToken
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -208,15 +209,31 @@ func (h *SessionHandler) RevokeAllSessions(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"message": "All sessions revoked successfully"})
 }
 
+func resolveAuthCookieOptions(c echo.Context) authCookieOptions {
+	request := c.Request()
+	secure := request.TLS != nil
+	if !secure {
+		forwardedProto := request.Header.Get(echo.HeaderXForwardedProto)
+		secure = strings.EqualFold(forwardedProto, "https")
+	}
+
+	return authCookieOptions{
+		secure:   secure,
+		sameSite: http.SameSiteStrictMode,
+	}
+}
+
 func (h *SessionHandler) setAuthCookies(c echo.Context, sessionID, accessToken, refreshToken string) {
+	options := resolveAuthCookieOptions(c)
+
 	// Session ID cookie (7 days)
 	c.SetCookie(&http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true, // Set to true in production with HTTPS
-		SameSite: http.SameSiteStrictMode,
+		Secure:   options.secure,
+		SameSite: options.sameSite,
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 
@@ -226,8 +243,8 @@ func (h *SessionHandler) setAuthCookies(c echo.Context, sessionID, accessToken, 
 		Value:    accessToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   options.secure,
+		SameSite: options.sameSite,
 		MaxAge:   15 * 60, // 15 minutes
 	})
 
@@ -237,13 +254,15 @@ func (h *SessionHandler) setAuthCookies(c echo.Context, sessionID, accessToken, 
 		Value:    refreshToken,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteStrictMode,
+		Secure:   options.secure,
+		SameSite: options.sameSite,
 		MaxAge:   7 * 24 * 60 * 60, // 7 days
 	})
 }
 
 func (h *SessionHandler) clearAuthCookies(c echo.Context) {
+	options := resolveAuthCookieOptions(c)
+
 	// Clear all auth cookies by setting them with negative MaxAge
 	cookies := []string{"session_id", "access_token", "refresh_token"}
 	for _, name := range cookies {
@@ -252,6 +271,8 @@ func (h *SessionHandler) clearAuthCookies(c echo.Context) {
 			Value:    "",
 			Path:     "/",
 			HttpOnly: true,
+			Secure:   options.secure,
+			SameSite: options.sameSite,
 			MaxAge:   -1,
 			Expires:  time.Unix(0, 0),
 		})

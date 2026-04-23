@@ -63,6 +63,7 @@ async function refreshAccessToken(): Promise<string | null> {
         body: JSON.stringify({
           sessionId: sessionId,
           refreshToken: refreshToken,
+          useCookie: true,
         }),
       });
 
@@ -89,6 +90,13 @@ async function refreshAccessToken(): Promise<string | null> {
   })();
 
   return refreshPromise;
+}
+
+export async function syncAuthCookie(): Promise<void> {
+  const accessToken = await refreshAccessToken()
+  if (!accessToken) {
+    throw new Error('Authentication failed. Please log in again.')
+  }
 }
 
 export async function fetchApi<Type>(

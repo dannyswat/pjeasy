@@ -149,6 +149,11 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     return this.__altText
   }
 
+  setSrc(src: string): void {
+    const writable = this.getWritable()
+    writable.__src = src
+  }
+
   setWidthAndHeight(width?: number, height?: number): void {
     const writable = this.getWritable()
     writable.__width = sanitizeDimension(width)
