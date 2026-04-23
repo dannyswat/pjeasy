@@ -24,12 +24,14 @@ type CreateWikiPageRequest struct {
 	Content   string `json:"content"`
 	ParentID  *int   `json:"parentId"`
 	SortOrder int    `json:"sortOrder"`
+	Protected bool   `json:"protected"`
 }
 
 type UpdateWikiPageRequest struct {
 	Title     string `json:"title" validate:"required"`
 	ParentID  *int   `json:"parentId"`
 	SortOrder int    `json:"sortOrder"`
+	Protected *bool  `json:"protected"`
 }
 
 type UpdateWikiPageContentRequest struct {
@@ -64,6 +66,7 @@ type WikiPageResponse struct {
 	ProjectID   int    `json:"projectId"`
 	Slug        string `json:"slug"`
 	Title       string `json:"title"`
+	Protected   bool   `json:"protected"`
 	Content     string `json:"content"`
 	ContentHash string `json:"contentHash,omitempty"`
 	Version     int    `json:"version"`
@@ -123,6 +126,7 @@ func toWikiPageResponse(page *wiki_pages.WikiPage) WikiPageResponse {
 		ProjectID:   page.ProjectID,
 		Slug:        page.Slug,
 		Title:       page.Title,
+		Protected:   page.Protected,
 		Content:     page.Content,
 		ContentHash: page.ContentHash,
 		Version:     page.Version,
@@ -184,7 +188,7 @@ func (h *WikiPageHandler) CreateWikiPage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	page, err := h.wikiPageService.CreateWikiPage(projectID, req.Title, req.Content, req.ParentID, req.SortOrder, userID)
+	page, err := h.wikiPageService.CreateWikiPage(projectID, req.Title, req.Content, req.ParentID, req.SortOrder, req.Protected, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -335,7 +339,7 @@ func (h *WikiPageHandler) UpdateWikiPage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	page, err := h.wikiPageService.UpdateWikiPage(pageID, req.Title, req.ParentID, req.SortOrder, userID)
+	page, err := h.wikiPageService.UpdateWikiPage(pageID, req.Title, req.ParentID, req.SortOrder, req.Protected, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

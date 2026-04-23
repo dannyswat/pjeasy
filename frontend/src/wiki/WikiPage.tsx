@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useWikiPageTree } from './useWikiPageTree'
 import { useGetWikiPage } from './useGetWikiPage'
@@ -30,6 +30,8 @@ export default function WikiPage() {
   const [internalMode, setInternalMode] = useState<'view' | 'edit'>('view')
   const [showChangesPanel, setShowChangesPanel] = useState(false)
   const [showSidebar, setShowSidebar] = useState(false)
+  const [showActionsMenu, setShowActionsMenu] = useState(false)
+  const actionsMenuRef = useRef<HTMLDivElement | null>(null)
   
   // Derive effective view mode
   const viewMode: ViewMode = isCreateFromUrl ? 'create' : internalMode
@@ -39,6 +41,7 @@ export default function WikiPage() {
   const [content, setContent] = useState('')
   const [sortOrder, setSortOrder] = useState(0)
   const [parentId, setParentId] = useState<number | ''>('')
+  const [isProtected, setIsProtected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
   // Fetch all wiki pages for the sidebar and parent selectors
@@ -47,7 +50,8 @@ export default function WikiPage() {
   // Fetch the current wiki page if we have a pageId
   const { wikiPage, isLoading: isLoadingPage, refetch: refetchPage } = useGetWikiPage(pageIdNum)
   const { changes: pendingChanges } = usePendingChanges(pageIdNum)
-  const { canWrite } = useProjectRole(projectIdNum)
+  const { canWrite, isProjectUser } = useProjectRole(projectIdNum)
+  const isLoading = isLoadingList || (pageIdNum && isLoadingPage)
   
   // Mutations
   const createWikiPage = useCreateWikiPage()
@@ -69,6 +73,29 @@ export default function WikiPage() {
       navigate(`/projects/${projectId}/wiki/${wikiPages[0].id}`, { replace: true })
     }
   }, [pageId, wikiPages, projectId, navigate, viewMode])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+        setShowActionsMenu(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (viewMode !== 'view') {
+      setShowActionsMenu(false)
+    }
+  }, [viewMode, pageIdNum])
+
+  useEffect(() => {
+    if (pageId && !isLoading && !wikiPage && wikiPages.length > 0 && viewMode === 'view') {
+      navigate(`/projects/${projectId}/wiki/${wikiPages[0].id}`, { replace: true })
+    }
+  }, [pageId, isLoading, wikiPage, wikiPages, viewMode, navigate, projectId])
   
   const handleStartCreate = () => {
     // Navigate to create mode via URL
@@ -77,6 +104,7 @@ export default function WikiPage() {
     setContent('')
     setSortOrder(wikiPages.length)
     setParentId('')
+    setIsProtected(false)
     setError(null)
   }
   
@@ -87,6 +115,7 @@ export default function WikiPage() {
       setContent(wikiPage.content || '')
       setSortOrder(wikiPage.sortOrder)
       setParentId(wikiPage.parentId ?? '')
+      setIsProtected(wikiPage.protected)
       setError(null)
     }
   }
@@ -116,6 +145,7 @@ export default function WikiPage() {
           title: title.trim(),
           content,
           parentId: parentId === '' ? undefined : parentId,
+          protected: isProtected,
           sortOrder,
         },
       })
@@ -148,6 +178,7 @@ export default function WikiPage() {
         data: {
           title: title.trim(),
           parentId: parentId === '' ? undefined : parentId,
+          protected: isProtected,
           sortOrder,
         },
       })
@@ -173,6 +204,7 @@ export default function WikiPage() {
     if (!window.confirm('Are you sure you want to delete this wiki page?')) return
     
     try {
+      setShowActionsMenu(false)
       await deleteWikiPage.mutateAsync({
         pageId: pageIdNum,
         projectId: projectIdNum,
@@ -196,6 +228,11 @@ export default function WikiPage() {
     } catch (err) {
       console.error('Failed to update status:', err)
     }
+  }
+
+  const handleShowHistory = () => {
+    setShowActionsMenu(false)
+    setShowChangesPanel(true)
   }
   
   const getStatusColor = (status: string) => {
@@ -231,6 +268,13 @@ export default function WikiPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <span className="truncate">{node.title}</span>
+          {node.protected && !isProjectUser && (
+            <span className="inline-flex items-center text-amber-700" role="img" aria-label="Protected page" title="Protected page">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 8a5 5 0 1110 0v1h.5A1.5 1.5 0 0117 10.5v6A1.5 1.5 0 0115.5 18h-11A1.5 1.5 0 013 16.5v-6A1.5 1.5 0 014.5 9H5V8zm2 1h6V8a3 3 0 10-6 0v1z" clipRule="evenodd" />
+              </svg>
+            </span>
+          )}
         </div>
       </button>
       {node.children.length > 0 && (
@@ -241,7 +285,6 @@ export default function WikiPage() {
     </div>
   )
 
-  const isLoading = isLoadingList || (pageIdNum && isLoadingPage)
   const isPending = createWikiPage.isPending || updateWikiPage.isPending || updateWikiPageContent.isPending
 
   if (!projectId) {
@@ -373,6 +416,24 @@ export default function WikiPage() {
                   </select>
                   <p className="mt-1 text-xs text-gray-500">Nest this page under an existing page.</p>
                 </div>
+
+                <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    id="createWikiProtected"
+                    checked={isProtected}
+                    onChange={(e) => setIsProtected(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <label htmlFor="createWikiProtected" className="block text-sm font-medium text-gray-700">
+                      Protected page
+                    </label>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Only project members and managers can see this page in the wiki menu and open it directly.
+                    </p>
+                  </div>
+                </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -451,6 +512,24 @@ export default function WikiPage() {
                   </select>
                   <p className="mt-1 text-xs text-gray-500">Choose where this page appears in the wiki menu.</p>
                 </div>
+
+                <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    id="editWikiProtected"
+                    checked={isProtected}
+                    onChange={(e) => setIsProtected(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <label htmlFor="editWikiProtected" className="block text-sm font-medium text-gray-700">
+                      Protected page
+                    </label>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Only project members and managers can see this page in the wiki menu and open it directly.
+                    </p>
+                  </div>
+                </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,17 +584,21 @@ export default function WikiPage() {
               </svg>
               <h2 className="mt-6 text-xl font-semibold text-gray-900">No Wiki Pages Yet</h2>
               <p className="mt-2 text-gray-600 max-w-md mx-auto">
-                Start documenting your project by creating your first wiki page.
+                {canWrite
+                  ? 'Start documenting your project by creating your first wiki page.'
+                  : 'There are no wiki pages available to your role.'}
               </p>
-              <button
-                onClick={handleStartCreate}
-                className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Start Creating First Wiki Page
-              </button>
+              {canWrite && (
+                <button
+                  onClick={handleStartCreate}
+                  className="mt-6 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition inline-flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  Start Creating First Wiki Page
+                </button>
+              )}
             </div>
           </div>
         ) : wikiPage ? (
@@ -530,6 +613,13 @@ export default function WikiPage() {
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(wikiPage.status)}`}>
                       {WikiPageStatusDisplay[wikiPage.status] || wikiPage.status}
                     </span>
+                    {wikiPage.protected && (
+                      <span className="inline-flex items-center text-amber-700" role="img" aria-label="Protected page" title="Protected page">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5 8a5 5 0 1110 0v1h.5A1.5 1.5 0 0117 10.5v6A1.5 1.5 0 0115.5 18h-11A1.5 1.5 0 013 16.5v-6A1.5 1.5 0 014.5 9H5V8zm2 1h6V8a3 3 0 10-6 0v1z" clipRule="evenodd" />
+                        </svg>
+                      </span>
+                    )}
                     <span className="text-sm text-gray-500">v{wikiPage.version}</span>
                   </div>
                   <div className="text-sm text-gray-500 mb-3">/{wikiPage.slug}</div>
@@ -554,12 +644,6 @@ export default function WikiPage() {
                     </button>
                   )}
                   <button
-                    onClick={() => setShowChangesPanel(true)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-                  >
-                    History
-                  </button>
-                  <button
                     onClick={handleStartEdit}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
@@ -574,12 +658,41 @@ export default function WikiPage() {
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>
-                  <button
-                    onClick={handleDelete}
-                    className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition"
-                  >
-                    Delete
-                  </button>
+                  <div className="relative" ref={actionsMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowActionsMenu((prev) => !prev)}
+                      className="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2 text-gray-600 hover:bg-gray-50 transition"
+                      aria-label="More actions"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 6a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 5.5A1.5 1.5 0 1010 8.5a1.5 1.5 0 000 3zm0 5.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
+                      </svg>
+                    </button>
+                    {showActionsMenu && (
+                      <div className="absolute right-0 z-10 mt-2 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg">
+                        <button
+                          type="button"
+                          onClick={handleShowHistory}
+                          className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <span>History</span>
+                          {pendingChanges.length > 0 && (
+                            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                              {pendingChanges.length}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDelete}
+                          className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>)}
               </div>
             </div>

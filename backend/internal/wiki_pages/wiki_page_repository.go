@@ -91,10 +91,39 @@ func (r *WikiPageRepository) GetByProjectIDAndStatus(projectID int, status strin
 	return pages, total, err
 }
 
+// GetVisibleByProjectIDAndStatus returns non-protected wiki pages filtered by status with pagination.
+func (r *WikiPageRepository) GetVisibleByProjectIDAndStatus(projectID int, status string, offset, limit int) ([]WikiPage, int64, error) {
+	var pages []WikiPage
+	var total int64
+
+	query := r.uow.GetDB().Model(&WikiPage{}).
+		Where("project_id = ? AND status = ? AND protected = ?", projectID, status, false)
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := query.Order("sort_order ASC, created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&pages).Error
+
+	return pages, total, err
+}
+
 // GetAllByProjectIDAndStatus returns all wiki pages for a project filtered by status.
 func (r *WikiPageRepository) GetAllByProjectIDAndStatus(projectID int, status string) ([]WikiPage, error) {
 	var pages []WikiPage
 	err := r.uow.GetDB().Where("project_id = ? AND status = ?", projectID, status).
+		Order("sort_order ASC, created_at DESC").
+		Find(&pages).Error
+	return pages, err
+}
+
+// GetAllVisibleByProjectIDAndStatus returns all non-protected wiki pages for a project filtered by status.
+func (r *WikiPageRepository) GetAllVisibleByProjectIDAndStatus(projectID int, status string) ([]WikiPage, error) {
+	var pages []WikiPage
+	err := r.uow.GetDB().Where("project_id = ? AND status = ? AND protected = ?", projectID, status, false).
 		Order("sort_order ASC, created_at DESC").
 		Find(&pages).Error
 	return pages, err

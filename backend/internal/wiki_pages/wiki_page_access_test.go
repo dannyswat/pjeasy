@@ -24,6 +24,27 @@ func TestCanReadWikiPageStatus(t *testing.T) {
 	}
 }
 
+func TestCanReadProtectedWikiPage(t *testing.T) {
+	tests := []struct {
+		name            string
+		isProtected     bool
+		isLimitedReader bool
+		expected        bool
+	}{
+		{name: "writer can read protected page", isProtected: true, isLimitedReader: false, expected: true},
+		{name: "limited user can read public page", isProtected: false, isLimitedReader: true, expected: true},
+		{name: "limited user cannot read protected page", isProtected: true, isLimitedReader: true, expected: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if result := canReadProtectedWikiPage(tt.isProtected, tt.isLimitedReader); result != tt.expected {
+				t.Fatalf("expected %v, got %v", tt.expected, result)
+			}
+		})
+	}
+}
+
 func TestNormalizeWikiListStatus(t *testing.T) {
 	tests := []struct {
 		name            string

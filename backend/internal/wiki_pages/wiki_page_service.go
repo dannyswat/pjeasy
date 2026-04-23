@@ -99,6 +99,10 @@ func canReadWikiPageStatus(status string, isLimitedReader bool) bool {
 	return status == WikiPageStatusPublished || status == WikiPageStatusArchived
 }
 
+func canReadProtectedWikiPage(isProtected bool, isLimitedReader bool) bool {
+	return !isLimitedReader || !isProtected
+}
+
 func normalizeWikiListStatus(status string, isLimitedReader bool) (string, bool) {
 	if !isLimitedReader {
 		return status, true
@@ -112,7 +116,7 @@ func normalizeWikiListStatus(status string, isLimitedReader bool) (string, bool)
 }
 
 // CreateWikiPage creates a new wiki page
-func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, parentID *int, sortOrder int, createdBy int) (*WikiPage, error) {
+func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, parentID *int, sortOrder int, isProtected bool, createdBy int) (*WikiPage, error) {
 	// Validate project exists
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
@@ -173,6 +177,7 @@ func (s *WikiPageService) CreateWikiPage(projectID int, title, content string, p
 		ProjectID:   projectID,
 		Slug:        slug,
 		Title:       title,
+		Protected:   isProtected,
 		Content:     content,
 		ContentHash: contentHash,
 		Version:     1,
@@ -225,7 +230,7 @@ func (s *WikiPageService) validateParentRelationship(pageID int, projectID int, 
 }
 
 // UpdateWikiPage updates a wiki page's metadata (not content)
-func (s *WikiPageService) UpdateWikiPage(pageID int, title string, parentID *int, sortOrder int, updatedBy int) (*WikiPage, error) {
+func (s *WikiPageService) UpdateWikiPage(pageID int, title string, parentID *int, sortOrder int, isProtected *bool, updatedBy int) (*WikiPage, error) {
 	page, err := s.pageRepo.GetByID(pageID)
 	if err != nil {
 		return nil, err
@@ -267,6 +272,9 @@ func (s *WikiPageService) UpdateWikiPage(pageID int, title string, parentID *int
 		page.Title = title
 	}
 
+	if isProtected != nil {
+		page.Protected = *isProtected
+	}
 	page.ParentID = parentID
 	page.SortOrder = sortOrder
 	page.UpdatedBy = updatedBy
@@ -410,6 +418,9 @@ func (s *WikiPageService) GetWikiPage(pageID int, userID int) (*WikiPage, error)
 	if !canReadWikiPageStatus(page.Status, isLimitedReader) {
 		return nil, nil
 	}
+	if !canReadProtectedWikiPage(page.Protected, isLimitedReader) {
+		return nil, nil
+	}
 
 	return page, nil
 }
@@ -432,6 +443,9 @@ func (s *WikiPageService) GetWikiPageBySlug(projectID int, slug string, userID i
 	if !canReadWikiPageStatus(page.Status, isLimitedReader) {
 		return nil, nil
 	}
+	if !canReadProtectedWikiPage(page.Protected, isLimitedReader) {
+		return nil, nil
+	}
 
 	return page, nil
 }
@@ -450,6 +464,9 @@ func (s *WikiPageService) ListWikiPages(projectID int, page, pageSize int, statu
 	}
 
 	if effectiveStatus != "" {
+		if isLimitedReader {
+			return s.pageRepo.GetVisibleByProjectIDAndStatus(projectID, effectiveStatus, offset, pageSize)
+		}
 		return s.pageRepo.GetByProjectIDAndStatus(projectID, effectiveStatus, offset, pageSize)
 	}
 	return s.pageRepo.GetByProjectID(projectID, offset, pageSize)
@@ -463,7 +480,7 @@ func (s *WikiPageService) GetWikiPageTree(projectID int, userID int) ([]WikiPage
 	}
 
 	if isLimitedReader {
-		return s.pageRepo.GetAllByProjectIDAndStatus(projectID, WikiPageStatusPublished)
+		return s.pageRepo.GetAllVisibleByProjectIDAndStatus(projectID, WikiPageStatusPublished)
 	}
 
 	return s.pageRepo.GetAllByProjectID(projectID)

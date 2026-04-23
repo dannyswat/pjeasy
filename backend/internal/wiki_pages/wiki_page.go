@@ -10,6 +10,7 @@ type WikiPage struct {
 	ProjectID   int       `gorm:"not null;index;uniqueIndex:idx_project_wiki_slug,composite:slug" json:"projectId"`
 	Slug        string    `gorm:"not null;size:255;uniqueIndex:idx_project_wiki_slug,composite:projectId" json:"slug"` // URL-friendly identifier
 	Title       string    `gorm:"not null;size:255" json:"title"`
+	Protected   bool      `gorm:"not null;default:false" json:"protected"`
 	Content     string    `gorm:"type:text" json:"content"`             // Current merged content (HTML)
 	ContentHash string    `gorm:"size:64" json:"contentHash,omitempty"` // Hash of content for version control
 	Version     int       `gorm:"not null;default:1" json:"version"`    // Current version number

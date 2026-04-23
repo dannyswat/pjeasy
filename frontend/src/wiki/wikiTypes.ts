@@ -3,6 +3,7 @@ export interface WikiPageResponse {
   projectId: number
   slug: string
   title: string
+  protected: boolean
   content: string
   contentHash?: string
   version: number
@@ -17,6 +18,7 @@ export interface WikiPageResponse {
 
 export interface CreateWikiPageRequest {
   title: string
+  protected?: boolean
   content?: string
   parentId?: number
   sortOrder?: number
@@ -24,6 +26,7 @@ export interface CreateWikiPageRequest {
 
 export interface UpdateWikiPageRequest {
   title: string
+  protected?: boolean
   parentId?: number
   sortOrder?: number
 }
