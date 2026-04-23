@@ -21,7 +21,7 @@ func TestSanitizeStripsScriptsAndJavascriptURLs(t *testing.T) {
 }
 
 func TestSanitizeAllowsEditorMarkup(t *testing.T) {
-	input := `<h2 style="text-align:center">Title</h2><p><span style="color:#3b82f6;font-size:24px">Body</span></p><pre><code class="language-typescript">const x = 1;</code></pre><img src="/uploads/images/example.png" alt="example" width="320" height="180" style="max-width:100%">`
+	input := `<h2 style="text-align:center">Title</h2><p><span style="color:#3b82f6;font-size:24px">Body</span></p><pre><code class="language-typescript">const x = 1;</code></pre><img src="/uploads/images/example.png" alt="example" width="320" height="180" style="max-width:100%;width:320px;height:180px">`
 	output := Sanitize(input)
 
 	checks := []string{
@@ -30,7 +30,11 @@ func TestSanitizeAllowsEditorMarkup(t *testing.T) {
 		`font-size: 24px`,
 		`class="language-typescript"`,
 		`src="/uploads/images/example.png"`,
-		`style="max-width: 100%"`,
+		`width="320"`,
+		`height="180"`,
+		`max-width: 100%`,
+		`width: 320px`,
+		`height: 180px`,
 	}
 
 	for _, check := range checks {

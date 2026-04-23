@@ -37,6 +37,31 @@ function sanitizeDimension(value?: number | null): number | undefined {
   return value
 }
 
+function parseDimensionValue(value?: string | null): number | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  const trimmed = value.trim().toLowerCase()
+  if (trimmed === '' || trimmed === 'auto') {
+    return undefined
+  }
+
+  const match = trimmed.match(/^([1-9][0-9]{0,4})(?:px)?$/)
+  if (!match) {
+    return undefined
+  }
+
+  return sanitizeDimension(Number.parseInt(match[1], 10))
+}
+
+function getImageDimension(domNode: HTMLImageElement, attribute: 'width' | 'height'): number | undefined {
+  return (
+    parseDimensionValue(domNode.getAttribute(attribute)) ??
+    parseDimensionValue(domNode.style.getPropertyValue(attribute))
+  )
+}
+
 function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
     if (domNode.dataset.lexicalLinebreak === 'true') {
@@ -50,8 +75,8 @@ function convertImageElement(domNode: Node): null | DOMConversionOutput {
     }
 
     const altText = domNode.getAttribute('alt') ?? ''
-    const width = sanitizeDimension(domNode.width)
-    const height = sanitizeDimension(domNode.height)
+    const width = getImageDimension(domNode, 'width')
+    const height = getImageDimension(domNode, 'height')
     const node = $createImageNode({ src: rawSrc, altText, width, height })
     return { node }
   }
@@ -123,9 +148,11 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     img.setAttribute('alt', this.__altText)
     if (this.__width) {
       img.setAttribute('width', String(this.__width))
+      img.style.width = `${this.__width}px`
     }
     if (this.__height) {
       img.setAttribute('height', String(this.__height))
+      img.style.height = `${this.__height}px`
     }
     img.style.maxWidth = '100%'
     return { element: img }

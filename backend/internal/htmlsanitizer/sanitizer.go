@@ -17,6 +17,7 @@ var (
 	fontSizePattern   = regexp.MustCompile(`^(?:12|14|16|18|20|24|28|32|36|48)px$`)
 	textAlignPattern  = regexp.MustCompile(`^(left|center|right|justify)$`)
 	maxWidthPattern   = regexp.MustCompile(`^(?:100%|[1-9][0-9]?%)$`)
+	imageSizePattern  = regexp.MustCompile(`^(?:auto|[1-9][0-9]{0,4}px|100%|[1-9][0-9]?%)$`)
 	languageClassExpr = regexp.MustCompile(`^language-[a-z0-9#+-]+$`)
 )
 
@@ -61,6 +62,8 @@ func sanitizerPolicy() *bluemonday.Policy {
 		policy.AllowStyles("font-size").Matching(fontSizePattern).Globally()
 		policy.AllowStyles("text-align").Matching(textAlignPattern).Globally()
 		policy.AllowStyles("max-width").Matching(maxWidthPattern).OnElements("img")
+		policy.AllowStyles("width").Matching(imageSizePattern).OnElements("img")
+		policy.AllowStyles("height").Matching(imageSizePattern).OnElements("img")
 	})
 
 	return policy
