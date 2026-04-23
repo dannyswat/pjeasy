@@ -14,7 +14,12 @@ interface RelatedFeaturesProps {
   itemPriority?: string
 }
 
-export default function RelatedFeatures({ projectId, itemType, itemId }: RelatedFeaturesProps) {
+export default function RelatedFeatures({ projectId, itemType, itemId, itemRefNum, itemTitle }: RelatedFeaturesProps) {
+  const linkedIdeaLabel = itemType === 'ideas'
+    ? itemRefNum && itemTitle
+      ? `[${itemRefNum}] ${itemTitle}`
+      : `Idea #${itemId}`
+    : undefined
   const [showCreateModal, setShowCreateModal] = useState(false)
   const { features, isLoading, refetch } = useListFeaturesByItem({ projectId, itemType, itemId, pageSize: 50 })
   const createFeature = useCreateFeature()
@@ -117,6 +122,9 @@ export default function RelatedFeatures({ projectId, itemType, itemId }: Related
       {showCreateModal && (
         <CreateFeatureForm
           projectId={projectId}
+          initialLinkedIdeaId={itemType === 'ideas' ? itemId : undefined}
+          lockedLinkedIdeaLabel={linkedIdeaLabel}
+          lockLinkedIdea={itemType === 'ideas'}
           onSubmit={handleCreateFeature}
           onCancel={() => setShowCreateModal(false)}
           isPending={createFeature.isPending}

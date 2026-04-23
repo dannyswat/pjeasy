@@ -589,7 +589,7 @@ export default function WikiPage() {
               <div className="p-6">
                 {wikiPage.content ? (
                   <div 
-                    className="prose max-w-none"
+                    className="prose prose-full-width"
                     dangerouslySetInnerHTML={{ __html: wikiPage.content }}
                   />
                 ) : (

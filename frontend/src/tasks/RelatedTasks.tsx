@@ -44,6 +44,11 @@ const FEATURE_TASK_TEMPLATES = [
 export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, itemTitle, itemPriority, onTaskCreated }: RelatedTasksProps) {
   // Select templates based on item type (no templates for service-tickets)
   const templates = itemType === 'issues' ? ISSUE_TASK_TEMPLATES : itemType === 'ideas' ? IDEA_TASK_TEMPLATES : itemType === 'features' ? FEATURE_TASK_TEMPLATES : []
+  const linkedIdeaLabel = itemType === 'ideas'
+    ? itemRefNum && itemTitle
+      ? `[${itemRefNum}] ${itemTitle}`
+      : `Idea #${itemId}`
+    : undefined
   const [showCreateDropdown, setShowCreateDropdown] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<{ title: string; description: string } | null>(null)
@@ -197,6 +202,9 @@ export default function RelatedTasks({ projectId, itemType, itemId, itemRefNum, 
           defaultTitle={selectedTemplate.title}
           defaultDescription={selectedTemplate.description}
           defaultPriority={itemPriority}
+          initialLinkedIdeaId={itemType === 'ideas' ? itemId : undefined}
+          lockedLinkedIdeaLabel={linkedIdeaLabel}
+          lockLinkedIdea={itemType === 'ideas'}
           onSubmit={handleCreateTask}
           onCancel={() => {
             setShowCreateModal(false)

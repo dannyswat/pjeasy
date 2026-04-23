@@ -6,6 +6,11 @@
   max-width: 65ch;
 }
 
+.prose-full-width {
+  max-width: none;
+  width: 100%;
+}
+
 .prose h1, .prose h2, .prose h3 {
   color: #111827;
   font-weight: 600;

@@ -14,7 +14,12 @@ interface RelatedIssuesProps {
   itemPriority?: string
 }
 
-export default function RelatedIssues({ projectId, itemType, itemId }: RelatedIssuesProps) {
+export default function RelatedIssues({ projectId, itemType, itemId, itemRefNum, itemTitle }: RelatedIssuesProps) {
+  const linkedIdeaLabel = itemType === 'ideas'
+    ? itemRefNum && itemTitle
+      ? `[${itemRefNum}] ${itemTitle}`
+      : `Idea #${itemId}`
+    : undefined
   const [showCreateModal, setShowCreateModal] = useState(false)
   const { issues, isLoading, refetch } = useListIssuesByItem({ projectId, itemType, itemId, pageSize: 50 })
   const createIssue = useCreateIssue()
@@ -101,6 +106,9 @@ export default function RelatedIssues({ projectId, itemType, itemId }: RelatedIs
       {showCreateModal && (
         <CreateIssueForm
           projectId={projectId}
+          initialLinkedIdeaId={itemType === 'ideas' ? itemId : undefined}
+          lockedLinkedIdeaLabel={linkedIdeaLabel}
+          lockLinkedIdea={itemType === 'ideas'}
           onSubmit={handleCreateIssue}
           onCancel={() => setShowCreateModal(false)}
           isPending={createIssue.isPending}

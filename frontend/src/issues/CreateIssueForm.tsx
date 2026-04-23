@@ -9,6 +9,9 @@ import { IssuePriority } from './issueTypes'
 
 interface CreateIssueFormProps {
   projectId: number
+  initialLinkedIdeaId?: number
+  lockedLinkedIdeaLabel?: string
+  lockLinkedIdea?: boolean
   onSubmit: (data: {
     title: string
     description: string
@@ -25,14 +28,22 @@ interface CreateIssueFormProps {
   isPending: boolean
 }
 
-export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPending }: CreateIssueFormProps) {
+export default function CreateIssueForm({
+  projectId,
+  initialLinkedIdeaId,
+  lockedLinkedIdeaLabel,
+  lockLinkedIdea = false,
+  onSubmit,
+  onCancel,
+  isPending,
+}: CreateIssueFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<string>(IssuePriority.URGENT)
   const [assignedTo, setAssignedTo] = useState<number | undefined>(undefined)
   const [points, setPoints] = useState<number | undefined>(undefined)
   const [releaseId, setReleaseId] = useState<number | undefined>(undefined)
-  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(undefined)
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(initialLinkedIdeaId)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
@@ -136,11 +147,22 @@ export default function CreateIssueForm({ projectId, onSubmit, onCancel, isPendi
             label="Release"
           />
 
-          <IdeaReferenceSelect
-            projectId={projectId}
-            value={linkedIdeaId}
-            onChange={setLinkedIdeaId}
-          />
+          {lockLinkedIdea && linkedIdeaId ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Linked Idea
+              </label>
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900">
+                {lockedLinkedIdeaLabel || `Idea #${linkedIdeaId}`}
+              </div>
+            </div>
+          ) : (
+            <IdeaReferenceSelect
+              projectId={projectId}
+              value={linkedIdeaId}
+              onChange={setLinkedIdeaId}
+            />
+          )}
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

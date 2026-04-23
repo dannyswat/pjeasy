@@ -13,6 +13,9 @@ interface CreateTaskFormProps {
   defaultTitle?: string
   defaultDescription?: string
   defaultPriority?: string
+  initialLinkedIdeaId?: number
+  lockedLinkedIdeaLabel?: string
+  lockLinkedIdea?: boolean
   onSubmit: (data: {
     title: string
     description: string
@@ -29,7 +32,18 @@ interface CreateTaskFormProps {
   isPending: boolean
 }
 
-export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDescription = '', defaultPriority, onSubmit, onCancel, isPending }: CreateTaskFormProps) {
+export default function CreateTaskForm({
+  projectId,
+  defaultTitle = '',
+  defaultDescription = '',
+  defaultPriority,
+  initialLinkedIdeaId,
+  lockedLinkedIdeaLabel,
+  lockLinkedIdea = false,
+  onSubmit,
+  onCancel,
+  isPending,
+}: CreateTaskFormProps) {
   const [title, setTitle] = useState(defaultTitle)
   const [description, setDescription] = useState(defaultDescription)
   const [priority, setPriority] = useState<string>(defaultPriority || TaskPriority.NORMAL)
@@ -37,7 +51,7 @@ export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDe
   const [assigneeId, setAssigneeId] = useState<number | undefined>()
   const [deadline, setDeadline] = useState('')
   const [releaseId, setReleaseId] = useState<number | undefined>()
-  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>()
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(initialLinkedIdeaId)
   const [tags, setTags] = useState<string[]>([])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -155,11 +169,22 @@ export default function CreateTaskForm({ projectId, defaultTitle = '', defaultDe
             label="Release"
           />
 
-          <IdeaReferenceSelect
-            projectId={projectId}
-            value={linkedIdeaId}
-            onChange={setLinkedIdeaId}
-          />
+          {lockLinkedIdea && linkedIdeaId ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Linked Idea
+              </label>
+              <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
+                {lockedLinkedIdeaLabel || `Idea #${linkedIdeaId}`}
+              </div>
+            </div>
+          ) : (
+            <IdeaReferenceSelect
+              projectId={projectId}
+              value={linkedIdeaId}
+              onChange={setLinkedIdeaId}
+            />
+          )}
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

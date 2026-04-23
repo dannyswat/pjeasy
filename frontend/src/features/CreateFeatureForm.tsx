@@ -11,6 +11,9 @@ import { FeaturePriority } from './featureTypes'
 
 interface CreateFeatureFormProps {
   projectId: number
+  initialLinkedIdeaId?: number
+  lockedLinkedIdeaLabel?: string
+  lockLinkedIdea?: boolean
   onSubmit: (data: {
     title: string
     description: string
@@ -29,7 +32,15 @@ interface CreateFeatureFormProps {
   isPending: boolean
 }
 
-export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPending }: CreateFeatureFormProps) {
+export default function CreateFeatureForm({
+  projectId,
+  initialLinkedIdeaId,
+  lockedLinkedIdeaLabel,
+  lockLinkedIdea = false,
+  onSubmit,
+  onCancel,
+  isPending,
+}: CreateFeatureFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<string>(FeaturePriority.NORMAL)
@@ -38,7 +49,7 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
   const [deadline, setDeadline] = useState<string>('')
   const [releaseId, setReleaseId] = useState<number | undefined>(undefined)
   const [dependsOnFeatureId, setDependsOnFeatureId] = useState<number | undefined>(undefined)
-  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(undefined)
+  const [linkedIdeaId, setLinkedIdeaId] = useState<number | undefined>(initialLinkedIdeaId)
   const [tags, setTags] = useState<string[]>([])
   const [cascadeCompletion, setCascadeCompletion] = useState(false)
 
@@ -173,11 +184,22 @@ export default function CreateFeatureForm({ projectId, onSubmit, onCancel, isPen
             onChange={setDependsOnFeatureId}
           />
 
-          <IdeaReferenceSelect
-            projectId={projectId}
-            value={linkedIdeaId}
-            onChange={setLinkedIdeaId}
-          />
+          {lockLinkedIdea && linkedIdeaId ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Linked Idea
+              </label>
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">
+                {lockedLinkedIdeaLabel || `Idea #${linkedIdeaId}`}
+              </div>
+            </div>
+          ) : (
+            <IdeaReferenceSelect
+              projectId={projectId}
+              value={linkedIdeaId}
+              onChange={setLinkedIdeaId}
+            />
+          )}
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
