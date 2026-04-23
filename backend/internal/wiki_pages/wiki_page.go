@@ -7,7 +7,7 @@ import (
 // WikiPage represents a wiki page in the system
 type WikiPage struct {
 	ID          int       `gorm:"primaryKey;autoIncrement" json:"id"`
-	ProjectID   int       `gorm:"not null;index" json:"projectId"`
+	ProjectID   int       `gorm:"not null;index;uniqueIndex:idx_project_wiki_slug,composite:slug" json:"projectId"`
 	Slug        string    `gorm:"not null;size:255;uniqueIndex:idx_project_wiki_slug,composite:projectId" json:"slug"` // URL-friendly identifier
 	Title       string    `gorm:"not null;size:255" json:"title"`
 	Content     string    `gorm:"type:text" json:"content"`             // Current merged content (HTML)

@@ -2,9 +2,11 @@ package apis
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/comments"
@@ -84,6 +86,8 @@ type APIServer struct {
 	workflowEngine       *workflow.WorkflowEngine
 }
 
+const wikiPageSlugIndexName = "idx_project_wiki_slug"
+
 func (s *APIServer) StartOrFatal() {
 	s.echo.Logger.Fatal(s.echo.Start(s.config.Server.Address))
 }
@@ -117,7 +121,10 @@ func (s *APIServer) AutoMigrate() error {
 	if s.gorm == nil {
 		return errors.New("Database has not been initialized")
 	}
-	return s.gorm.AutoMigrate(
+	if err := s.repairWikiPageSlugIndex(); err != nil {
+		return err
+	}
+	if err := s.gorm.AutoMigrate(
 		users.User{},
 		users.UserCredential{},
 		&user_sessions.UserSession{},
@@ -144,7 +151,59 @@ func (s *APIServer) AutoMigrate() error {
 		&status_changes.StatusFlow{},
 		&user_dailies.UserDailyItem{},
 		&user_dailies.UserDailyTimeLog{},
-	)
+	); err != nil {
+		return err
+	}
+	return s.ensureWikiPageSlugIndex()
+}
+
+func (s *APIServer) repairWikiPageSlugIndex() error {
+	indexDef, err := s.getWikiPageSlugIndexDefinition()
+	if err != nil {
+		return err
+	}
+	if indexDef == "" || !wikiPageSlugIndexNeedsRepair(indexDef) {
+		return nil
+	}
+	if err := s.gorm.Migrator().DropIndex(&wiki_pages.WikiPage{}, wikiPageSlugIndexName); err != nil {
+		return fmt.Errorf("drop stale wiki page slug index: %w", err)
+	}
+	return nil
+}
+
+func (s *APIServer) ensureWikiPageSlugIndex() error {
+	if s.gorm.Migrator().HasIndex(&wiki_pages.WikiPage{}, wikiPageSlugIndexName) {
+		return nil
+	}
+	if err := s.gorm.Migrator().CreateIndex(&wiki_pages.WikiPage{}, wikiPageSlugIndexName); err != nil {
+		return fmt.Errorf("create wiki page slug index: %w", err)
+	}
+	return nil
+}
+
+func (s *APIServer) getWikiPageSlugIndexDefinition() (string, error) {
+	var indexDef string
+	err := s.gorm.Raw(`
+		SELECT indexdef
+		FROM pg_indexes
+		WHERE schemaname = current_schema()
+		  AND tablename = ?
+		  AND indexname = ?
+	`, (&wiki_pages.WikiPage{}).TableName(), wikiPageSlugIndexName).Scan(&indexDef).Error
+	if err != nil {
+		return "", fmt.Errorf("inspect wiki page slug index: %w", err)
+	}
+	return indexDef, nil
+}
+
+func wikiPageSlugIndexNeedsRepair(indexDef string) bool {
+	normalized := strings.ToLower(indexDef)
+	normalized = strings.ReplaceAll(normalized, `"`, "")
+	normalized = strings.Join(strings.Fields(normalized), " ")
+
+	return normalized != "" &&
+		!strings.Contains(normalized, "(project_id, slug)") &&
+		!strings.Contains(normalized, "(slug, project_id)")
 }
 
 func (s *APIServer) SetupAPIServer() error {
