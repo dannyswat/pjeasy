@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -17,6 +18,7 @@ func NewValidator() *CustomValidator {
 
 	// Register custom validation for complex password
 	v.RegisterValidation("complexpassword", validateComplexPassword)
+	v.RegisterValidation("httpurl", validateHTTPURL)
 
 	return &CustomValidator{validator: v}
 }
@@ -67,4 +69,22 @@ func GetPasswordRequirements() string {
 		"- At least one number (0-9)",
 		"- At least one special character (!@#$%^&*...)",
 	}, "\n")
+}
+
+func validateHTTPURL(fl validator.FieldLevel) bool {
+	rawURL := strings.TrimSpace(fl.Field().String())
+	if rawURL == "" {
+		return true
+	}
+
+	parsedURL, err := url.ParseRequestURI(rawURL)
+	if err != nil {
+		return false
+	}
+
+	if parsedURL.Host == "" {
+		return false
+	}
+
+	return parsedURL.Scheme == "http" || parsedURL.Scheme == "https"
 }

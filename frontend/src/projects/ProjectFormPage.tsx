@@ -101,6 +101,7 @@ export default function ProjectFormPage() {
 
   const [name, setName] = useState(project?.name || '')
   const [description, setDescription] = useState(project?.description || '')
+  const [repositoryUrl, setRepositoryUrl] = useState(project?.repositoryUrl || '')
   const [newMemberUserId, setNewMemberUserId] = useState('')
   const [newMemberRole, setNewMemberRole] = useState<'member' | 'admin' | 'user'>('member')
   const [errorMessage, setErrorMessage] = useState('')
@@ -113,10 +114,18 @@ export default function ProjectFormPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('details')
 
   useEffect(() => {
-    if (!project) return
+    if (!project) {
+      if (!isEditMode) {
+        setName('')
+        setDescription('')
+        setRepositoryUrl('')
+      }
+      return
+    }
     setName(project.name)
     setDescription(project.description || '')
-  }, [project])
+    setRepositoryUrl(project.repositoryUrl || '')
+  }, [isEditMode, project])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,11 +134,11 @@ export default function ProjectFormPage() {
 
     try {
       if (isEditMode && projectId) {
-        await updateProject({ projectId, data: { name, description } })
+        await updateProject({ projectId, data: { name, description, repositoryUrl } })
         setSuccessMessage('Project updated successfully')
         refetch()
       } else {
-        const newProject = await createProject({ name, description })
+        const newProject = await createProject({ name, description, repositoryUrl })
         setSelectedProjectId(newProject.id)
         setSuccessMessage('Project created successfully')
         setTimeout(() => navigate(`/projects/${newProject.id}`), 1500)
@@ -409,6 +418,21 @@ export default function ProjectFormPage() {
               rows={3}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
               placeholder="Enter project description"
+              disabled={isPending || !canWrite}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="repositoryUrl" className="block text-xs font-medium text-gray-700 mb-1.5">
+              Repository Link
+            </label>
+            <input
+              id="repositoryUrl"
+              type="url"
+              value={repositoryUrl}
+              onChange={(e) => setRepositoryUrl(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+              placeholder="https://github.com/your-org/your-repo"
               disabled={isPending || !canWrite}
             />
           </div>

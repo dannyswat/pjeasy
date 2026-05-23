@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '../apis/fetch'
 import type { UpdateProjectRequest, ProjectResponse } from './projectTypes'
 
@@ -8,6 +8,8 @@ interface UpdateProjectParams {
 }
 
 export function useUpdateProject() {
+  const queryClient = useQueryClient()
+
   const mutation = useMutation<ProjectResponse, Error, UpdateProjectParams>({
     mutationFn: async ({ projectId, data }: UpdateProjectParams) => {
       return fetchApi<ProjectResponse>(`/api/projects/${projectId}`, {
@@ -17,6 +19,10 @@ export function useUpdateProject() {
         },
         body: JSON.stringify(data),
       }, true)
+    },
+    onSuccess: (_updatedProject, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: ['project', projectId] })
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
     },
   })
 

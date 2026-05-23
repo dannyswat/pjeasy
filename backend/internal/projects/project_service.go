@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/dannyswat/pjeasy/internal/sequences"
@@ -55,7 +56,7 @@ type ProjectInvitationListItem struct {
 }
 
 // CreateProject creates a new project and adds creator as admin
-func (s *ProjectService) CreateProject(name, description string, createdBy int) (*Project, error) {
+func (s *ProjectService) CreateProject(name, description, repositoryURL string, createdBy int) (*Project, error) {
 	// Validate creator exists
 	creator, err := s.userRepo.GetByID(createdBy)
 	if err != nil {
@@ -67,12 +68,13 @@ func (s *ProjectService) CreateProject(name, description string, createdBy int) 
 
 	now := time.Now()
 	project := &Project{
-		Name:        name,
-		Description: description,
-		IsArchived:  false,
-		CreatedBy:   createdBy,
-		CreatedAt:   now,
-		UpdatedAt:   now,
+		Name:          name,
+		Description:   description,
+		RepositoryURL: strings.TrimSpace(repositoryURL),
+		IsArchived:    false,
+		CreatedBy:     createdBy,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	if err := s.projectRepo.Create(project); err != nil {
@@ -101,7 +103,7 @@ func (s *ProjectService) CreateProject(name, description string, createdBy int) 
 }
 
 // UpdateProject updates a project's basic information
-func (s *ProjectService) UpdateProject(projectID int, name, description string, updatedBy int) (*Project, error) {
+func (s *ProjectService) UpdateProject(projectID int, name, description, repositoryURL string, updatedBy int) (*Project, error) {
 	project, err := s.projectRepo.GetByID(projectID)
 	if err != nil {
 		return nil, err
@@ -121,6 +123,7 @@ func (s *ProjectService) UpdateProject(projectID int, name, description string, 
 
 	project.Name = name
 	project.Description = description
+	project.RepositoryURL = strings.TrimSpace(repositoryURL)
 	project.UpdatedAt = time.Now()
 
 	if err := s.projectRepo.Update(project); err != nil {

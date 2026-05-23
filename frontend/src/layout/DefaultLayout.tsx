@@ -35,7 +35,7 @@ export default function DefaultLayout({
     return () => mq.removeEventListener("change", handler);
   }, []);
   const params = useParams();
-  const { allProjects, selectedProjectId, setSelectedProjectId } =
+  const { allProjects, selectedProject, selectedProjectId, setSelectedProjectId } =
     useProjectContext();
   const { logout } = useRevokeSession();
   const { getUser } = useUserSession();
@@ -133,8 +133,34 @@ export default function DefaultLayout({
             {isInProject && (
               <>
                 <div className="h-5 w-px bg-gray-300"></div>
-                <div className="min-w-0 w-40 sm:w-56">
-                  <ProjectSelector />
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="min-w-0 w-40 sm:w-56">
+                    <ProjectSelector />
+                  </div>
+                  {selectedProject?.repositoryUrl && (
+                    <a
+                      href={selectedProject.repositoryUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1.5 rounded border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-indigo-600 transition-colors shrink-0"
+                      aria-label={`Open ${selectedProject.name} repository in a new tab`}
+                      title="Open repository"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 17l8-8M8 7h9v9M5 5h6M5 5v6M19 19h-6M19 19v-6"
+                        />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               </>
             )}

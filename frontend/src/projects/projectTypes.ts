@@ -4,6 +4,7 @@ export interface ProjectResponse {
   id: number
   name: string
   description: string
+  repositoryUrl: string
   isArchived: boolean
   createdBy: number
   createdAt: string
@@ -29,11 +30,13 @@ export interface ProjectWithMembersResponse {
 export interface CreateProjectRequest {
   name: string
   description: string
+  repositoryUrl: string
 }
 
 export interface UpdateProjectRequest {
   name: string
   description: string
+  repositoryUrl: string
 }
 
 export interface AddMemberRequest {

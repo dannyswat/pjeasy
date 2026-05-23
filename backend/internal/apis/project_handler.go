@@ -23,13 +23,15 @@ func NewProjectHandler(projectService *projects.ProjectService, sequenceService 
 }
 
 type CreateProjectRequest struct {
-	Name        string `json:"name" validate:"required"`
-	Description string `json:"description"`
+	Name          string `json:"name" validate:"required"`
+	Description   string `json:"description"`
+	RepositoryURL string `json:"repositoryUrl" validate:"omitempty,httpurl"`
 }
 
 type UpdateProjectRequest struct {
-	Name        string `json:"name" validate:"required"`
-	Description string `json:"description"`
+	Name          string `json:"name" validate:"required"`
+	Description   string `json:"description"`
+	RepositoryURL string `json:"repositoryUrl" validate:"omitempty,httpurl"`
 }
 
 type AddMemberRequest struct {
@@ -49,14 +51,15 @@ type CreateProjectInvitationRequest struct {
 }
 
 type ProjectResponse struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsArchived  bool   `json:"isArchived"`
-	CreatedBy   int    `json:"createdBy"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
-	ArchivedAt  string `json:"archivedAt,omitempty"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	RepositoryURL string `json:"repositoryUrl"`
+	IsArchived    bool   `json:"isArchived"`
+	CreatedBy     int    `json:"createdBy"`
+	CreatedAt     string `json:"createdAt"`
+	UpdatedAt     string `json:"updatedAt"`
+	ArchivedAt    string `json:"archivedAt,omitempty"`
 }
 
 type MemberResponse struct {
@@ -101,7 +104,7 @@ func (h *ProjectHandler) CreateProject(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	project, err := h.projectService.CreateProject(req.Name, req.Description, userID)
+	project, err := h.projectService.CreateProject(req.Name, req.Description, req.RepositoryURL, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
@@ -112,13 +115,14 @@ func (h *ProjectHandler) CreateProject(c echo.Context) error {
 	}
 
 	response := ProjectResponse{
-		ID:          project.ID,
-		Name:        project.Name,
-		Description: project.Description,
-		IsArchived:  project.IsArchived,
-		CreatedBy:   project.CreatedBy,
-		CreatedAt:   project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:            project.ID,
+		Name:          project.Name,
+		Description:   project.Description,
+		RepositoryURL: project.RepositoryURL,
+		IsArchived:    project.IsArchived,
+		CreatedBy:     project.CreatedBy,
+		CreatedAt:     project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:     project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	return c.JSON(http.StatusCreated, response)
@@ -146,19 +150,20 @@ func (h *ProjectHandler) UpdateProject(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	project, err := h.projectService.UpdateProject(projectID, req.Name, req.Description, userID)
+	project, err := h.projectService.UpdateProject(projectID, req.Name, req.Description, req.RepositoryURL, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	response := ProjectResponse{
-		ID:          project.ID,
-		Name:        project.Name,
-		Description: project.Description,
-		IsArchived:  project.IsArchived,
-		CreatedBy:   project.CreatedBy,
-		CreatedAt:   project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:            project.ID,
+		Name:          project.Name,
+		Description:   project.Description,
+		RepositoryURL: project.RepositoryURL,
+		IsArchived:    project.IsArchived,
+		CreatedBy:     project.CreatedBy,
+		CreatedAt:     project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:     project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -197,13 +202,14 @@ func (h *ProjectHandler) GetProject(c echo.Context) error {
 
 	response := ProjectWithMembersResponse{
 		Project: ProjectResponse{
-			ID:          projectWithMembers.Project.ID,
-			Name:        projectWithMembers.Project.Name,
-			Description: projectWithMembers.Project.Description,
-			IsArchived:  projectWithMembers.Project.IsArchived,
-			CreatedBy:   projectWithMembers.Project.CreatedBy,
-			CreatedAt:   projectWithMembers.Project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt:   projectWithMembers.Project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			ID:            projectWithMembers.Project.ID,
+			Name:          projectWithMembers.Project.Name,
+			Description:   projectWithMembers.Project.Description,
+			RepositoryURL: projectWithMembers.Project.RepositoryURL,
+			IsArchived:    projectWithMembers.Project.IsArchived,
+			CreatedBy:     projectWithMembers.Project.CreatedBy,
+			CreatedAt:     projectWithMembers.Project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:     projectWithMembers.Project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		},
 		Members: members,
 	}
@@ -243,13 +249,14 @@ func (h *ProjectHandler) ListProjects(c echo.Context) error {
 	projects := make([]ProjectResponse, 0, len(projectsList))
 	for _, p := range projectsList {
 		pr := ProjectResponse{
-			ID:          p.ID,
-			Name:        p.Name,
-			Description: p.Description,
-			IsArchived:  p.IsArchived,
-			CreatedBy:   p.CreatedBy,
-			CreatedAt:   p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			UpdatedAt:   p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			ID:            p.ID,
+			Name:          p.Name,
+			Description:   p.Description,
+			RepositoryURL: p.RepositoryURL,
+			IsArchived:    p.IsArchived,
+			CreatedBy:     p.CreatedBy,
+			CreatedAt:     p.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt:     p.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		}
 		if !p.ArchivedAt.IsZero() {
 			pr.ArchivedAt = p.ArchivedAt.Format("2006-01-02T15:04:05Z07:00")
