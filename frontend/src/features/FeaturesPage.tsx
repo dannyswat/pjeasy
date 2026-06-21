@@ -378,58 +378,21 @@ export default function FeaturesPage() {
                   key={feature.id}
                   className="bg-white border border-gray-200 rounded-lg px-4 py-3 hover:border-gray-300 hover:shadow-sm transition group"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                      {canWrite && (
-                        <input
-                          type="checkbox"
-                          checked={selectedFeatureIds.includes(feature.id)}
-                          onChange={() => toggleFeatureSelection(feature.id)}
-                          className="mt-1 h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                      <div className="flex items-center flex-wrap gap-1 mb-1">
-                        <span className="text-xs font-mono text-gray-500">{feature.refNum}</span>
-                        {feature.itemType === 'ideas' && feature.linkedIdeaLabel && (
-                          <IdeaLabelBadge label={feature.linkedIdeaLabel} className="px-2 py-0.5 text-xs rounded-full" />
+                  <div className="w-full min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {canWrite && (
+                          <input
+                            type="checkbox"
+                            checked={selectedFeatureIds.includes(feature.id)}
+                            onChange={() => toggleFeatureSelection(feature.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                          />
                         )}
-                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(feature.status)}`}>
-                          {FeatureStatusDisplay[feature.status] || feature.status}
-                        </span>
-                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getPriorityColor(feature.priority)}`}>
-                          {feature.priority}
-                        </span>
-                        <ReleaseBadge releaseId={feature.releaseId} />
-                        {formatDeadline(feature.deadline)}
+                        <span className="text-xs font-mono text-gray-500">[{feature.refNum}]</span>
                       </div>
-                      <h3 
-                        className="text-sm font-medium text-gray-900 hover:text-green-600 cursor-pointer truncate"
-                        onClick={() => navigate(`/projects/${projectId}/features/${feature.id}`)}
-                      >
-                        {feature.title}
-                      </h3>
-                      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
-                        {feature.assignedTo ? (
-                          <span className="flex items-center space-x-1">
-                            <span>Assigned to:</span>
-                            <UserLabel userId={feature.assignedTo} />
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">Unassigned</span>
-                        )}
-                        {feature.points > 0 && (
-                          <span className="flex items-center space-x-1">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span>{feature.points} pts</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
+
+                      <div className="flex items-center space-x-2 shrink-0">
                       <button
                         onClick={() => handleAddToDaily(feature.id)}
                         className="p-1.5 text-sky-600 hover:bg-sky-50 rounded"
@@ -461,6 +424,46 @@ export default function FeaturesPage() {
                         </svg>
                       </button>
                       </>
+                      )}
+                      </div>
+                    </div>
+
+                    <h3
+                      className="mt-1 text-sm font-medium text-gray-900 hover:text-green-600 cursor-pointer wrap-break-word"
+                      onClick={() => navigate(`/projects/${projectId}/features/${feature.id}`)}
+                    >
+                      {feature.title}
+                    </h3>
+
+                    <div className="mt-2 flex items-start justify-between gap-2">
+                      <div className="flex items-center flex-wrap gap-1 min-w-0">
+                        {feature.itemType === 'ideas' && feature.linkedIdeaLabel && (
+                          <IdeaLabelBadge label={feature.linkedIdeaLabel} className="px-2 py-0.5 text-xs rounded-full" />
+                        )}
+                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getStatusColor(feature.status)}`}>
+                          {FeatureStatusDisplay[feature.status] || feature.status}
+                        </span>
+                        <span className={`px-2 py-0.5 text-xs rounded-full border ${getPriorityColor(feature.priority)}`}>
+                          {feature.priority}
+                        </span>
+                        <ReleaseBadge releaseId={feature.releaseId} />
+                        {formatDeadline(feature.deadline)}
+                        {feature.points > 0 && (
+                          <span className="flex items-center space-x-1 text-xs text-gray-500">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>{feature.points} pts</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {feature.assignedTo ? (
+                        <span className="shrink-0 text-xs text-gray-600 text-right">
+                          👤 <UserLabel userId={feature.assignedTo} />
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-xs text-gray-400 text-right">Unassigned</span>
                       )}
                     </div>
                   </div>

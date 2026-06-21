@@ -372,47 +372,22 @@ export default function IssuesPage() {
                     className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition group cursor-pointer"
                     onClick={() => navigate(`/projects/${projectId}/issues/${issue.id}`)}
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {canWrite && (
-                        <input
-                          type="checkbox"
-                          checked={selectedIssueIds.includes(issue.id)}
-                          onChange={() => toggleIssueSelection(issue.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                      <div className="flex items-center flex-wrap gap-1">
-                        <span className="text-xs text-gray-500">[{issue.refNum}]</span>
-                        <h3 className="text-sm font-medium text-gray-900 group-hover:text-red-600 transition">
-                          {issue.title}
-                        </h3>
-                        {issue.itemType === 'ideas' && issue.linkedIdeaLabel && (
-                          <IdeaLabelBadge label={issue.linkedIdeaLabel} />
-                        )}
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(issue.status)}`}>
-                          {IssueStatusDisplay[issue.status]}
-                        </span>
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(issue.priority)}`}>
-                          {issue.priority}
-                        </span>
-                        <ReleaseBadge releaseId={issue.releaseId} />
-                        {issue.points > 0 && (
-                          <span className="text-xs text-gray-500">
-                            {issue.points} pts
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 ml-3">
-                      {issue.assignedTo && (
-                        <span className="text-xs text-gray-600">
-                          👤 <UserLabel userId={issue.assignedTo} />
-                        </span>
-                      )}
+                    <div className="w-full min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {canWrite && (
+                            <input
+                              type="checkbox"
+                              checked={selectedIssueIds.includes(issue.id)}
+                              onChange={() => toggleIssueSelection(issue.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                            />
+                          )}
+                          <span className="text-xs text-gray-500">[{issue.refNum}]</span>
+                        </div>
+
+                        <div className="flex items-center space-x-2 shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -455,6 +430,39 @@ export default function IssuesPage() {
                       </button>
                       </>
                       )}
+                        </div>
+                      </div>
+
+                      <h3 className="mt-1 text-sm font-medium text-gray-900 group-hover:text-red-600 transition wrap-break-word">
+                        {issue.title}
+                      </h3>
+
+                      <div className="mt-1 flex items-start justify-between gap-2">
+                        <div className="flex items-center flex-wrap gap-1 min-w-0">
+                          {issue.itemType === 'ideas' && issue.linkedIdeaLabel && (
+                            <IdeaLabelBadge label={issue.linkedIdeaLabel} />
+                          )}
+                          <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(issue.status)}`}>
+                            {IssueStatusDisplay[issue.status]}
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(issue.priority)}`}>
+                            {issue.priority}
+                          </span>
+                          <ReleaseBadge releaseId={issue.releaseId} />
+                          {issue.points > 0 && (
+                            <span className="text-xs text-gray-500">
+                              {issue.points} pts
+                            </span>
+                          )}
+                        </div>
+                        {issue.assignedTo ? (
+                          <span className="text-xs text-gray-600 shrink-0 text-right">
+                            👤 <UserLabel userId={issue.assignedTo} />
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 shrink-0 text-right">Unassigned</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

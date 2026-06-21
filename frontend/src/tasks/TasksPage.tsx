@@ -776,105 +776,22 @@ export default function TasksPage() {
                     key={task.id} 
                     className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition group"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {canWrite && (
-                        <input
-                          type="checkbox"
-                          checked={selectedTaskIds.includes(task.id)}
-                          onChange={() => toggleTaskSelection(task.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                      )}
-                      <div 
-                        className="flex-1 min-w-0 cursor-pointer" 
-                        onClick={() => setViewingTask(task)}
-                      >
-                        <div className="flex items-center flex-wrap gap-1">
-                        <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition">
-                          <span>{task.title}</span>
-                        </h3>
-                        {task.itemType === 'ideas' && task.linkedIdeaLabel && (
-                          <IdeaLabelBadge label={task.linkedIdeaLabel} />
-                        )}
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(task.status)}`}>
-                          {TaskStatusDisplay[task.status as keyof typeof TaskStatusDisplay]}
-                        </span>
-                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(task.priority)}`}>
-                          {task.priority}
-                        </span>
-                          <ReleaseBadge releaseId={task.releaseId} />
-                        {task.sprintId && (
-                          <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 border border-green-200" title={`In Sprint`}>
-                            🏃 Sprint
-                          </span>
-                        )}
-                        {task.estimatedHours > 0 && (
-                          <span className="text-xs text-gray-500">
-                            {task.estimatedHours}h
-                          </span>
-                        )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center flex-wrap gap-2 ml-3">
-                      {task.assigneeId ? (
-                        <span className="text-xs text-gray-600">
-                          👤 <UserLabel userId={task.assigneeId} />
-                        </span>
-                      ) : assigningTaskId === task.id ? (
-                        <div className="flex items-center space-x-2">
-                          <ProjectMemberSelect
-                            projectId={projectIdNum}
-                            value={selectedAssignee}
-                            onChange={setSelectedAssignee}
-                            placeholder="Select"
-                            showAssignToMe={false}
-                          />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleAssign(task.id, selectedAssignee)
-                            }}
-                            disabled={!selectedAssignee}
-                            className="px-2 py-1 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition disabled:opacity-50"
-                          >
-                            Assign
-                          </button>
-                          {user && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAssignToMe(task.id)
-                              }}
-                              className="px-2 py-1 text-xs font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition"
-                            >
-                              Me
-                            </button>
+                    <div className="w-full min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {canWrite && (
+                            <input
+                              type="checkbox"
+                              checked={selectedTaskIds.includes(task.id)}
+                              onChange={() => toggleTaskSelection(task.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
                           )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setAssigningTaskId(null)
-                              setSelectedAssignee(undefined)
-                            }}
-                            className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800"
-                          >
-                            ✕
-                          </button>
+                          <span className="text-xs text-gray-500">[Task #{task.id}]</span>
                         </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setAssigningTaskId(task.id)
-                          }}
-                          className="text-xs text-gray-500 hover:text-indigo-600 transition"
-                        >
-                          👤 Unassigned
-                        </button>
-                      )}
+
+                        <div className="flex items-center flex-wrap gap-2 shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -946,6 +863,101 @@ export default function TasksPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
+                        </div>
+                      </div>
+
+                      <div
+                        className="mt-1 min-w-0 cursor-pointer"
+                        onClick={() => setViewingTask(task)}
+                      >
+                        <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition wrap-break-word">
+                          {task.title}
+                        </h3>
+                      </div>
+
+                      <div className="mt-1 flex items-start justify-between gap-2">
+                        <div className="flex items-center flex-wrap gap-1 min-w-0">
+                          {task.itemType === 'ideas' && task.linkedIdeaLabel && (
+                            <IdeaLabelBadge label={task.linkedIdeaLabel} />
+                          )}
+                          <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getStatusColor(task.status)}`}>
+                            {TaskStatusDisplay[task.status as keyof typeof TaskStatusDisplay]}
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xs font-medium rounded border ${getPriorityColor(task.priority)}`}>
+                            {task.priority}
+                          </span>
+                          <ReleaseBadge releaseId={task.releaseId} />
+                          {task.sprintId && (
+                            <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-800 border border-green-200" title={`In Sprint`}>
+                              🏃 Sprint
+                            </span>
+                          )}
+                          {task.estimatedHours > 0 && (
+                            <span className="text-xs text-gray-500">
+                              {task.estimatedHours}h
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="shrink-0 text-right">
+                          {task.assigneeId ? (
+                            <span className="text-xs text-gray-600">
+                              👤 <UserLabel userId={task.assigneeId} />
+                            </span>
+                          ) : assigningTaskId === task.id ? (
+                            <div className="flex items-center justify-end space-x-2">
+                              <ProjectMemberSelect
+                                projectId={projectIdNum}
+                                value={selectedAssignee}
+                                onChange={setSelectedAssignee}
+                                placeholder="Select"
+                                showAssignToMe={false}
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAssign(task.id, selectedAssignee)
+                                }}
+                                disabled={!selectedAssignee}
+                                className="px-2 py-1 text-xs font-medium bg-indigo-600 text-white rounded hover:bg-indigo-700 transition disabled:opacity-50"
+                              >
+                                Assign
+                              </button>
+                              {user && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleAssignToMe(task.id)
+                                  }}
+                                  className="px-2 py-1 text-xs font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition"
+                                >
+                                  Me
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setAssigningTaskId(null)
+                                  setSelectedAssignee(undefined)
+                                }}
+                                className="px-2 py-1 text-xs text-gray-600 hover:text-gray-800"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setAssigningTaskId(task.id)
+                              }}
+                              className="text-xs text-gray-500 hover:text-indigo-600 transition"
+                            >
+                              👤 Unassigned
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
