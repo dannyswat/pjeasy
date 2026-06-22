@@ -570,13 +570,14 @@ func syncReleaseWorkItems(tx *gorm.DB, releaseID int, projectID int, confirmedIt
 	types := []struct {
 		itemType   string
 		table      string
+		assigned   string
 		inProgress string
 		inReview   string
 		canPromote bool
 	}{
-		{itemType: "feature", table: "features", inProgress: features.FeatureStatusInProgress, inReview: features.FeatureStatusInReview, canPromote: true},
-		{itemType: "issue", table: "issues", inProgress: issues.IssueStatusInProgress, inReview: issues.IssueStatusInReview, canPromote: true},
-		{itemType: "task", table: "tasks", inProgress: tasks.TaskStatusInProgress, inReview: "", canPromote: false},
+		{itemType: "feature", table: "features", assigned: features.FeatureStatusAssigned, inProgress: features.FeatureStatusInProgress, inReview: features.FeatureStatusInReview, canPromote: true},
+		{itemType: "issue", table: "issues", assigned: issues.IssueStatusAssigned, inProgress: issues.IssueStatusInProgress, inReview: issues.IssueStatusInReview, canPromote: true},
+		{itemType: "task", table: "tasks", assigned: tasks.TaskStatusOpen, inProgress: "", inReview: tasks.TaskStatusInProgress, canPromote: true},
 	}
 
 	for _, itemConfig := range types {
@@ -601,7 +602,7 @@ func syncReleaseWorkItems(tx *gorm.DB, releaseID int, projectID int, confirmedIt
 
 			if promoteInReview && itemConfig.canPromote {
 				if err := tx.Table(itemConfig.table).
-					Where("project_id = ? AND id IN ? AND status = ?", projectID, ids, itemConfig.inProgress).
+					Where("project_id = ? AND id IN ? AND (status = ? OR status = ?)", projectID, ids, itemConfig.assigned, itemConfig.inProgress).
 					Update("status", itemConfig.inReview).Error; err != nil {
 					return err
 				}
